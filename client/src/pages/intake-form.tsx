@@ -197,7 +197,7 @@ export default function IntakeForm() {
                       <FormItem>
                         <FormLabel>Middle Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Optional" {...field} data-testid="input-middleName" />
+                          <Input placeholder="Optional" {...field} value={field.value || ""} data-testid="input-middleName" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -565,6 +565,7 @@ export default function IntakeForm() {
                             placeholder="List any medical conditions, injuries, or health concerns (optional)"
                             className="resize-none"
                             {...field}
+                            value={field.value || ""}
                             data-testid="input-medicalConditions"
                           />
                         </FormControl>
@@ -590,7 +591,7 @@ export default function IntakeForm() {
                       <FormItem>
                         <FormLabel>Preferred Military Occupational Specialty (MOS)</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Infantry, Military Intelligence, Logistics" {...field} data-testid="input-preferredMOS" />
+                          <Input placeholder="e.g., Infantry, Military Intelligence, Logistics" {...field} value={field.value || ""} data-testid="input-preferredMOS" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -631,6 +632,7 @@ export default function IntakeForm() {
                             placeholder="Any additional information you'd like to share (optional)"
                             className="resize-none"
                             {...field}
+                            value={field.value || ""}
                             data-testid="input-additionalNotes"
                           />
                         </FormControl>

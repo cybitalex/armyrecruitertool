@@ -30,7 +30,13 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const submittedAt = new Date().toISOString();
     const recruit: Recruit = { 
-      ...insertRecruit, 
+      ...insertRecruit,
+      middleName: insertRecruit.middleName ?? null,
+      priorServiceBranch: insertRecruit.priorServiceBranch ?? null,
+      priorServiceYears: insertRecruit.priorServiceYears ?? null,
+      medicalConditions: insertRecruit.medicalConditions ?? null,
+      preferredMOS: insertRecruit.preferredMOS ?? null,
+      additionalNotes: insertRecruit.additionalNotes ?? null,
       id,
       submittedAt,
       status: insertRecruit.status || "pending"
