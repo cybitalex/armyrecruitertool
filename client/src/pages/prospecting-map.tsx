@@ -316,42 +316,32 @@ export default function ProspectingMap() {
   return (
     <div className="min-h-screen bg-army-green">
       <div className="h-screen flex flex-col">
-        {/* Header */}
-        <div className="bg-army-black border-b border-army-field01 px-6 py-4 shadow-lg">
+        {/* Page Header */}
+        <div className="bg-army-black border-b border-army-field01 px-3 md:px-6 py-3 md:py-4 shadow-lg">
           <div className="max-w-full">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h1 className="text-3xl font-bold text-army-gold flex items-center gap-2 tracking-wide">
-                  <Navigation className="w-8 h-8 drop-shadow-lg" />
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3 md:mb-4 gap-3">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl md:text-3xl font-bold text-army-gold flex items-center gap-2 tracking-wide">
+                  <Navigation className="w-6 h-6 md:w-8 md:h-8 drop-shadow-lg" />
                   🗺️ PROSPECTING MAP
                 </h1>
-                <p className="text-army-tan mt-1 font-medium">
+                <p className="text-army-tan mt-1 font-medium text-sm md:text-base">
                   Discover prime locations and events for Army recruiting
                 </p>
                 {userLocation && (
-                  <div className="mt-2 flex items-center gap-2">
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                     <Badge
                       variant="secondary"
                       className="bg-blue-500/20 text-blue-300 border-blue-400"
                     >
-                      📍 Your Location: {userLocation[0].toFixed(4)}°,{" "}
-                      {userLocation[1].toFixed(4)}°
-                    </Badge>
-                    <Badge
-                      variant="secondary"
-                      className="bg-green-500/20 text-green-300 border-green-400"
-                    >
-                      🎯 Search Radius: 5km (3.1 miles)
+                      📍 {userLocation[0].toFixed(2)}°, {userLocation[1].toFixed(2)}°
                     </Badge>
                   </div>
                 )}
-                {locationError && (
-                  <p className="text-yellow-400 text-sm mt-2">
-                    ⚠️ {locationError}
-                  </p>
-                )}
               </div>
-              <div className="flex gap-2">
+              
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={() => searchNearbyMutation.mutate()}
                   disabled={!userLocation || searchNearbyMutation.isPending}
@@ -416,19 +406,19 @@ export default function ProspectingMap() {
             </div>
 
             {/* Search and Filters */}
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-2 md:gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 md:w-4 md:h-4 text-muted-foreground" />
                 <Input
                   placeholder="Search locations or events..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-8 md:pl-10 text-sm"
                 />
               </div>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[200px]">
-                  <Filter className="w-4 h-4 mr-2" />
+                <SelectTrigger className="w-full sm:w-[180px] md:w-[200px]">
+                  <Filter className="w-3 h-3 md:w-4 md:h-4 mr-2" />
                   <SelectValue placeholder="Filter by type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -447,9 +437,9 @@ export default function ProspectingMap() {
         </div>
 
         {/* Map and List Layout */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
           {/* Map Container */}
-          <div className="flex-1 relative">
+          <div className="flex-1 relative h-[35vh] md:h-full md:flex-1">
             <MapContainer
               center={mapCenter}
               zoom={13}
@@ -572,44 +562,45 @@ export default function ProspectingMap() {
           </div>
 
           {/* Sidebar List */}
-          <div className="w-96 border-l bg-card overflow-y-auto">
+          <div className="w-full h-[65vh] md:h-full md:w-96 border-t md:border-t-0 md:border-l bg-card flex flex-col overflow-hidden">
             <Tabs
               value={activeTab}
               onValueChange={(v) => setActiveTab(v as "locations" | "events")}
-              className="h-full"
+              className="h-full flex flex-col overflow-hidden"
             >
-              <div className="sticky top-0 bg-card border-b z-10">
+              <div className="bg-card border-b shrink-0">
                 <TabsList className="w-full grid grid-cols-2">
-                  <TabsTrigger value="locations">
+                  <TabsTrigger value="locations" className="text-xs md:text-sm">
                     Locations ({filteredLocations.length})
                   </TabsTrigger>
-                  <TabsTrigger value="events">
+                  <TabsTrigger value="events" className="text-xs md:text-sm">
                     Events ({filteredEvents.length})
                   </TabsTrigger>
                 </TabsList>
               </div>
 
-              <TabsContent value="locations" className="p-4 space-y-3 mt-0">
+              <TabsContent value="locations" className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 overflow-y-scroll flex-1 data-[state=active]:flex data-[state=active]:flex-col"
+                style={{ maxHeight: 'calc(65vh - 48px)' }}>
                 {filteredLocations.map((location) => (
                   <Card
                     key={location.id}
-                    className={`p-4 cursor-pointer transition-all hover:shadow-md ${
+                    className={`p-3 md:p-4 cursor-pointer transition-all hover:shadow-md ${
                       selectedLocation?.id === location.id
                         ? "ring-2 ring-primary"
                         : ""
                     }`}
                     onClick={() => setSelectedLocation(location)}
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2 md:gap-3">
                       <div className="mt-1">{getTypeIcon(location.type)}</div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-foreground truncate">
+                        <h3 className="font-semibold text-foreground truncate text-sm md:text-base">
                           {location.name}
                         </h3>
-                        <p className="text-sm text-muted-foreground capitalize">
+                        <p className="text-xs md:text-sm text-muted-foreground capitalize">
                           {location.type.replace(/_/g, " ")}
                         </p>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="text-xs md:text-sm text-muted-foreground mt-1">
                           {location.city}, {location.state}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
@@ -647,24 +638,25 @@ export default function ProspectingMap() {
                 )}
               </TabsContent>
 
-              <TabsContent value="events" className="p-4 space-y-3 mt-0">
+              <TabsContent value="events" className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 overflow-y-scroll flex-1 data-[state=active]:flex data-[state=active]:flex-col"
+                style={{ maxHeight: 'calc(65vh - 48px)' }}>
                 {filteredEvents.map((event) => (
                   <Card
                     key={event.id}
-                    className={`p-4 cursor-pointer transition-all hover:shadow-md ${
+                    className={`p-3 md:p-4 cursor-pointer transition-all hover:shadow-md ${
                       selectedEvent?.id === event.id
                         ? "ring-2 ring-primary"
                         : ""
                     }`}
                     onClick={() => setSelectedEvent(event)}
                   >
-                    <div className="flex items-start gap-3">
-                      <Calendar className="w-5 h-5 mt-1 text-primary" />
+                    <div className="flex items-start gap-2 md:gap-3">
+                      <Calendar className="w-4 h-4 md:w-5 md:h-5 mt-1 text-primary" />
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-foreground">
+                        <h3 className="font-semibold text-foreground text-sm md:text-base">
                           {event.name}
                         </h3>
-                        <p className="text-sm text-muted-foreground capitalize">
+                        <p className="text-xs md:text-sm text-muted-foreground capitalize">
                           {event.type.replace(/_/g, " ")}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
