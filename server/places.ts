@@ -39,164 +39,218 @@ export async function searchNearbyLocations(
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
 
   if (!apiKey) {
-    console.log("Google Places API key not found. Returning empty locations list.");
+    console.log(
+      "Google Places API key not found. Returning empty locations list."
+    );
     console.log(
       "Get your API key at https://console.cloud.google.com/apis/credentials"
     );
     return [];
   }
 
-  // Place types perfect for Army recruiting
-  const placeTypes = [
-    'school',           // High schools
-    'university',       // Colleges and universities  
-    'secondary_school', // High schools (alternative type)
-    'gym',             // Fitness centers
-    'shopping_mall',   // High foot traffic
-    'stadium',         // Sports venues
-    'park',            // Community gathering spots
-  ];
+    // Place types perfect for Army recruiting
+    const placeTypes = [
+      "university", // Colleges and universities
+      "secondary_school", // High schools only
+      "gym", // Fitness centers
+      "shopping_mall", // High foot traffic
+      "stadium", // Sports venues
+      "park", // Community gathering spots
+    ];
 
   try {
     const allLocations: InsertLocation[] = [];
 
     // Google Places API allows one type per request, so we'll search for each type
     for (const placeType of placeTypes) {
-      console.log(`🔍 Searching Google Places for ${placeType} near ${latitude}, ${longitude}`);
+      console.log(
+        `🔍 Searching Google Places for ${placeType} near ${latitude}, ${longitude}`
+      );
 
-      const url = new URL('https://maps.googleapis.com/maps/api/place/nearbysearch/json');
-      url.searchParams.append('location', `${latitude},${longitude}`);
-      url.searchParams.append('radius', radiusMeters.toString());
-      url.searchParams.append('type', placeType);
-      url.searchParams.append('key', apiKey);
+      const url = new URL(
+        "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+      );
+      url.searchParams.append("location", `${latitude},${longitude}`);
+      url.searchParams.append("radius", radiusMeters.toString());
+      url.searchParams.append("type", placeType);
+      url.searchParams.append("key", apiKey);
 
       const response = await fetch(url.toString());
 
       if (!response.ok) {
-        console.error(`Google Places API error (${response.status}): ${response.statusText}`);
+        console.error(
+          `Google Places API error (${response.status}): ${response.statusText}`
+        );
         continue; // Skip this type and continue with others
       }
 
       const data = await response.json();
 
-      if (data.status === 'INVALID_REQUEST' || data.status === 'REQUEST_DENIED') {
-        console.error(`Google Places API error: ${data.status} - ${data.error_message || ''}`);
-        if (data.status === 'REQUEST_DENIED') {
+      if (
+        data.status === "INVALID_REQUEST" ||
+        data.status === "REQUEST_DENIED"
+      ) {
+        console.error(
+          `Google Places API error: ${data.status} - ${
+            data.error_message || ""
+          }`
+        );
+        if (data.status === "REQUEST_DENIED") {
           console.log("💡 Make sure your API key has Places API enabled");
-          console.log("   Visit: https://console.cloud.google.com/apis/library/places-backend.googleapis.com");
+          console.log(
+            "   Visit: https://console.cloud.google.com/apis/library/places-backend.googleapis.com"
+          );
         }
         continue;
       }
 
-      console.log(`✅ Found ${data.results?.length || 0} ${placeType} locations`);
+      console.log(
+        `✅ Found ${data.results?.length || 0} ${placeType} locations`
+      );
 
       // Transform Google Places data to our location format
-      const locations: InsertLocation[] = (data.results || []).map((place: any) => {
-        // Determine our internal type from Google's type
-        let type = "community_center";
-        let prospectingScore = 50;
+      const locations: InsertLocation[] = (data.results || []).map(
+        (place: any) => {
+          // Determine our internal type from Google's type
+          let type = "community_center";
+          let prospectingScore = 50;
 
-        if (place.types?.includes('school') || place.types?.includes('secondary_school')) {
-          type = "school";
-          prospectingScore = 85;
-        } else if (place.types?.includes('university')) {
-          type = "school";
-          prospectingScore = 95; // Universities are prime recruiting locations
-        } else if (place.types?.includes('gym')) {
-          type = "gym";
-          prospectingScore = 75;
-        } else if (place.types?.includes('shopping_mall')) {
-          type = "mall";
-          prospectingScore = 70;
-        } else if (place.types?.includes('stadium')) {
-          type = "event_venue";
-          prospectingScore = 85;
-        } else if (place.types?.includes('park')) {
-          type = "community_center";
-          prospectingScore = 60;
-        }
-
-        // Adjust score based on rating and user ratings
-        if (place.rating && place.user_ratings_total) {
-          if (place.rating >= 4.0 && place.user_ratings_total > 100) {
-            prospectingScore += 5; // Popular, well-reviewed locations
+           // Check for secondary schools (high schools) and universities only
+           // Explicitly exclude elementary schools
+           const placeName = place.name?.toLowerCase() || "";
+           const isElementary = placeName.includes("elementary") || 
+                                placeName.includes("primary") ||
+                                placeName.includes("preschool") ||
+                                placeName.includes("kindergarten");
+           
+           if (place.types?.includes("secondary_school") && !isElementary) {
+             type = "school";
+             prospectingScore = 90; // High schools are prime recruiting
+           } else if (place.types?.includes("university")) {
+             type = "school";
+             prospectingScore = 95; // Universities/colleges are top priority
+           } else if (place.types?.includes("school") && !isElementary) {
+             // Generic "school" - only include if it's clearly not elementary
+             if (placeName.includes("high") || placeName.includes("senior")) {
+               type = "school";
+               prospectingScore = 90;
+             } else {
+               // Skip this location - likely elementary
+               return null;
+             }
+           } else if (place.types?.includes("gym")) {
+            type = "gym";
+            prospectingScore = 75;
+          } else if (place.types?.includes("shopping_mall")) {
+            type = "mall";
+            prospectingScore = 70;
+          } else if (place.types?.includes("stadium")) {
+            type = "event_venue";
+            prospectingScore = 85;
+          } else if (place.types?.includes("park")) {
+            type = "community_center";
+            prospectingScore = 60;
           }
-        }
 
-        // Parse address components
-        let address = place.vicinity || "Address not available";
-        let city = "Unknown";
-        let state = "Unknown";
-        let zipCode = "00000";
-
-        // Try to get more detailed address info
-        if (place.plus_code?.compound_code) {
-          const parts = place.plus_code.compound_code.split(', ');
-          if (parts.length >= 2) {
-            city = parts[parts.length - 2] || city;
-            const stateMatch = parts[parts.length - 1]?.match(/([A-Z]{2})/);
-            if (stateMatch) {
-              state = stateMatch[1];
+          // Adjust score based on rating and user ratings
+          if (place.rating && place.user_ratings_total) {
+            if (place.rating >= 4.0 && place.user_ratings_total > 100) {
+              prospectingScore += 5; // Popular, well-reviewed locations
             }
           }
-        }
 
-        const location: InsertLocation = {
-          name: place.name || "Unnamed Location",
-          type,
-          address,
-          city,
-          state,
-          zipCode,
-          latitude: place.geometry.location.lat.toString(),
-          longitude: place.geometry.location.lng.toString(),
-          prospectingScore: Math.min(100, prospectingScore),
-          footTraffic: prospectingScore >= 80 ? "high" : prospectingScore >= 60 ? "medium" : "low",
-          description: place.editorial_summary?.overview || 
-                      `${place.types?.[0]?.replace(/_/g, ' ') || 'Location'} found via Google Places. ${
-                        place.rating ? `Rating: ${place.rating}/5 (${place.user_ratings_total} reviews)` : ''
-                      }`,
-          demographics: JSON.stringify({
-            source: "Google Places",
-            placeId: place.place_id,
-            types: place.types,
-            rating: place.rating,
-            totalRatings: place.user_ratings_total,
-            priceLevel: place.price_level,
-            businessStatus: place.business_status,
-          }),
-          notes: place.opening_hours?.open_now !== undefined 
-            ? (place.opening_hours.open_now ? "Currently open" : "Currently closed")
-            : null,
-          lastVisited: null,
-        };
+          // Parse address components
+          let address = place.vicinity || "Address not available";
+          let city = "Unknown";
+          let state = "Unknown";
+          let zipCode = "00000";
 
-        return location;
-      });
+          // Try to get more detailed address info
+          if (place.plus_code?.compound_code) {
+            const parts = place.plus_code.compound_code.split(", ");
+            if (parts.length >= 2) {
+              city = parts[parts.length - 2] || city;
+              const stateMatch = parts[parts.length - 1]?.match(/([A-Z]{2})/);
+              if (stateMatch) {
+                state = stateMatch[1];
+              }
+            }
+          }
 
-      allLocations.push(...locations);
+          const location: InsertLocation = {
+            name: place.name || "Unnamed Location",
+            type,
+            address,
+            city,
+            state,
+            zipCode,
+            latitude: place.geometry.location.lat.toString(),
+            longitude: place.geometry.location.lng.toString(),
+            prospectingScore: Math.min(100, prospectingScore),
+            footTraffic:
+              prospectingScore >= 80
+                ? "high"
+                : prospectingScore >= 60
+                ? "medium"
+                : "low",
+            description:
+              place.editorial_summary?.overview ||
+              `${
+                place.types?.[0]?.replace(/_/g, " ") || "Location"
+              } found via Google Places. ${
+                place.rating
+                  ? `Rating: ${place.rating}/5 (${place.user_ratings_total} reviews)`
+                  : ""
+              }`,
+            demographics: JSON.stringify({
+              source: "Google Places",
+              placeId: place.place_id,
+              types: place.types,
+              rating: place.rating,
+              totalRatings: place.user_ratings_total,
+              priceLevel: place.price_level,
+              businessStatus: place.business_status,
+            }),
+            notes:
+              place.opening_hours?.open_now !== undefined
+                ? place.opening_hours.open_now
+                  ? "Currently open"
+                  : "Currently closed"
+                : null,
+            lastVisited: null,
+          };
+
+           return location;
+         }
+       );
+
+       // Filter out null results (excluded elementary schools)
+       const validLocations = locations.filter((loc): loc is InsertLocation => loc !== null);
+       allLocations.push(...validLocations);
 
       // Small delay between requests to respect rate limits
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     // Remove duplicates based on place name and proximity
     const uniqueLocations = allLocations.filter((loc, index, self) => {
-      return index === self.findIndex((l) => {
-        // Consider locations with same name within 50 meters as duplicates
-        const distance = calculateDistance(
-          parseFloat(loc.latitude),
-          parseFloat(loc.longitude),
-          parseFloat(l.latitude),
-          parseFloat(l.longitude)
-        );
-        return l.name === loc.name && distance < 0.05; // 50 meters
-      });
+      return (
+        index ===
+        self.findIndex((l) => {
+          // Consider locations with same name within 50 meters as duplicates
+          const distance = calculateDistance(
+            parseFloat(loc.latitude),
+            parseFloat(loc.longitude),
+            parseFloat(l.latitude),
+            parseFloat(l.longitude)
+          );
+          return l.name === loc.name && distance < 0.05; // 50 meters
+        })
+      );
     });
 
     console.log(`🎯 Total unique locations found: ${uniqueLocations.length}`);
     return uniqueLocations;
-
   } catch (error) {
     console.error("Error searching nearby locations:", error);
     throw new Error(
@@ -210,14 +264,21 @@ export async function searchNearbyLocations(
 /**
  * Calculate distance between two coordinates in kilometers
  */
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function calculateDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
   const R = 6371; // Earth's radius in kilometers
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
@@ -245,7 +306,7 @@ export async function searchNearbyEvents(
   try {
     // Convert miles to meters for PredictHQ (they use metric)
     const radiusMeters = Math.round(radiusMiles * 1609.34);
-    
+
     // Categories perfect for Army recruiting:
     // - sports: Military appreciation nights, college games
     // - community: Local gatherings, parades
@@ -254,27 +315,30 @@ export async function searchNearbyEvents(
     // - festivals: Community events
     // - school-holidays: Education-related events
     const categories = [
-      'sports',
-      'community',
-      'conferences',
-      'expos',
-      'concerts',
-      'festivals',
-      'performing-arts',
-      'school-holidays'
-    ].join(',');
+      "sports",
+      "community",
+      "conferences",
+      "expos",
+      "concerts",
+      "festivals",
+      "performing-arts",
+      "school-holidays",
+    ].join(",");
 
     // Build the URL with query parameters
-    const url = new URL('https://api.predicthq.com/v1/events/');
-    url.searchParams.append('limit', '50');
-    url.searchParams.append('within', `${radiusMeters}m@${latitude},${longitude}`);
-    url.searchParams.append('category', categories);
-    url.searchParams.append('sort', 'start');
-    url.searchParams.append('state', 'active'); // Only active events
-    
+    const url = new URL("https://api.predicthq.com/v1/events/");
+    url.searchParams.append("limit", "50");
+    url.searchParams.append(
+      "within",
+      `${radiusMeters}m@${latitude},${longitude}`
+    );
+    url.searchParams.append("category", categories);
+    url.searchParams.append("sort", "start");
+    url.searchParams.append("state", "active"); // Only active events
+
     // Filter for upcoming events only
-    const today = new Date().toISOString().split('T')[0];
-    url.searchParams.append('start.gte', today);
+    const today = new Date().toISOString().split("T")[0];
+    url.searchParams.append("start.gte", today);
 
     console.log(
       `🔍 Searching PredictHQ events near ${latitude}, ${longitude} within ${radiusMiles} miles`
@@ -282,8 +346,8 @@ export async function searchNearbyEvents(
 
     const response = await fetch(url.toString(), {
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Accept': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+        Accept: "application/json",
       },
     });
 
@@ -293,7 +357,9 @@ export async function searchNearbyEvents(
 
       if (response.status === 401) {
         console.log("💡 Note: Invalid PredictHQ API key.");
-        console.log("   - Check your API key at https://control.predicthq.com/");
+        console.log(
+          "   - Check your API key at https://control.predicthq.com/"
+        );
         console.log("   - Make sure it's added to .env as PREDICTHQ_API_KEY");
       }
 
@@ -308,14 +374,17 @@ export async function searchNearbyEvents(
       // Determine event type from category
       let type = "community_event";
       let targetAudience = "general";
-      
+
       if (evt.category === "sports") {
         type = "sports_event";
         targetAudience = "young_adults";
       } else if (evt.category === "conferences" || evt.category === "expos") {
         type = "career_fair";
         targetAudience = "high_school";
-      } else if (evt.category === "concerts" || evt.category === "performing-arts") {
+      } else if (
+        evt.category === "concerts" ||
+        evt.category === "performing-arts"
+      ) {
         type = "concert";
         targetAudience = "young_adults";
       } else if (evt.category === "festivals" || evt.category === "community") {
@@ -362,23 +431,55 @@ export async function searchNearbyEvents(
         else expectedAttendance = 100;
       }
 
-      // Generate useful URLs for the event
+      // Get the official event URL and location URL
       let eventUrl = null;
-      
-      // Try to get official event URL from entities
+      let locationUrl = null;
+
+      // Try to get official event page URL from PredictHQ
+      // Note: Free tier may not always include event URLs
       if (evt.entities && evt.entities.length > 0) {
+        // Check for event entity with URL
+        const eventEntity = evt.entities.find(
+          (e: any) => e.type === "event" && (e.url || e.website)
+        );
+        if (eventEntity) {
+          eventUrl = eventEntity.url || eventEntity.website;
+        }
+
+        // Check venue for website (might be useful)
         const venue = evt.entities.find((e: any) => e.type === "venue");
+        if (venue && !eventUrl && venue.url) {
+          // Only use venue URL if it looks like an event page
+          const venueUrl = venue.url || venue.website;
+          if (venueUrl && !venueUrl.includes("google.com")) {
+            eventUrl = venueUrl;
+          }
+        }
+
+        // Create Google Maps URL for the venue location
         if (venue && venue.formatted_address) {
-          // Create Google Maps URL for the venue
           const encodedAddress = encodeURIComponent(venue.formatted_address);
-          eventUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+          locationUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
         }
       }
-      
-      // Fallback to coordinates if no venue address
-      if (!eventUrl) {
-        eventUrl = `https://www.google.com/maps/search/?api=1&query=${eventLat},${eventLon}`;
+
+      // Check if PredictHQ provides a direct event URL in the main data
+      if (!eventUrl && evt.url && !evt.url.includes("google.com")) {
+        eventUrl = evt.url;
       }
+
+      // Check for website in event data
+      if (!eventUrl && evt.website && !evt.website.includes("google.com")) {
+        eventUrl = evt.website;
+      }
+
+      // Fallback: Create Google Maps URL from coordinates if no location URL
+      if (!locationUrl) {
+        locationUrl = `https://www.google.com/maps/search/?api=1&query=${eventLat},${eventLon}`;
+      }
+
+      // Don't set eventUrl to Google search - leave it null if no official page found
+      // The UI will handle showing a search option instead
 
       return {
         name: evt.title || "Unnamed Event",
@@ -389,14 +490,19 @@ export async function searchNearbyEvents(
         zipCode,
         latitude: eventLat.toString(),
         longitude: eventLon.toString(),
-        eventDate: evt.start?.split("T")[0] || new Date().toISOString().split("T")[0],
-        eventTime: evt.start ? new Date(evt.start).toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
-          minute: '2-digit',
-          hour12: false 
-        }) : null,
+        eventDate:
+          evt.start?.split("T")[0] || new Date().toISOString().split("T")[0],
+        eventTime: evt.start
+          ? new Date(evt.start).toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            })
+          : null,
         endDate: evt.end?.split("T")[0] || null,
-        description: evt.description?.substring(0, 500) || `${evt.category} event in ${city}`,
+        description:
+          evt.description?.substring(0, 500) ||
+          `${evt.category} event in ${city}`,
         expectedAttendance,
         targetAudience,
         contactName: null,
@@ -405,8 +511,11 @@ export async function searchNearbyEvents(
         registrationRequired: "unknown",
         cost: "Unknown",
         status: "upcoming",
-        notes: `Found via PredictHQ. Category: ${evt.category}. Rank: ${evt.rank || 'N/A'}. ${evt.labels?.length ? `Labels: ${evt.labels.join(', ')}` : ''}`,
+        notes: `Found via PredictHQ. Category: ${evt.category}. Rank: ${
+          evt.rank || "N/A"
+        }. ${evt.labels?.length ? `Labels: ${evt.labels.join(", ")}` : ""}`,
         eventUrl,
+        locationUrl,
       };
     });
 

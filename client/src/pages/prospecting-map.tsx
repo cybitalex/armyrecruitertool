@@ -40,6 +40,7 @@ import {
   ExternalLink,
   Clock,
   MapPinIcon,
+  Globe,
 } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
@@ -88,6 +89,7 @@ export default function ProspectingMap() {
     null
   );
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [showLocations, setShowLocations] = useState(true);
   const [showEvents, setShowEvents] = useState(true);
@@ -346,12 +348,13 @@ export default function ProspectingMap() {
                       variant="secondary"
                       className="bg-blue-500/20 text-blue-300 border-blue-400"
                     >
-                      📍 {userLocation[0].toFixed(2)}°, {userLocation[1].toFixed(2)}°
+                      📍 {userLocation[0].toFixed(2)}°,{" "}
+                      {userLocation[1].toFixed(2)}°
                     </Badge>
                   </div>
                 )}
               </div>
-              
+
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -483,26 +486,40 @@ export default function ProspectingMap() {
                     eventHandlers={{
                       click: () => {
                         setSelectedLocation(location);
-                        setActiveTab("locations");
+                        setLocationDialogOpen(true);
                       },
                     }}
                   >
                     <Popup>
                       <div className="p-2">
-                        <h3 className="font-bold text-lg">{location.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {location.type}
+                        <h3 className="font-bold text-base">{location.name}</h3>
+                        <p className="text-xs text-muted-foreground capitalize mt-1">
+                          {location.type.replace(/_/g, " ")}
                         </p>
-                        <p className="text-sm mt-1">{location.address}</p>
-                        <div className="mt-2">
+                        <div className="mt-2 flex gap-1">
                           <Badge
                             variant={getScoreBadgeColor(
                               location.prospectingScore
                             )}
+                            className="text-xs"
                           >
                             Score: {location.prospectingScore}
                           </Badge>
+                          {location.footTraffic && (
+                            <Badge variant="outline" className="text-xs capitalize">
+                              {location.footTraffic}
+                            </Badge>
+                          )}
                         </div>
+                        <button
+                          onClick={() => {
+                            setSelectedLocation(location);
+                            setLocationDialogOpen(true);
+                          }}
+                          className="text-xs text-blue-600 hover:text-blue-800 font-medium mt-2 underline"
+                        >
+                          View Details →
+                        </button>
                       </div>
                     </Popup>
                   </Marker>
@@ -567,18 +584,49 @@ export default function ProspectingMap() {
                         <div className="mt-2 flex gap-2">
                           <Badge>{event.status}</Badge>
                         </div>
-                        {event.eventUrl && (
-                          <a
-                            href={event.eventUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mt-2"
-                          >
-                            <MapPinIcon className="w-3 h-3" />
-                            View Location
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
+                        <div className="mt-2 flex flex-col gap-1">
+                          {event.eventUrl ? (
+                            <a
+                              href={event.eventUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                              <Calendar className="w-3 h-3" />
+                              Event Page
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          ) : (
+                            <a
+                              href={`https://www.google.com/search?q=${encodeURIComponent(
+                                event.name +
+                                  " " +
+                                  event.city +
+                                  " " +
+                                  event.state
+                              )}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-gray-600 hover:text-gray-800 font-medium"
+                            >
+                              <Globe className="w-3 h-3" />
+                              Search Online
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                          {event.locationUrl && (
+                            <a
+                              href={event.locationUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-green-600 hover:text-green-800 font-medium"
+                            >
+                              <MapPinIcon className="w-3 h-3" />
+                              View Location
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </Popup>
                   </Marker>
@@ -604,8 +652,8 @@ export default function ProspectingMap() {
                 </TabsList>
               </div>
 
-              <TabsContent 
-                value="locations" 
+              <TabsContent
+                value="locations"
                 className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 overflow-y-auto flex-1"
               >
                 {filteredLocations.map((location) => (
@@ -665,8 +713,8 @@ export default function ProspectingMap() {
                 )}
               </TabsContent>
 
-              <TabsContent 
-                value="events" 
+              <TabsContent
+                value="events"
                 className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 overflow-y-auto flex-1"
               >
                 {filteredEvents.map((event) => (
@@ -709,7 +757,9 @@ export default function ProspectingMap() {
                         {event.expectedAttendance && (
                           <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                             <Users className="w-3 h-3" />
-                            Expected: {event.expectedAttendance.toLocaleString()} attendees
+                            Expected:{" "}
+                            {event.expectedAttendance.toLocaleString()}{" "}
+                            attendees
                           </p>
                         )}
                         {event.description && (
@@ -717,7 +767,7 @@ export default function ProspectingMap() {
                             {event.description}
                           </p>
                         )}
-                        <div className="flex gap-2 mt-3">
+                        <div className="flex flex-wrap gap-2 mt-3">
                           <Button
                             size="sm"
                             variant="outline"
@@ -729,12 +779,12 @@ export default function ProspectingMap() {
                           >
                             View Details
                           </Button>
-                          {event.eventUrl && (
+                          {event.eventUrl ? (
                             <Button
                               size="sm"
                               variant="default"
                               asChild
-                              className="text-xs"
+                              className="text-xs bg-blue-600 hover:bg-blue-700"
                             >
                               <a
                                 href={event.eventUrl}
@@ -742,8 +792,51 @@ export default function ProspectingMap() {
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1"
                               >
+                                <Calendar className="w-3 h-3" />
+                                Event Page
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              asChild
+                              className="text-xs"
+                            >
+                              <a
+                                href={`https://www.google.com/search?q=${encodeURIComponent(
+                                  event.name +
+                                    " " +
+                                    event.city +
+                                    " " +
+                                    event.state
+                                )}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1"
+                              >
+                                <Globe className="w-3 h-3" />
+                                Search Online
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </Button>
+                          )}
+                          {event.locationUrl && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              asChild
+                              className="text-xs"
+                            >
+                              <a
+                                href={event.locationUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1"
+                              >
                                 <MapPinIcon className="w-3 h-3" />
-                                View Location
+                                Location
                                 <ExternalLink className="w-3 h-3" />
                               </a>
                             </Button>
@@ -763,6 +856,152 @@ export default function ProspectingMap() {
           </div>
         </div>
       </div>
+
+      {/* Location Details Dialog - Condensed */}
+      <Dialog open={locationDialogOpen} onOpenChange={setLocationDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          {selectedLocation && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl pr-6">
+                  {selectedLocation.name}
+                </DialogTitle>
+                <DialogDescription>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <Badge
+                      variant={getScoreBadgeColor(
+                        selectedLocation.prospectingScore
+                      )}
+                    >
+                      Score: {selectedLocation.prospectingScore}
+                    </Badge>
+                    <Badge variant="outline" className="capitalize">
+                      {selectedLocation.type.replace(/_/g, " ")}
+                    </Badge>
+                    {selectedLocation.footTraffic && (
+                      <Badge variant="secondary" className="capitalize">
+                        {selectedLocation.footTraffic} Traffic
+                      </Badge>
+                    )}
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-3 mt-4">
+                {/* Location Info */}
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <MapPinIcon className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">Location</p>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedLocation.address}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedLocation.city}, {selectedLocation.state}{" "}
+                        {selectedLocation.zipCode}
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="link"
+                        asChild
+                        className="h-auto p-0 mt-1"
+                      >
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${selectedLocation.latitude},${selectedLocation.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs"
+                        >
+                          <MapPinIcon className="w-3 h-3" />
+                          Open in Google Maps
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description */}
+                {selectedLocation.description && (
+                  <div>
+                    <p className="font-medium text-sm mb-1">Details</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedLocation.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Demographics */}
+                {selectedLocation.demographics && (() => {
+                  try {
+                    const demo = JSON.parse(selectedLocation.demographics);
+                    return (
+                      <div className="p-3 bg-muted/30 rounded-lg">
+                        <p className="font-medium text-sm mb-2">Info</p>
+                        <div className="space-y-1 text-sm text-muted-foreground">
+                          {demo.rating && (
+                            <p>⭐ Rating: {demo.rating}/5 ({demo.totalRatings} reviews)</p>
+                          )}
+                          {demo.source && <p>📍 Source: {demo.source}</p>}
+                        </div>
+                      </div>
+                    );
+                  } catch {
+                    return null;
+                  }
+                })()}
+
+                {/* Notes */}
+                {selectedLocation.notes && (
+                  <div>
+                    <p className="font-medium text-sm mb-1">Notes</p>
+                    <p className="text-sm text-muted-foreground italic">
+                      {selectedLocation.notes}
+                    </p>
+                  </div>
+                )}
+
+                {/* Last Visited */}
+                {selectedLocation.lastVisited && (
+                  <div>
+                    <p className="font-medium text-sm mb-1">Last Visited</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(selectedLocation.lastVisited).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-3 border-t">
+                  <Button
+                    asChild
+                    className="flex-1"
+                  >
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${selectedLocation.latitude},${selectedLocation.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2"
+                    >
+                      <MapPinIcon className="w-4 h-4" />
+                      Open in Maps
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setLocationDialogOpen(false)}
+                    className="flex-1"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Event Details Dialog */}
       <Dialog open={eventDialogOpen} onOpenChange={setEventDialogOpen}>
@@ -795,12 +1034,15 @@ export default function ProspectingMap() {
                   <div>
                     <p className="font-semibold text-sm">Date & Time</p>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(selectedEvent.eventDate).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
+                      {new Date(selectedEvent.eventDate).toLocaleDateString(
+                        "en-US",
+                        {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        }
+                      )}
                     </p>
                     {selectedEvent.eventTime && (
                       <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
@@ -810,7 +1052,8 @@ export default function ProspectingMap() {
                     )}
                     {selectedEvent.endDate && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Ends: {new Date(selectedEvent.endDate).toLocaleDateString()}
+                        Ends:{" "}
+                        {new Date(selectedEvent.endDate).toLocaleDateString()}
                       </p>
                     )}
                   </div>
@@ -821,11 +1064,14 @@ export default function ProspectingMap() {
                   <MapPinIcon className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="font-semibold text-sm">Location</p>
-                    <p className="text-sm text-muted-foreground">{selectedEvent.address}</p>
                     <p className="text-sm text-muted-foreground">
-                      {selectedEvent.city}, {selectedEvent.state} {selectedEvent.zipCode}
+                      {selectedEvent.address}
                     </p>
-                    {selectedEvent.eventUrl && (
+                    <p className="text-sm text-muted-foreground">
+                      {selectedEvent.city}, {selectedEvent.state}{" "}
+                      {selectedEvent.zipCode}
+                    </p>
+                    {selectedEvent.locationUrl && (
                       <Button
                         size="sm"
                         variant="link"
@@ -833,7 +1079,7 @@ export default function ProspectingMap() {
                         className="h-auto p-0 mt-2"
                       >
                         <a
-                          href={selectedEvent.eventUrl}
+                          href={selectedEvent.locationUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-xs"
@@ -852,9 +1098,12 @@ export default function ProspectingMap() {
                   <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
                     <Users className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="font-semibold text-sm">Expected Attendance</p>
+                      <p className="font-semibold text-sm">
+                        Expected Attendance
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        {selectedEvent.expectedAttendance.toLocaleString()} attendees
+                        {selectedEvent.expectedAttendance.toLocaleString()}{" "}
+                        attendees
                       </p>
                     </div>
                   </div>
@@ -871,26 +1120,35 @@ export default function ProspectingMap() {
                 )}
 
                 {/* Contact Information */}
-                {(selectedEvent.contactName || selectedEvent.contactPhone || selectedEvent.contactEmail) && (
+                {(selectedEvent.contactName ||
+                  selectedEvent.contactPhone ||
+                  selectedEvent.contactEmail) && (
                   <div className="space-y-2">
                     <p className="font-semibold text-sm">Contact Information</p>
                     {selectedEvent.contactName && (
                       <p className="text-sm text-muted-foreground">
-                        <span className="font-medium">Name:</span> {selectedEvent.contactName}
+                        <span className="font-medium">Name:</span>{" "}
+                        {selectedEvent.contactName}
                       </p>
                     )}
                     {selectedEvent.contactPhone && (
                       <p className="text-sm text-muted-foreground">
-                        <span className="font-medium">Phone:</span>{' '}
-                        <a href={`tel:${selectedEvent.contactPhone}`} className="text-primary hover:underline">
+                        <span className="font-medium">Phone:</span>{" "}
+                        <a
+                          href={`tel:${selectedEvent.contactPhone}`}
+                          className="text-primary hover:underline"
+                        >
                           {selectedEvent.contactPhone}
                         </a>
                       </p>
                     )}
                     {selectedEvent.contactEmail && (
                       <p className="text-sm text-muted-foreground">
-                        <span className="font-medium">Email:</span>{' '}
-                        <a href={`mailto:${selectedEvent.contactEmail}`} className="text-primary hover:underline">
+                        <span className="font-medium">Email:</span>{" "}
+                        <a
+                          href={`mailto:${selectedEvent.contactEmail}`}
+                          className="text-primary hover:underline"
+                        >
                           {selectedEvent.contactEmail}
                         </a>
                       </p>
@@ -902,14 +1160,20 @@ export default function ProspectingMap() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {selectedEvent.cost && (
                     <div>
-                      <p className="font-semibold text-xs text-muted-foreground uppercase">Cost</p>
+                      <p className="font-semibold text-xs text-muted-foreground uppercase">
+                        Cost
+                      </p>
                       <p className="text-sm">{selectedEvent.cost}</p>
                     </div>
                   )}
                   {selectedEvent.registrationRequired && (
                     <div>
-                      <p className="font-semibold text-xs text-muted-foreground uppercase">Registration</p>
-                      <p className="text-sm capitalize">{selectedEvent.registrationRequired}</p>
+                      <p className="font-semibold text-xs text-muted-foreground uppercase">
+                        Registration
+                      </p>
+                      <p className="text-sm capitalize">
+                        {selectedEvent.registrationRequired}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -917,7 +1181,9 @@ export default function ProspectingMap() {
                 {/* Notes */}
                 {selectedEvent.notes && (
                   <div className="space-y-2 pt-3 border-t">
-                    <p className="font-semibold text-xs text-muted-foreground uppercase">Notes</p>
+                    <p className="font-semibold text-xs text-muted-foreground uppercase">
+                      Notes
+                    </p>
                     <p className="text-xs text-muted-foreground italic">
                       {selectedEvent.notes}
                     </p>
@@ -925,11 +1191,47 @@ export default function ProspectingMap() {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex gap-2 pt-4 border-t">
-                  {selectedEvent.eventUrl && (
-                    <Button asChild className="flex-1">
+                <div className="flex flex-wrap gap-2 pt-4 border-t">
+                  {selectedEvent.eventUrl ? (
+                    <Button
+                      asChild
+                      className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    >
                       <a
                         href={selectedEvent.eventUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        Event Page
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </Button>
+                  ) : (
+                    <Button asChild variant="outline" className="flex-1">
+                      <a
+                        href={`https://www.google.com/search?q=${encodeURIComponent(
+                          selectedEvent.name +
+                            " " +
+                            selectedEvent.city +
+                            " " +
+                            selectedEvent.state
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2"
+                      >
+                        <Globe className="w-4 h-4" />
+                        Search Online
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </Button>
+                  )}
+                  {selectedEvent.locationUrl && (
+                    <Button asChild variant="secondary" className="flex-1">
+                      <a
+                        href={selectedEvent.locationUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center justify-center gap-2"
@@ -943,7 +1245,7 @@ export default function ProspectingMap() {
                   <Button
                     variant="outline"
                     onClick={() => setEventDialogOpen(false)}
-                    className="flex-1"
+                    className="w-full md:flex-1"
                   >
                     Close
                   </Button>

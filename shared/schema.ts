@@ -99,7 +99,8 @@ export const events = pgTable("events", {
   cost: text("cost"),
   status: text("status").notNull().default("upcoming"), // "upcoming", "confirmed", "completed", "cancelled"
   notes: text("notes"),
-  eventUrl: text("event_url"), // URL to event details page (PredictHQ, venue website, etc.)
+  eventUrl: text("event_url"), // URL to event details page (official event website, Eventbrite, etc.)
+  locationUrl: text("location_url"), // URL to location/venue (Google Maps, venue website)
   createdAt: text("created_at").notNull(),
 });
 

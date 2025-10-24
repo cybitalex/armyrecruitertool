@@ -38,21 +38,27 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-army-field01 bg-army-black/95 backdrop-blur supports-[backdrop-filter]:bg-army-black/60 shadow-xl">
-      {/* Security Classification Banner */}
-      <div className="bg-green-900 border-b border-green-700">
-        <div className="max-w-7xl mx-auto px-3 md:px-4 py-1 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs md:text-sm">
-            <Shield className="w-3 h-3 md:w-4 md:h-4 text-green-300" />
-            <span className="font-mono font-bold text-green-300">
+      {/* DoD-Style Classification Banner */}
+      <div className="bg-[#006400] w-full">
+        <div className="w-full px-3 md:px-6 py-1.5 flex items-center justify-between">
+          <div className="flex-1 text-left">
+            <span className="font-mono text-[10px] md:text-xs text-white/90 uppercase tracking-wide">
+              Army Recruiting Tool | CyBit Devs
+            </span>
+          </div>
+          <div className="flex-1 text-center">
+            <span className="font-mono font-bold text-sm md:text-base text-white uppercase tracking-wider">
               UNCLASSIFIED
             </span>
           </div>
-          <div className="text-[10px] md:text-xs text-green-400/80 hidden sm:block">
-            CyBit Devs • SGT Alex Moran
+          <div className="flex-1 text-right">
+            <span className="font-mono text-[10px] md:text-xs text-white/90 uppercase tracking-wide">
+              FPCON NORMAL
+            </span>
           </div>
         </div>
       </div>
-      
+
       <div className="max-w-7xl mx-auto px-3 md:px-4 h-16 md:h-20 flex items-center justify-between gap-2 md:gap-4">
         <div className="flex items-center gap-2 md:gap-4 min-w-0">
           {/* U.S. Army Official Logo */}
@@ -78,15 +84,18 @@ export function Header() {
         <div className="md:hidden">
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="icon"
                 className="border-army-gold text-army-gold hover:bg-army-gold hover:text-army-black"
               >
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="bg-army-black border-army-field01 w-72">
+            <SheetContent
+              side="right"
+              className="bg-army-black border-army-field01 w-72"
+            >
               <SheetHeader>
                 <SheetTitle className="text-army-gold">Navigation</SheetTitle>
                 <SheetDescription className="text-army-tan">
