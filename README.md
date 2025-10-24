@@ -75,6 +75,22 @@ See [AI_SETUP.md](./AI_SETUP.md) for AI assistant setup (takes 2 minutes!).
 - npm or yarn
 - PostgreSQL (optional - in-memory storage available for development)
 
+### Production Deployment with HTTPS
+
+For production deployment with SSL (NIPR-compatible):
+
+- **🚀 Complete Guide**: [COMPLETE_DEPLOYMENT.md](./COMPLETE_DEPLOYMENT.md) - Full deployment workflow
+- **⚡ Quick Start**: [QUICK_SETUP.md](./QUICK_SETUP.md) - 3-step setup guide
+- **📖 Reverse Proxy**: [REVERSE_PROXY_SETUP.md](./REVERSE_PROXY_SETUP.md) - Nginx & SSL details
+- **⚙️ PM2 Setup**: [PM2_SETUP.md](./PM2_SETUP.md) - Auto-start configuration
+- **✅ Checklist**: [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) - Deployment checklist
+
+**Two-command deployment:**
+```bash
+sudo ./setup-reverse-proxy.sh    # Setup HTTPS
+sudo ./setup-pm2.sh               # Setup auto-start
+```
+
 ### Installation
 
 1. Clone the repository:
@@ -221,6 +237,16 @@ npm run build
 This builds the frontend and backend for production deployment.
 
 ### Starting Production Server
+
+#### Option 1: PM2 (Recommended - Auto-starts on boot)
+
+```bash
+sudo ./setup-pm2.sh
+```
+
+See [PM2_SETUP.md](./PM2_SETUP.md) for complete PM2 documentation.
+
+#### Option 2: Direct Start
 
 ```bash
 npm start
