@@ -4,7 +4,9 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const recruits = pgTable("recruits", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   middleName: text("middle_name"),
@@ -40,3 +42,70 @@ export const insertRecruitSchema = createInsertSchema(recruits).omit({
 
 export type InsertRecruit = z.infer<typeof insertRecruitSchema>;
 export type Recruit = typeof recruits.$inferSelect;
+
+// Prospecting Locations table
+export const locations = pgTable("locations", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // e.g., "school", "gym", "mall", "event_venue", "community_center"
+  address: text("address").notNull(),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  zipCode: text("zip_code").notNull(),
+  latitude: text("latitude").notNull(),
+  longitude: text("longitude").notNull(),
+  description: text("description"),
+  prospectingScore: integer("prospecting_score").notNull().default(0), // 0-100 score
+  footTraffic: text("foot_traffic"), // "low", "medium", "high"
+  demographics: text("demographics"), // JSON string of demographic data
+  notes: text("notes"),
+  lastVisited: text("last_visited"),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertLocationSchema = createInsertSchema(locations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertLocation = z.infer<typeof insertLocationSchema>;
+export type Location = typeof locations.$inferSelect;
+
+// Recruiting Events table
+export const events = pgTable("events", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // e.g., "career_fair", "sports_event", "festival", "community_event"
+  address: text("address").notNull(),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  zipCode: text("zip_code").notNull(),
+  latitude: text("latitude").notNull(),
+  longitude: text("longitude").notNull(),
+  eventDate: text("event_date").notNull(),
+  eventTime: text("event_time"),
+  endDate: text("end_date"),
+  description: text("description"),
+  expectedAttendance: integer("expected_attendance"),
+  targetAudience: text("target_audience"), // e.g., "high_school", "college", "veterans", "general"
+  contactName: text("contact_name"),
+  contactPhone: text("contact_phone"),
+  contactEmail: text("contact_email"),
+  registrationRequired: text("registration_required").notNull().default("no"),
+  cost: text("cost"),
+  status: text("status").notNull().default("upcoming"), // "upcoming", "confirmed", "completed", "cancelled"
+  notes: text("notes"),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertEventSchema = createInsertSchema(events).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertEvent = z.infer<typeof insertEventSchema>;
+export type Event = typeof events.$inferSelect;

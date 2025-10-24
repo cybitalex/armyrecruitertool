@@ -7,12 +7,14 @@ import { Header } from "@/components/header";
 import Dashboard from "@/pages/dashboard";
 import IntakeForm from "@/pages/intake-form";
 import RecruitDetail from "@/pages/recruit-detail";
+import ProspectingMap from "@/pages/prospecting-map";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/prospecting" component={ProspectingMap} />
       <Route path="/intake" component={IntakeForm} />
       <Route path="/recruits/:id" component={RecruitDetail} />
       <Route component={NotFound} />

@@ -4,3 +4,12 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Environment variables (contains API keys and secrets)
+.env
+.env.local
+.env.development
+.env.production
+
+# Local state files
+.local/
