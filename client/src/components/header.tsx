@@ -38,6 +38,21 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-army-field01 bg-army-black/95 backdrop-blur supports-[backdrop-filter]:bg-army-black/60 shadow-xl">
+      {/* Security Classification Banner */}
+      <div className="bg-green-900 border-b border-green-700">
+        <div className="max-w-7xl mx-auto px-3 md:px-4 py-1 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs md:text-sm">
+            <Shield className="w-3 h-3 md:w-4 md:h-4 text-green-300" />
+            <span className="font-mono font-bold text-green-300">
+              UNCLASSIFIED
+            </span>
+          </div>
+          <div className="text-[10px] md:text-xs text-green-400/80 hidden sm:block">
+            CyBit Devs • SGT Alex Moran
+          </div>
+        </div>
+      </div>
+      
       <div className="max-w-7xl mx-auto px-3 md:px-4 h-16 md:h-20 flex items-center justify-between gap-2 md:gap-4">
         <div className="flex items-center gap-2 md:gap-4 min-w-0">
           {/* U.S. Army Official Logo */}

@@ -362,6 +362,24 @@ export async function searchNearbyEvents(
         else expectedAttendance = 100;
       }
 
+      // Generate useful URLs for the event
+      let eventUrl = null;
+      
+      // Try to get official event URL from entities
+      if (evt.entities && evt.entities.length > 0) {
+        const venue = evt.entities.find((e: any) => e.type === "venue");
+        if (venue && venue.formatted_address) {
+          // Create Google Maps URL for the venue
+          const encodedAddress = encodeURIComponent(venue.formatted_address);
+          eventUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+        }
+      }
+      
+      // Fallback to coordinates if no venue address
+      if (!eventUrl) {
+        eventUrl = `https://www.google.com/maps/search/?api=1&query=${eventLat},${eventLon}`;
+      }
+
       return {
         name: evt.title || "Unnamed Event",
         type,
@@ -388,6 +406,7 @@ export async function searchNearbyEvents(
         cost: "Unknown",
         status: "upcoming",
         notes: `Found via PredictHQ. Category: ${evt.category}. Rank: ${evt.rank || 'N/A'}. ${evt.labels?.length ? `Labels: ${evt.labels.join(', ')}` : ''}`,
+        eventUrl,
       };
     });
 

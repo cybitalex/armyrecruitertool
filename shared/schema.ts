@@ -99,6 +99,7 @@ export const events = pgTable("events", {
   cost: text("cost"),
   status: text("status").notNull().default("upcoming"), // "upcoming", "confirmed", "completed", "cancelled"
   notes: text("notes"),
+  eventUrl: text("event_url"), // URL to event details page (PredictHQ, venue website, etc.)
   createdAt: text("created_at").notNull(),
 });
 

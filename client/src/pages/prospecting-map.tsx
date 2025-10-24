@@ -9,6 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -30,6 +37,9 @@ import {
   ShoppingBag,
   Radar,
   Loader2,
+  ExternalLink,
+  Clock,
+  MapPinIcon,
 } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
@@ -78,6 +88,7 @@ export default function ProspectingMap() {
     null
   );
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [showLocations, setShowLocations] = useState(true);
   const [showEvents, setShowEvents] = useState(true);
   const [activeTab, setActiveTab] = useState<"locations" | "events">(
@@ -545,16 +556,29 @@ export default function ProspectingMap() {
                     <Popup>
                       <div className="p-2">
                         <h3 className="font-bold text-lg">{event.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {event.type}
+                        <p className="text-sm text-muted-foreground capitalize">
+                          {event.type.replace(/_/g, " ")}
                         </p>
                         <p className="text-sm mt-1">{event.address}</p>
                         <p className="text-sm mt-1">
-                          {new Date(event.eventDate).toLocaleDateString()}
+                          📅 {new Date(event.eventDate).toLocaleDateString()}
+                          {event.eventTime && ` at ${event.eventTime}`}
                         </p>
-                        <div className="mt-2">
+                        <div className="mt-2 flex gap-2">
                           <Badge>{event.status}</Badge>
                         </div>
+                        {event.eventUrl && (
+                          <a
+                            href={event.eventUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mt-2"
+                          >
+                            <MapPinIcon className="w-3 h-3" />
+                            View Location
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
                       </div>
                     </Popup>
                   </Marker>
@@ -648,15 +672,14 @@ export default function ProspectingMap() {
                 {filteredEvents.map((event) => (
                   <Card
                     key={event.id}
-                    className={`p-3 md:p-4 cursor-pointer transition-all hover:shadow-md ${
+                    className={`p-3 md:p-4 transition-all hover:shadow-md ${
                       selectedEvent?.id === event.id
                         ? "ring-2 ring-primary"
                         : ""
                     }`}
-                    onClick={() => setSelectedEvent(event)}
                   >
                     <div className="flex items-start gap-2 md:gap-3">
-                      <Calendar className="w-4 h-4 md:w-5 md:h-5 mt-1 text-primary" />
+                      <Calendar className="w-4 h-4 md:w-5 md:h-5 mt-1 text-primary flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-foreground text-sm md:text-base">
                           {event.name}
@@ -664,7 +687,7 @@ export default function ProspectingMap() {
                         <p className="text-xs md:text-sm text-muted-foreground capitalize">
                           {event.type.replace(/_/g, " ")}
                         </p>
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
                           <Badge>{event.status}</Badge>
                           {event.targetAudience && (
                             <Badge variant="outline" className="capitalize">
@@ -672,20 +695,21 @@ export default function ProspectingMap() {
                             </Badge>
                           )}
                         </div>
-                        <div className="text-sm text-muted-foreground mt-2">
-                          <p>
+                        <div className="text-xs md:text-sm text-muted-foreground mt-2">
+                          <p className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
                             {new Date(event.eventDate).toLocaleDateString()}
+                            {event.eventTime && ` • ${event.eventTime}`}
                           </p>
-                          {event.eventTime && <p>{event.eventTime}</p>}
-                          <p className="mt-1">
+                          <p className="flex items-center gap-1 mt-1">
+                            <MapPinIcon className="w-3 h-3" />
                             {event.city}, {event.state}
                           </p>
                         </div>
                         {event.expectedAttendance && (
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Expected:{" "}
-                            {event.expectedAttendance.toLocaleString()}{" "}
-                            attendees
+                          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            Expected: {event.expectedAttendance.toLocaleString()} attendees
                           </p>
                         )}
                         {event.description && (
@@ -693,11 +717,38 @@ export default function ProspectingMap() {
                             {event.description}
                           </p>
                         )}
-                        {event.contactName && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Contact: {event.contactName}
-                          </p>
-                        )}
+                        <div className="flex gap-2 mt-3">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedEvent(event);
+                              setEventDialogOpen(true);
+                            }}
+                            className="text-xs"
+                          >
+                            View Details
+                          </Button>
+                          {event.eventUrl && (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              asChild
+                              className="text-xs"
+                            >
+                              <a
+                                href={event.eventUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1"
+                              >
+                                <MapPinIcon className="w-3 h-3" />
+                                View Location
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </Card>
@@ -712,6 +763,196 @@ export default function ProspectingMap() {
           </div>
         </div>
       </div>
+
+      {/* Event Details Dialog */}
+      <Dialog open={eventDialogOpen} onOpenChange={setEventDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {selectedEvent && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl md:text-2xl pr-6">
+                  {selectedEvent.name}
+                </DialogTitle>
+                <DialogDescription>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <Badge>{selectedEvent.status}</Badge>
+                    <Badge variant="outline" className="capitalize">
+                      {selectedEvent.type.replace(/_/g, " ")}
+                    </Badge>
+                    {selectedEvent.targetAudience && (
+                      <Badge variant="secondary" className="capitalize">
+                        {selectedEvent.targetAudience.replace(/_/g, " ")}
+                      </Badge>
+                    )}
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 mt-4">
+                {/* Date and Time */}
+                <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                  <Calendar className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-sm">Date & Time</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(selectedEvent.eventDate).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                    {selectedEvent.eventTime && (
+                      <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                        <Clock className="w-3 h-3" />
+                        {selectedEvent.eventTime}
+                      </p>
+                    )}
+                    {selectedEvent.endDate && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Ends: {new Date(selectedEvent.endDate).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Location */}
+                <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                  <MapPinIcon className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm">Location</p>
+                    <p className="text-sm text-muted-foreground">{selectedEvent.address}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedEvent.city}, {selectedEvent.state} {selectedEvent.zipCode}
+                    </p>
+                    {selectedEvent.eventUrl && (
+                      <Button
+                        size="sm"
+                        variant="link"
+                        asChild
+                        className="h-auto p-0 mt-2"
+                      >
+                        <a
+                          href={selectedEvent.eventUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs"
+                        >
+                          <MapPinIcon className="w-3 h-3" />
+                          Open in Google Maps
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Attendance */}
+                {selectedEvent.expectedAttendance && (
+                  <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                    <Users className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-sm">Expected Attendance</p>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedEvent.expectedAttendance.toLocaleString()} attendees
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Description */}
+                {selectedEvent.description && (
+                  <div className="space-y-2">
+                    <p className="font-semibold text-sm">Description</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {selectedEvent.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Contact Information */}
+                {(selectedEvent.contactName || selectedEvent.contactPhone || selectedEvent.contactEmail) && (
+                  <div className="space-y-2">
+                    <p className="font-semibold text-sm">Contact Information</p>
+                    {selectedEvent.contactName && (
+                      <p className="text-sm text-muted-foreground">
+                        <span className="font-medium">Name:</span> {selectedEvent.contactName}
+                      </p>
+                    )}
+                    {selectedEvent.contactPhone && (
+                      <p className="text-sm text-muted-foreground">
+                        <span className="font-medium">Phone:</span>{' '}
+                        <a href={`tel:${selectedEvent.contactPhone}`} className="text-primary hover:underline">
+                          {selectedEvent.contactPhone}
+                        </a>
+                      </p>
+                    )}
+                    {selectedEvent.contactEmail && (
+                      <p className="text-sm text-muted-foreground">
+                        <span className="font-medium">Email:</span>{' '}
+                        <a href={`mailto:${selectedEvent.contactEmail}`} className="text-primary hover:underline">
+                          {selectedEvent.contactEmail}
+                        </a>
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Additional Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {selectedEvent.cost && (
+                    <div>
+                      <p className="font-semibold text-xs text-muted-foreground uppercase">Cost</p>
+                      <p className="text-sm">{selectedEvent.cost}</p>
+                    </div>
+                  )}
+                  {selectedEvent.registrationRequired && (
+                    <div>
+                      <p className="font-semibold text-xs text-muted-foreground uppercase">Registration</p>
+                      <p className="text-sm capitalize">{selectedEvent.registrationRequired}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Notes */}
+                {selectedEvent.notes && (
+                  <div className="space-y-2 pt-3 border-t">
+                    <p className="font-semibold text-xs text-muted-foreground uppercase">Notes</p>
+                    <p className="text-xs text-muted-foreground italic">
+                      {selectedEvent.notes}
+                    </p>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-4 border-t">
+                  {selectedEvent.eventUrl && (
+                    <Button asChild className="flex-1">
+                      <a
+                        href={selectedEvent.eventUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2"
+                      >
+                        <MapPinIcon className="w-4 h-4" />
+                        View Location
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    onClick={() => setEventDialogOpen(false)}
+                    className="flex-1"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
