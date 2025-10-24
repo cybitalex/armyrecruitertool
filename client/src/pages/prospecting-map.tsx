@@ -486,17 +486,18 @@ export default function ProspectingMap() {
                     eventHandlers={{
                       click: () => {
                         setSelectedLocation(location);
-                        setLocationDialogOpen(true);
+                        setActiveTab("locations");
                       },
                     }}
                   >
                     <Popup>
-                      <div className="p-2">
+                      <div className="p-2 min-w-[250px]">
                         <h3 className="font-bold text-base">{location.name}</h3>
                         <p className="text-xs text-muted-foreground capitalize mt-1">
                           {location.type.replace(/_/g, " ")}
                         </p>
-                        <div className="mt-2 flex gap-1">
+                        
+                        <div className="mt-2 flex flex-wrap gap-1">
                           <Badge
                             variant={getScoreBadgeColor(
                               location.prospectingScore
@@ -507,19 +508,42 @@ export default function ProspectingMap() {
                           </Badge>
                           {location.footTraffic && (
                             <Badge variant="outline" className="text-xs capitalize">
-                              {location.footTraffic}
+                              {location.footTraffic} Traffic
                             </Badge>
                           )}
                         </div>
-                        <button
-                          onClick={() => {
-                            setSelectedLocation(location);
-                            setLocationDialogOpen(true);
-                          }}
-                          className="text-xs text-blue-600 hover:text-blue-800 font-medium mt-2 underline"
+
+                        <div className="mt-2 space-y-1">
+                          <p className="text-xs text-muted-foreground">
+                            📍 {location.address}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {location.city}, {location.state} {location.zipCode}
+                          </p>
+                        </div>
+
+                        {location.description && (
+                          <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                            {location.description}
+                          </p>
+                        )}
+
+                        {location.notes && (
+                          <p className="text-xs text-muted-foreground italic mt-2">
+                            💡 {location.notes}
+                          </p>
+                        )}
+
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${location.latitude},${location.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium mt-2"
                         >
-                          View Details →
-                        </button>
+                          <MapPinIcon className="w-3 h-3" />
+                          Open in Google Maps
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
                       </div>
                     </Popup>
                   </Marker>
@@ -664,7 +688,10 @@ export default function ProspectingMap() {
                         ? "ring-2 ring-primary"
                         : ""
                     }`}
-                    onClick={() => setSelectedLocation(location)}
+                    onClick={() => {
+                      setSelectedLocation(location);
+                      setLocationDialogOpen(true);
+                    }}
                   >
                     <div className="flex items-start gap-2 md:gap-3">
                       <div className="mt-1">{getTypeIcon(location.type)}</div>
