@@ -315,9 +315,10 @@ export default function ProspectingMap() {
 
   return (
     <div className="min-h-screen bg-army-green">
-      <div className="h-screen flex flex-col">
-        {/* Page Header */}
-        <div className="bg-army-black border-b border-army-field01 px-3 md:px-6 py-3 md:py-4 shadow-lg">
+      {/* Desktop: Fixed height container, Mobile: Allow scrolling */}
+      <div className="flex flex-col md:h-screen">
+        {/* Page Header - Fixed at top */}
+        <div className="bg-army-black border-b border-army-field01 px-3 md:px-6 py-3 md:py-4 shadow-lg shrink-0">
           <div className="max-w-full">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3 md:mb-4 gap-3">
               <div className="flex-1 min-w-0">
@@ -436,10 +437,10 @@ export default function ProspectingMap() {
           </div>
         </div>
 
-        {/* Map and List Layout */}
-        <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
-          {/* Map Container */}
-          <div className="flex-1 relative h-[35vh] md:h-full md:flex-1">
+        {/* Map and List Layout - Mobile: Stack vertically and scroll, Desktop: Side-by-side with fixed height */}
+        <div className="flex flex-col md:flex-row md:flex-1 md:overflow-hidden md:min-h-0">
+          {/* Map Container - Mobile: Fixed height, Desktop: Fill available space */}
+          <div className="relative h-[50vh] md:h-full md:flex-1">
             <MapContainer
               center={mapCenter}
               zoom={13}
@@ -561,14 +562,14 @@ export default function ProspectingMap() {
             </MapContainer>
           </div>
 
-          {/* Sidebar List */}
-          <div className="w-full h-[65vh] md:h-full md:w-96 border-t md:border-t-0 md:border-l bg-card flex flex-col overflow-hidden">
+          {/* Results List - Mobile: Scrollable below map, Desktop: Fixed sidebar with scroll */}
+          <div className="w-full md:w-96 border-t md:border-t-0 md:border-l bg-card">
             <Tabs
               value={activeTab}
               onValueChange={(v) => setActiveTab(v as "locations" | "events")}
-              className="h-full flex flex-col overflow-hidden"
+              className="flex flex-col h-full"
             >
-              <div className="bg-card border-b shrink-0">
+              <div className="bg-card border-b shrink-0 sticky top-0 z-10">
                 <TabsList className="w-full grid grid-cols-2">
                   <TabsTrigger value="locations" className="text-xs md:text-sm">
                     Locations ({filteredLocations.length})
@@ -579,8 +580,10 @@ export default function ProspectingMap() {
                 </TabsList>
               </div>
 
-              <TabsContent value="locations" className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 overflow-y-scroll flex-1 data-[state=active]:flex data-[state=active]:flex-col"
-                style={{ maxHeight: 'calc(65vh - 48px)' }}>
+              <TabsContent 
+                value="locations" 
+                className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 overflow-y-auto flex-1"
+              >
                 {filteredLocations.map((location) => (
                   <Card
                     key={location.id}
@@ -638,8 +641,10 @@ export default function ProspectingMap() {
                 )}
               </TabsContent>
 
-              <TabsContent value="events" className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 overflow-y-scroll flex-1 data-[state=active]:flex data-[state=active]:flex-col"
-                style={{ maxHeight: 'calc(65vh - 48px)' }}>
+              <TabsContent 
+                value="events" 
+                className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 overflow-y-auto flex-1"
+              >
                 {filteredEvents.map((event) => (
                   <Card
                     key={event.id}

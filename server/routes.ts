@@ -354,7 +354,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // PLACES SEARCH ENDPOINT
 
-  // Search for nearby locations using OpenStreetMap
+  // Search for nearby locations using Google Places API
   app.post("/api/places/search", async (req, res) => {
     try {
       const { latitude, longitude, radius } = req.body;
@@ -376,9 +376,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         count: locations.length,
         locations,
-        message: `Found ${locations.length} locations within ${
-          radiusMeters / 1000
-        }km`,
+        message:
+          locations.length > 0
+            ? `Found ${locations.length} locations within ${radiusMeters / 1000}km`
+            : "No Google Places API key configured. Add GOOGLE_PLACES_API_KEY to .env to discover locations.",
       });
     } catch (error) {
       res.status(500).json({
@@ -390,7 +391,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Search for nearby events using Eventbrite
+  // Search for nearby events using PredictHQ API
   app.post("/api/places/search-events", async (req, res) => {
     try {
       const { latitude, longitude, radius } = req.body;
@@ -411,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message:
           events.length > 0
             ? `Found ${events.length} events within ${radiusMiles} miles`
-            : "No Eventbrite API key configured. Add EVENTBRITE_API_KEY to .env to discover events.",
+            : "No PredictHQ API key configured. Add PREDICTHQ_API_KEY to .env to discover events.",
       });
     } catch (error) {
       res.status(500).json({
