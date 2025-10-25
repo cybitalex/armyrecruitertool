@@ -25,9 +25,9 @@ function Router() {
 
 function App() {
   const [location] = useLocation();
-  // Don't show header/footer on prospecting page (it has its own layout)
+  // Don't show header/footer on pages with their own layout (prospecting, dashboard)
   const showHeader = location !== "/prospecting";
-  const showFooter = location !== "/prospecting";
+  const showFooter = location !== "/prospecting" && location !== "/";
 
   return (
     <QueryClientProvider client={queryClient}>
