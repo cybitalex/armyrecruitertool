@@ -37,7 +37,7 @@ export function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-army-field01 bg-army-black/95 backdrop-blur supports-[backdrop-filter]:bg-army-black/60 shadow-xl">
+    <header className="sticky top-0 z-50 w-full border-b border-army-field01 bg-army-black shadow-xl">
       {/* DoD-Style Classification Banner */}
       <div className="bg-[#006400] w-full">
         <div className="w-full px-3 md:px-6 py-1.5 flex items-center justify-between">
@@ -59,7 +59,7 @@ export function Header() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-3 md:px-4 h-16 md:h-20 flex items-center justify-between gap-2 md:gap-4">
+      <div className="max-w-7xl mx-auto px-3 md:px-4 h-14 md:h-16 flex items-center justify-between gap-2 md:gap-4">
         <div className="flex items-center gap-2 md:gap-4 min-w-0">
           {/* U.S. Army Official Logo */}
           <div className="relative h-10 w-10 md:h-16 md:w-16 flex items-center justify-center shrink-0">

@@ -15,26 +15,26 @@ declare module "http" {
 app.use((req, res, next) => {
   // Prevent clickjacking attacks
   res.setHeader("X-Frame-Options", "SAMEORIGIN");
-  
+
   // Prevent MIME type sniffing
   res.setHeader("X-Content-Type-Options", "nosniff");
-  
+
   // Enable XSS protection
   res.setHeader("X-XSS-Protection", "1; mode=block");
-  
+
   // Control referrer information
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  
+
   // Content Security Policy
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.predicthq.com https://maps.googleapis.com https://overpass-api.de;"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.predicthq.com https://maps.googleapis.com https://overpass-api.de https://api.groq.com;"
   );
-  
+
   // Add security attribution
   res.setHeader("X-Developed-By", "SGT Alex Moran - CyBit Devs");
   res.setHeader("X-System-Classification", "UNCLASSIFIED");
-  
+
   next();
 });
 
@@ -46,23 +46,23 @@ const RATE_WINDOW = 60 * 1000; // 1 minute
 app.use("/api/*", (req, res, next) => {
   const clientIp = req.ip || req.socket.remoteAddress || "unknown";
   const now = Date.now();
-  
+
   let clientData = requestCounts.get(clientIp);
-  
+
   if (!clientData || now > clientData.resetTime) {
     clientData = { count: 0, resetTime: now + RATE_WINDOW };
     requestCounts.set(clientIp, clientData);
   }
-  
+
   clientData.count++;
-  
+
   if (clientData.count > RATE_LIMIT) {
-    return res.status(429).json({ 
+    return res.status(429).json({
       message: "Too many requests. Please try again later.",
-      retryAfter: Math.ceil((clientData.resetTime - now) / 1000)
+      retryAfter: Math.ceil((clientData.resetTime - now) / 1000),
     });
   }
-  
+
   next();
 });
 

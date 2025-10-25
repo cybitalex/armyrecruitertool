@@ -4,7 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Header } from "@/components/header";
-import Footer from "@/components/footer";
+import { Footer } from "@/components/footer";
 import Dashboard from "@/pages/dashboard";
 import IntakeForm from "@/pages/intake-form";
 import RecruitDetail from "@/pages/recruit-detail";
@@ -25,14 +25,15 @@ function Router() {
 
 function App() {
   const [location] = useLocation();
-  // Don't show footer on prospecting page (it has its own layout)
+  // Don't show header/footer on prospecting page (it has its own layout)
+  const showHeader = location !== "/prospecting";
   const showFooter = location !== "/prospecting";
 
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="min-h-screen bg-background flex flex-col">
-          <Header />
+        <div className="min-h-screen bg-army-green flex flex-col">
+          {showHeader && <Header />}
           <div className="flex-1">
             <Router />
           </div>

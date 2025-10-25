@@ -4,7 +4,13 @@ import type { Recruit } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ArrowLeft, Calendar, Mail, MapPin, Phone, User } from "lucide-react";
@@ -33,11 +39,15 @@ export default function RecruitDetail() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      return await apiRequest("PATCH", `/api/recruits/${id}/status`, { status });
+      return await apiRequest("PATCH", `/api/recruits/${id}/status`, {
+        status,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/recruits"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/recruits", params?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/recruits", params?.id],
+      });
       toast({
         title: "Status Updated",
         description: "The application status has been updated successfully.",
@@ -76,7 +86,9 @@ export default function RecruitDetail() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-muted-foreground">Loading application details...</div>
+        <div className="text-muted-foreground">
+          Loading application details...
+        </div>
       </div>
     );
   }
@@ -85,8 +97,13 @@ export default function RecruitDetail() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="text-muted-foreground mb-4">Application not found</div>
-          <Button onClick={() => navigate("/")} data-testid="button-backToDashboard">
+          <div className="text-muted-foreground mb-4">
+            Application not found
+          </div>
+          <Button
+            onClick={() => navigate("/")}
+            data-testid="button-backToDashboard"
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
@@ -96,14 +113,23 @@ export default function RecruitDetail() {
   }
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: "default" | "secondary" | "outline" | "destructive", label: string }> = {
+    const variants: Record<
+      string,
+      {
+        variant: "default" | "secondary" | "outline" | "destructive";
+        label: string;
+      }
+    > = {
       pending: { variant: "secondary", label: "Pending" },
       reviewing: { variant: "default", label: "In Review" },
       approved: { variant: "default", label: "Approved" },
       rejected: { variant: "destructive", label: "Rejected" },
     };
 
-    const config = variants[status] || { variant: "secondary" as const, label: status };
+    const config = variants[status] || {
+      variant: "secondary" as const,
+      label: status,
+    };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
@@ -111,19 +137,27 @@ export default function RecruitDetail() {
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate("/")} className="mb-4" data-testid="button-back">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/")}
+            className="mb-4"
+            data-testid="button-back"
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-2">
-                {recruit.firstName} {recruit.middleName ? `${recruit.middleName} ` : ""}{recruit.lastName}
+                {recruit.firstName}{" "}
+                {recruit.middleName ? `${recruit.middleName} ` : ""}
+                {recruit.lastName}
               </h1>
               <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  Submitted: {new Date(recruit.submittedAt).toLocaleDateString()}
+                  Submitted:{" "}
+                  {new Date(recruit.submittedAt).toLocaleDateString()}
                 </div>
                 <div>{getStatusBadge(recruit.status)}</div>
               </div>
@@ -131,9 +165,14 @@ export default function RecruitDetail() {
             <div className="flex flex-wrap items-center gap-3">
               <Select
                 value={recruit.status}
-                onValueChange={(status) => updateStatusMutation.mutate({ id: recruit.id, status })}
+                onValueChange={(status) =>
+                  updateStatusMutation.mutate({ id: recruit.id, status })
+                }
               >
-                <SelectTrigger className="w-[180px]" data-testid="select-updateStatus">
+                <SelectTrigger
+                  className="w-[180px]"
+                  data-testid="select-updateStatus"
+                >
                   <SelectValue placeholder="Update status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -166,16 +205,18 @@ export default function RecruitDetail() {
               <div>
                 <div className="text-sm text-muted-foreground">Full Name</div>
                 <div className="font-medium" data-testid="detail-fullName">
-                  {recruit.firstName} {recruit.middleName ? `${recruit.middleName} ` : ""}{recruit.lastName}
+                  {recruit.firstName}{" "}
+                  {recruit.middleName ? `${recruit.middleName} ` : ""}
+                  {recruit.lastName}
                 </div>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">Date of Birth</div>
-                <div className="font-medium" data-testid="detail-dateOfBirth">{new Date(recruit.dateOfBirth).toLocaleDateString()}</div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground">Social Security Number</div>
-                <div className="font-medium font-mono" data-testid="detail-ssn">{recruit.ssn}</div>
+                <div className="text-sm text-muted-foreground">
+                  Date of Birth
+                </div>
+                <div className="font-medium" data-testid="detail-dateOfBirth">
+                  {new Date(recruit.dateOfBirth).toLocaleDateString()}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -189,12 +230,20 @@ export default function RecruitDetail() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <div className="text-sm text-muted-foreground">Email Address</div>
-                <div className="font-medium" data-testid="detail-email">{recruit.email}</div>
+                <div className="text-sm text-muted-foreground">
+                  Email Address
+                </div>
+                <div className="font-medium" data-testid="detail-email">
+                  {recruit.email}
+                </div>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">Phone Number</div>
-                <div className="font-medium" data-testid="detail-phone">{recruit.phone}</div>
+                <div className="text-sm text-muted-foreground">
+                  Phone Number
+                </div>
+                <div className="font-medium" data-testid="detail-phone">
+                  {recruit.phone}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -208,21 +257,31 @@ export default function RecruitDetail() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <div className="text-sm text-muted-foreground">Street Address</div>
-                <div className="font-medium" data-testid="detail-address">{recruit.address}</div>
+                <div className="text-sm text-muted-foreground">
+                  Street Address
+                </div>
+                <div className="font-medium" data-testid="detail-address">
+                  {recruit.address}
+                </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <div className="text-sm text-muted-foreground">City</div>
-                  <div className="font-medium" data-testid="detail-city">{recruit.city}</div>
+                  <div className="font-medium" data-testid="detail-city">
+                    {recruit.city}
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">State</div>
-                  <div className="font-medium" data-testid="detail-state">{recruit.state}</div>
+                  <div className="font-medium" data-testid="detail-state">
+                    {recruit.state}
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">ZIP Code</div>
-                  <div className="font-medium" data-testid="detail-zipCode">{recruit.zipCode}</div>
+                  <div className="font-medium" data-testid="detail-zipCode">
+                    {recruit.zipCode}
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -234,16 +293,37 @@ export default function RecruitDetail() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <div className="text-sm text-muted-foreground">Education Level</div>
-                <div className="font-medium capitalize" data-testid="detail-educationLevel">{recruit.educationLevel.replace(/_/g, " ")}</div>
+                <div className="text-sm text-muted-foreground">
+                  Education Level
+                </div>
+                <div
+                  className="font-medium capitalize"
+                  data-testid="detail-educationLevel"
+                >
+                  {recruit.educationLevel.replace(/_/g, " ")}
+                </div>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">Driver's License</div>
-                <div className="font-medium capitalize" data-testid="detail-hasDriversLicense">{recruit.hasDriversLicense}</div>
+                <div className="text-sm text-muted-foreground">
+                  Driver's License
+                </div>
+                <div
+                  className="font-medium capitalize"
+                  data-testid="detail-hasDriversLicense"
+                >
+                  {recruit.hasDriversLicense}
+                </div>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">Criminal History</div>
-                <div className="font-medium capitalize" data-testid="detail-criminalHistory">{recruit.criminalHistory}</div>
+                <div className="text-sm text-muted-foreground">
+                  Criminal History
+                </div>
+                <div
+                  className="font-medium capitalize"
+                  data-testid="detail-criminalHistory"
+                >
+                  {recruit.criminalHistory}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -254,18 +334,37 @@ export default function RecruitDetail() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <div className="text-sm text-muted-foreground">Prior Service</div>
-                <div className="font-medium capitalize" data-testid="detail-hasPriorService">{recruit.hasPriorService}</div>
+                <div className="text-sm text-muted-foreground">
+                  Prior Service
+                </div>
+                <div
+                  className="font-medium capitalize"
+                  data-testid="detail-hasPriorService"
+                >
+                  {recruit.hasPriorService}
+                </div>
               </div>
               {recruit.hasPriorService === "yes" && (
                 <>
                   <div>
                     <div className="text-sm text-muted-foreground">Branch</div>
-                    <div className="font-medium capitalize" data-testid="detail-priorServiceBranch">{recruit.priorServiceBranch?.replace(/_/g, " ") || "N/A"}</div>
+                    <div
+                      className="font-medium capitalize"
+                      data-testid="detail-priorServiceBranch"
+                    >
+                      {recruit.priorServiceBranch?.replace(/_/g, " ") || "N/A"}
+                    </div>
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">Years of Service</div>
-                    <div className="font-medium" data-testid="detail-priorServiceYears">{recruit.priorServiceYears || "N/A"} years</div>
+                    <div className="text-sm text-muted-foreground">
+                      Years of Service
+                    </div>
+                    <div
+                      className="font-medium"
+                      data-testid="detail-priorServiceYears"
+                    >
+                      {recruit.priorServiceYears || "N/A"} years
+                    </div>
                   </div>
                 </>
               )}
@@ -279,16 +378,27 @@ export default function RecruitDetail() {
             <CardContent className="space-y-4">
               <div>
                 <div className="text-sm text-muted-foreground">Height</div>
-                <div className="font-medium" data-testid="detail-height">{recruit.heightFeet}' {recruit.heightInches}"</div>
+                <div className="font-medium" data-testid="detail-height">
+                  {recruit.heightFeet}' {recruit.heightInches}"
+                </div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">Weight</div>
-                <div className="font-medium" data-testid="detail-weight">{recruit.weight} lbs</div>
+                <div className="font-medium" data-testid="detail-weight">
+                  {recruit.weight} lbs
+                </div>
               </div>
               {recruit.medicalConditions && (
                 <div>
-                  <div className="text-sm text-muted-foreground">Medical Conditions</div>
-                  <div className="font-medium" data-testid="detail-medicalConditions">{recruit.medicalConditions}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Medical Conditions
+                  </div>
+                  <div
+                    className="font-medium"
+                    data-testid="detail-medicalConditions"
+                  >
+                    {recruit.medicalConditions}
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -301,18 +411,39 @@ export default function RecruitDetail() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <div className="text-sm text-muted-foreground">Preferred MOS</div>
-                  <div className="font-medium" data-testid="detail-preferredMOS">{recruit.preferredMOS || "Not specified"}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Preferred MOS
+                  </div>
+                  <div
+                    className="font-medium"
+                    data-testid="detail-preferredMOS"
+                  >
+                    {recruit.preferredMOS || "Not specified"}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground">Availability</div>
-                  <div className="font-medium capitalize" data-testid="detail-availability">{recruit.availability.replace(/_/g, " ")}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Availability
+                  </div>
+                  <div
+                    className="font-medium capitalize"
+                    data-testid="detail-availability"
+                  >
+                    {recruit.availability.replace(/_/g, " ")}
+                  </div>
                 </div>
               </div>
               {recruit.additionalNotes && (
                 <div>
-                  <div className="text-sm text-muted-foreground">Additional Notes</div>
-                  <div className="font-medium" data-testid="detail-additionalNotes">{recruit.additionalNotes}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Additional Notes
+                  </div>
+                  <div
+                    className="font-medium"
+                    data-testid="detail-additionalNotes"
+                  >
+                    {recruit.additionalNotes}
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -325,11 +456,14 @@ export default function RecruitDetail() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Application</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this recruit application? This action cannot be undone.
+              Are you sure you want to delete this recruit application? This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancelDeleteDialog">Cancel</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancelDeleteDialog">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteMutation.mutate(recruit.id)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

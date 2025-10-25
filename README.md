@@ -86,6 +86,7 @@ For production deployment with SSL (NIPR-compatible):
 - **✅ Checklist**: [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) - Deployment checklist
 
 **Two-command deployment:**
+
 ```bash
 sudo ./setup-reverse-proxy.sh    # Setup HTTPS
 sudo ./setup-pm2.sh               # Setup auto-start
@@ -334,7 +335,8 @@ For development without PostgreSQL, the app uses in-memory storage with sample d
 
 ## Security Considerations
 
-- All recruit data includes sensitive information (SSN, DOB)
+- Recruit data includes sensitive information (name, DOB, contact details)
+- **SSN is NOT collected** - system designed for prospecting and interest tracking only
 - Implement proper authentication in production
 - Use HTTPS for all connections
 - Encrypt sensitive data at rest

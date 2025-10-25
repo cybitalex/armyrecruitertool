@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { Icon, LatLngBounds, LatLngTuple } from "leaflet";
 import type { Location, Event } from "@shared/schema";
@@ -16,6 +17,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -24,6 +33,8 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { AIAssistant } from "@/components/ai-assistant";
+import { Footer } from "@/components/footer";
 import {
   MapPin,
   Calendar,
@@ -41,6 +52,9 @@ import {
   Clock,
   MapPinIcon,
   Globe,
+  Home,
+  FileText,
+  Menu,
 } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
@@ -83,6 +97,8 @@ function MapBoundsUpdater({
 }
 
 export default function ProspectingMap() {
+  const [, navigate] = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(
@@ -99,6 +115,27 @@ export default function ProspectingMap() {
   const [userLocation, setUserLocation] = useState<LatLngTuple | null>(null);
   const [locationError, setLocationError] = useState<string>("");
   const { toast } = useToast();
+
+  // Prevent body scrolling on desktop only
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 768px)");
+
+    const updateOverflow = () => {
+      if (mediaQuery.matches) {
+        document.body.style.overflow = "hidden";
+      } else {
+        document.body.style.overflow = "unset";
+      }
+    };
+
+    updateOverflow();
+    mediaQuery.addEventListener("change", updateOverflow);
+
+    return () => {
+      document.body.style.overflow = "unset";
+      mediaQuery.removeEventListener("change", updateOverflow);
+    };
+  }, []);
 
   const { data: locations = [] } = useQuery<Location[]>({
     queryKey: ["/api/locations"],
@@ -327,9 +364,142 @@ export default function ProspectingMap() {
   }
 
   return (
-    <div className="min-h-screen bg-army-green">
+    <div className="md:fixed md:inset-0 bg-army-green min-h-screen md:h-screen md:overflow-hidden">
       {/* Desktop: Fixed height container, Mobile: Allow scrolling */}
-      <div className="flex flex-col md:h-screen">
+      <div className="flex flex-col h-full md:overflow-hidden">
+        {/* Top Navigation Bar */}
+        <div className="bg-[#006400] w-full shrink-0">
+          <div className="w-full px-3 md:px-6 py-1.5 flex items-center justify-between">
+            <div className="flex-1 text-left">
+              <span className="font-mono text-[10px] md:text-xs text-white/90 uppercase tracking-wide">
+                Army Recruiting Tool | CyBit Devs
+              </span>
+            </div>
+            <div className="flex-1 text-center">
+              <span className="font-mono font-bold text-sm md:text-base text-white uppercase tracking-wider">
+                UNCLASSIFIED
+              </span>
+            </div>
+            <div className="flex-1 text-right">
+              <span className="font-mono text-[10px] md:text-xs text-white/90 uppercase tracking-wide">
+                FPCON NORMAL
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Main App Navigation */}
+        <div className="bg-army-black border-b border-army-field01 shrink-0">
+          <div className="px-3 md:px-6 py-2 flex items-center justify-between">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="relative h-8 w-8 md:h-10 md:w-10 shrink-0">
+                <img
+                  src="/logos/Mark_of_the_United_States_Army.svg"
+                  alt="U.S. Army"
+                  className="w-full h-full object-contain drop-shadow-lg"
+                />
+              </div>
+              <div className="border-l-2 border-army-gold pl-2">
+                <h1 className="text-xs md:text-sm font-bold text-army-gold tracking-wider">
+                  U.S. ARMY
+                </h1>
+                <p className="text-[10px] text-army-tan font-medium">
+                  RECRUITING OPERATIONS
+                </p>
+              </div>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden">
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="border-army-gold text-army-gold hover:bg-army-gold hover:text-army-black"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent
+                  side="right"
+                  className="bg-army-black border-army-field01 w-72"
+                >
+                  <SheetHeader>
+                    <SheetTitle className="text-army-gold">
+                      Navigation
+                    </SheetTitle>
+                    <SheetDescription className="text-army-tan">
+                      Army Recruiting Operations
+                    </SheetDescription>
+                  </SheetHeader>
+                  <nav className="mt-6 space-y-2">
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        navigate("/");
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full justify-start text-army-tan hover:text-army-gold hover:bg-army-green"
+                    >
+                      <Home className="w-4 h-4 mr-3" />
+                      Dashboard
+                    </Button>
+                    <Button
+                      variant="default"
+                      className="w-full justify-start bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold"
+                    >
+                      <MapPin className="w-4 h-4 mr-3" />
+                      Prospecting
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        navigate("/intake");
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full justify-start text-army-tan hover:text-army-gold hover:bg-army-green"
+                    >
+                      <FileText className="w-4 h-4 mr-3" />
+                      New Application
+                    </Button>
+                  </nav>
+                </SheetContent>
+              </Sheet>
+            </div>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/")}
+                className="text-army-tan hover:text-army-gold hover:bg-army-green text-xs md:text-sm"
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Dashboard
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                className="bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold text-xs md:text-sm"
+              >
+                <MapPin className="w-4 h-4 mr-2" />
+                Prospecting
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/intake")}
+                className="text-army-tan hover:text-army-gold hover:bg-army-green text-xs md:text-sm"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                New Application
+              </Button>
+            </nav>
+          </div>
+        </div>
+
         {/* Page Header - Fixed at top */}
         <div className="bg-army-black border-b border-army-field01 px-3 md:px-6 py-3 md:py-4 shadow-lg shrink-0">
           <div className="max-w-full">
@@ -496,7 +666,7 @@ export default function ProspectingMap() {
                         <p className="text-xs text-muted-foreground capitalize mt-1">
                           {location.type.replace(/_/g, " ")}
                         </p>
-                        
+
                         <div className="mt-2 flex flex-wrap gap-1">
                           <Badge
                             variant={getScoreBadgeColor(
@@ -507,7 +677,10 @@ export default function ProspectingMap() {
                             Score: {location.prospectingScore}
                           </Badge>
                           {location.footTraffic && (
-                            <Badge variant="outline" className="text-xs capitalize">
+                            <Badge
+                              variant="outline"
+                              className="text-xs capitalize"
+                            >
                               {location.footTraffic} Traffic
                             </Badge>
                           )}
@@ -659,11 +832,11 @@ export default function ProspectingMap() {
           </div>
 
           {/* Results List - Mobile: Scrollable below map, Desktop: Fixed sidebar with scroll */}
-          <div className="w-full md:w-96 border-t md:border-t-0 md:border-l bg-card">
+          <div className="w-full md:w-96 border-t md:border-t-0 md:border-l bg-card md:h-full">
             <Tabs
               value={activeTab}
               onValueChange={(v) => setActiveTab(v as "locations" | "events")}
-              className="flex flex-col h-full"
+              className="flex flex-col md:h-full"
             >
               <div className="bg-card border-b shrink-0 sticky top-0 z-10">
                 <TabsList className="w-full grid grid-cols-2">
@@ -678,7 +851,7 @@ export default function ProspectingMap() {
 
               <TabsContent
                 value="locations"
-                className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 overflow-y-auto flex-1"
+                className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 md:overflow-y-auto md:flex-1"
               >
                 {filteredLocations.map((location) => (
                   <Card
@@ -742,7 +915,7 @@ export default function ProspectingMap() {
 
               <TabsContent
                 value="events"
-                className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 overflow-y-auto flex-1"
+                className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 md:overflow-y-auto md:flex-1"
               >
                 {filteredEvents.map((event) => (
                   <Card
@@ -882,6 +1055,11 @@ export default function ProspectingMap() {
             </Tabs>
           </div>
         </div>
+
+        {/* Footer - Desktop Only */}
+        <div className="hidden md:block shrink-0">
+          <Footer />
+        </div>
       </div>
 
       {/* Location Details Dialog - Condensed */}
@@ -960,24 +1138,28 @@ export default function ProspectingMap() {
                 )}
 
                 {/* Demographics */}
-                {selectedLocation.demographics && (() => {
-                  try {
-                    const demo = JSON.parse(selectedLocation.demographics);
-                    return (
-                      <div className="p-3 bg-muted/30 rounded-lg">
-                        <p className="font-medium text-sm mb-2">Info</p>
-                        <div className="space-y-1 text-sm text-muted-foreground">
-                          {demo.rating && (
-                            <p>⭐ Rating: {demo.rating}/5 ({demo.totalRatings} reviews)</p>
-                          )}
-                          {demo.source && <p>📍 Source: {demo.source}</p>}
+                {selectedLocation.demographics &&
+                  (() => {
+                    try {
+                      const demo = JSON.parse(selectedLocation.demographics);
+                      return (
+                        <div className="p-3 bg-muted/30 rounded-lg">
+                          <p className="font-medium text-sm mb-2">Info</p>
+                          <div className="space-y-1 text-sm text-muted-foreground">
+                            {demo.rating && (
+                              <p>
+                                ⭐ Rating: {demo.rating}/5 ({demo.totalRatings}{" "}
+                                reviews)
+                              </p>
+                            )}
+                            {demo.source && <p>📍 Source: {demo.source}</p>}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  } catch {
-                    return null;
-                  }
-                })()}
+                      );
+                    } catch {
+                      return null;
+                    }
+                  })()}
 
                 {/* Notes */}
                 {selectedLocation.notes && (
@@ -994,17 +1176,16 @@ export default function ProspectingMap() {
                   <div>
                     <p className="font-medium text-sm mb-1">Last Visited</p>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(selectedLocation.lastVisited).toLocaleDateString()}
+                      {new Date(
+                        selectedLocation.lastVisited
+                      ).toLocaleDateString()}
                     </p>
                   </div>
                 )}
 
                 {/* Action Buttons */}
                 <div className="flex gap-2 pt-3 border-t">
-                  <Button
-                    asChild
-                    className="flex-1"
-                  >
+                  <Button asChild className="flex-1">
                     <a
                       href={`https://www.google.com/maps/search/?api=1&query=${selectedLocation.latitude},${selectedLocation.longitude}`}
                       target="_blank"
@@ -1282,6 +1463,15 @@ export default function ProspectingMap() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* AI Assistant - Floating Button */}
+      <AIAssistant
+        userLocation={
+          userLocation
+            ? { latitude: userLocation[0], longitude: userLocation[1] }
+            : undefined
+        }
+      />
     </div>
   );
 }
