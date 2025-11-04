@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { ProtectedRoute } from "@/lib/auth-context";
 import { insertRecruitSchema } from "@shared/schema";
 import type { InsertRecruit } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -95,7 +96,7 @@ const states = [
   "WY",
 ];
 
-export default function IntakeForm() {
+function IntakeForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -144,10 +145,13 @@ export default function IntakeForm() {
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertRecruit) => {
-      return await apiRequest("POST", "/api/recruits", data);
+      // Don't send recruiterCode - backend will use logged-in recruiter's ID
+      const { recruiterCode, ...submissionData } = data as any;
+      return await apiRequest("POST", "/api/recruits", submissionData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/recruits"] });
+      queryClient.invalidateQueries({ queryKey: ["/recruiter/stats"] }); // Refresh stats
       toast({
         title: "Application Submitted",
         description:
@@ -876,5 +880,13 @@ export default function IntakeForm() {
         </Form>
       </div>
     </div>
+  );
+}
+
+export default function IntakeFormPage() {
+  return (
+    <ProtectedRoute>
+      <IntakeForm />
+    </ProtectedRoute>
   );
 }

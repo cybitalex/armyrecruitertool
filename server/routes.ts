@@ -9,8 +9,260 @@ import {
 import { z } from "zod";
 import { askAI, createProspectingSystemPrompt, type AIMessage } from "./llm";
 import { searchNearbyLocations, searchNearbyEvents } from "./places";
+import { 
+  registerUser, 
+  verifyEmail, 
+  loginUser, 
+  createSession, 
+  destroySession,
+  generateQRCodeImage,
+  requestPasswordReset,
+  resetPassword as resetPasswordHandler,
+  sendApplicantConfirmationEmail
+} from "./auth";
+import { db } from "./database";
+import { users } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // AUTHENTICATION ENDPOINTS
+  
+  // Register new recruiter
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      console.log('📝 Registration attempt for:', req.body.email);
+      const result = await registerUser(req.body);
+      console.log('✅ Registration successful for:', req.body.email);
+      res.status(201).json(result);
+    } catch (error) {
+      console.error('❌ Registration error:', error);
+      const message = error instanceof Error ? error.message : "Registration failed";
+      const status = message.includes("already exists") ? 409 : 400;
+      res.status(status).json({ error: message });
+    }
+  });
+
+  // Verify email
+  app.get("/api/auth/verify-email", async (req, res) => {
+    try {
+      const token = req.query.token as string;
+      
+      if (!token) {
+        return res.status(400).json({ error: "Verification token is required" });
+      }
+
+      const result = await verifyEmail(token);
+      
+      // Redirect to login with success message
+      res.redirect(`/login?verified=true`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Verification failed";
+      res.status(400).json({ error: message });
+    }
+  });
+
+  // Login
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+
+      const user = await loginUser(email, password);
+      
+      // Create session
+      await createSession(req, user.id);
+      
+      // Verify session was created
+      console.log('✅ Session created for user:', user.id, 'Session ID:', req.sessionID);
+      console.log('📝 Session data:', JSON.stringify(req.session));
+      
+      // Return user data (without sensitive fields)
+      const { passwordHash, verificationToken, resetPasswordToken, ...userData } = user;
+      
+      // Ensure session is fully saved before sending response
+      await new Promise<void>((resolve) => {
+        req.session.save((err) => {
+          if (err) {
+            console.error('❌ Error saving session before response:', err);
+          } else {
+            console.log('✅ Session fully saved, sending response');
+          }
+          resolve();
+        });
+      });
+      
+      // Send response after session is saved
+      res.json({ message: "Login successful", user: userData });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Login failed";
+      res.status(401).json({ error: message });
+    }
+  });
+
+  // Logout
+  app.post("/api/auth/logout", async (req, res) => {
+    try {
+      await destroySession(req);
+      res.json({ message: "Logged out successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Logout failed" });
+    }
+  });
+
+  // Get current user
+  app.get("/api/auth/me", async (req, res) => {
+    try {
+      console.log('🔍 Auth check - Session ID:', req.sessionID);
+      console.log('🔍 Auth check - Session data:', JSON.stringify(req.session));
+      console.log('🔍 Auth check - Cookies:', req.headers.cookie);
+      
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        console.log('❌ No userId in session');
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const { passwordHash, verificationToken, resetPasswordToken, ...userData } = user;
+      console.log('✅ User authenticated:', userData.email);
+      res.json({ user: userData });
+    } catch (error) {
+      console.error('❌ Auth check error:', error);
+      res.status(500).json({ error: "Failed to fetch user data" });
+    }
+  });
+
+  // Forgot password
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      const result = await requestPasswordReset(email);
+      res.json(result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to process password reset request";
+      res.status(400).json({ error: message });
+    }
+  });
+
+  // Reset password
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { token, password } = req.body;
+      
+      if (!token || !password) {
+        return res.status(400).json({ error: "Token and password are required" });
+      }
+
+      if (password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters long" });
+      }
+
+      const result = await resetPasswordHandler(token, password);
+      res.json(result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to reset password";
+      res.status(400).json({ error: message });
+    }
+  });
+
+  // Get recruiter's QR code
+  app.get("/api/auth/qr-code", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user || !user.qrCode) {
+        return res.status(404).json({ error: "QR code not found" });
+      }
+
+      // Generate QR code image on demand from the stored identifier
+      const qrCodeImage = await generateQRCodeImage(user.qrCode);
+      res.json({ qrCode: qrCodeImage });
+    } catch (error) {
+      console.error('❌ Failed to generate QR code:', error);
+      res.status(500).json({ error: "Failed to fetch QR code" });
+    }
+  });
+
+  // Get recruiter stats
+  app.get("/api/recruiter/stats", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Get all recruits
+      const allRecruits = await storage.getAllRecruits();
+      
+      console.log(`📊 Stats request for userId: ${userId} (type: ${typeof userId})`);
+      console.log(`📊 Total recruits in system: ${allRecruits.length}`);
+      if (allRecruits.length > 0) {
+        allRecruits.forEach((r, idx) => {
+          console.log(`📊 Recruit ${idx + 1}: id=${r.id}, recruiterId=${r.recruiterId || 'NULL'} (type: ${typeof r.recruiterId}), source=${r.source || 'NULL'}`);
+        });
+      }
+      
+      // Filter recruits for this recruiter (if recruiterId is set)
+      // Handle null/undefined recruiterId and convert both to strings for comparison
+      const recruiterRecruits = allRecruits.filter(r => {
+        if (!r.recruiterId) {
+          return false; // Skip recruits without a recruiterId
+        }
+        const match = String(r.recruiterId) === String(userId);
+        if (!match) {
+          console.log(`📊 Mismatch: recruit recruiterId "${r.recruiterId}" !== userId "${userId}"`);
+        }
+        return match;
+      });
+      
+      console.log(`📊 Recruits matching recruiterId ${userId}: ${recruiterRecruits.length}`);
+      
+      // Calculate stats
+      const totalRecruits = recruiterRecruits.length;
+      const qrCodeScans = recruiterRecruits.filter(r => r.source === "qr_code").length;
+      const directEntries = recruiterRecruits.filter(r => r.source === "direct").length;
+      
+      console.log(`📊 Stats: total=${totalRecruits}, qrCode=${qrCodeScans}, direct=${directEntries}`);
+      
+      // Get recent recruits (last 10)
+      const recentRecruits = recruiterRecruits
+        .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
+        .slice(0, 10);
+
+      res.json({
+        totalRecruits,
+        qrCodeScans,
+        directEntries,
+        recentRecruits,
+      });
+    } catch (error) {
+      console.error('❌ Failed to get recruiter stats:', error);
+      res.status(500).json({ error: "Failed to fetch recruiter stats" });
+    }
+  });
+
+  // RECRUITS ENDPOINTS (with recruiter filtering)
   // Get all recruits
   app.get("/api/recruits", async (_req, res) => {
     try {
@@ -42,11 +294,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get recruiter by QR code
+  app.get("/api/recruiter/by-qr/:qrCode", async (req, res) => {
+    try {
+      const { qrCode } = req.params;
+      
+      const [recruiter] = await db.select().from(users).where(eq(users.qrCode, qrCode));
+      
+      if (!recruiter) {
+        return res.status(404).json({ error: "Recruiter not found" });
+      }
+
+      // Return public recruiter info (no sensitive data)
+      const { passwordHash, verificationToken, resetPasswordToken, qrCode: _qrCode, ...recruiterInfo } = recruiter;
+      res.json({ recruiter: recruiterInfo });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch recruiter information" });
+    }
+  });
+
   // Create new recruit application
   app.post("/api/recruits", async (req, res) => {
     try {
-      const validatedData = insertRecruitSchema.parse(req.body);
+      const body = req.body;
+      const userId = (req as any).session?.userId; // Logged in recruiter ID
+      
+      console.log(`📝 POST /api/recruits - Session userId: ${userId || 'NULL'}, recruiterCode: ${body.recruiterCode || 'NULL'}`);
+      console.log(`📝 Session data:`, JSON.stringify((req as any).session || {}));
+      
+      // Determine source and recruiterId:
+      // - If recruiterCode (QR code) is provided, it's from QR scan
+      // - If user is logged in and no recruiterCode, it's direct entry from intake form
+      // - Otherwise, it's a public submission without recruiter
+      let recruiterId: string | undefined = undefined;
+      let source = "direct";
+      
+      if (body.recruiterCode && !userId) {
+        // QR code scan (public form with recruiter code)
+        const [recruiter] = await db.select().from(users).where(eq(users.qrCode, body.recruiterCode));
+        if (recruiter) {
+          recruiterId = recruiter.id;
+          source = "qr_code";
+        }
+      } else if (userId && !body.recruiterCode) {
+        // Logged in recruiter filling intake form directly
+        recruiterId = userId;
+        source = "direct";
+      } else if (userId && body.recruiterCode) {
+        // Logged in recruiter but also has code - use the code's recruiter
+        const [recruiter] = await db.select().from(users).where(eq(users.qrCode, body.recruiterCode));
+        if (recruiter) {
+          recruiterId = recruiter.id;
+          source = "qr_code";
+        } else {
+          recruiterId = userId;
+          source = "direct";
+        }
+      }
+      
+      // Remove recruiterCode from body and use recruiterId
+      const { recruiterCode, ...recruitData } = body;
+      
+      console.log(`📝 Creating recruit - recruiterId: ${recruiterId || 'NULL'}, source: ${source}, userId from session: ${userId || 'NULL'}`);
+      
+      const validatedData = insertRecruitSchema.parse({
+        ...recruitData,
+        recruiterId: recruiterId || null, // Use null instead of undefined for database
+        source,
+      });
+      
       const recruit = await storage.createRecruit(validatedData);
+
+      console.log(`✅ Created recruit: ${recruit.id}, recruiterId: ${recruit.recruiterId || 'NULL'} (type: ${typeof recruit.recruiterId}), source: ${recruit.source}`);
+
+      // Send confirmation email to applicant
+      try {
+        await sendApplicantConfirmationEmail(recruit.email, recruit.firstName, recruit.lastName, recruiterId);
+      } catch (emailError) {
+        console.error('⚠️ Failed to send applicant confirmation email:', emailError);
+        // Don't fail the request if email fails
+      }
 
       res.status(201).json(recruit);
     } catch (error) {
@@ -449,6 +776,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         message:
           error instanceof Error ? error.message : "Failed to get AI response",
+      });
+    }
+  });
+
+  // HEALTH CHECK ENDPOINTS (for Kubernetes)
+  
+  // Liveness probe
+  app.get("/health", (_req, res) => {
+    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  // Readiness probe
+  app.get("/ready", async (_req, res) => {
+    try {
+      // Check database connectivity
+      await db.select().from(users).limit(1);
+      res.status(200).json({ status: "ready", timestamp: new Date().toISOString() });
+    } catch (error) {
+      res.status(503).json({ 
+        status: "not ready", 
+        error: error instanceof Error ? error.message : "Database check failed" 
       });
     }
   });

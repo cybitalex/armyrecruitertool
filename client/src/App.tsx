@@ -3,44 +3,90 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/lib/auth-context";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+
+// Auth pages
+import RegisterPage from "@/pages/register";
+import LoginPage from "@/pages/login";
+import ForgotPasswordPage from "@/pages/forgot-password";
+import ResetPasswordPage from "@/pages/reset-password";
+import VerifyEmailPage from "@/pages/verify-email";
+
+// Protected pages
 import Dashboard from "@/pages/dashboard";
+import MyQRCode from "@/pages/my-qr";
 import IntakeForm from "@/pages/intake-form";
 import RecruitDetail from "@/pages/recruit-detail";
 import ProspectingMap from "@/pages/prospecting-map";
+
+// Public pages
+import ApplyPage from "@/pages/apply";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
+      {/* Public routes */}
+      <Route path="/register" component={RegisterPage} />
+      <Route path="/login" component={LoginPage} />
+      <Route path="/verify-email" component={VerifyEmailPage} />
+      <Route path="/forgot-password" component={ForgotPasswordPage} />
+      <Route path="/reset-password" component={ResetPasswordPage} />
+      <Route path="/apply" component={ApplyPage} />
+      
+      {/* Protected routes */}
       <Route path="/" component={Dashboard} />
+      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/my-qr" component={MyQRCode} />
       <Route path="/prospecting" component={ProspectingMap} />
       <Route path="/intake" component={IntakeForm} />
+      <Route path="/intake-form" component={IntakeForm} />
       <Route path="/recruits/:id" component={RecruitDetail} />
+      
+      {/* 404 */}
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-function App() {
+function AppContent() {
   const [location] = useLocation();
-  // Don't show header/footer on pages with their own layout (prospecting, dashboard)
-  const showHeader = location !== "/prospecting";
-  const showFooter = location !== "/prospecting" && location !== "/";
+  
+  // Pages with their own full layout (no header/footer)
+  // Only public/auth pages - all protected routes use global header
+  const noLayoutPages = [
+    "/register",
+    "/login",
+    "/verify-email",
+    "/forgot-password",
+    "/reset-password",
+    "/apply",
+  ];
+  
+  const showLayout = !noLayoutPages.some(page => location.startsWith(page));
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <div className="min-h-screen bg-army-green flex flex-col">
-          {showHeader && <Header />}
-          <div className="flex-1">
-            <Router />
-          </div>
-          {showFooter && <Footer />}
+    <TooltipProvider>
+      <div className="min-h-screen bg-army-green flex flex-col">
+        {showLayout && <Header />}
+        <div className="flex-1">
+          <Router />
         </div>
-        <Toaster />
-      </TooltipProvider>
+        {showLayout && <Footer />}
+      </div>
+      <Toaster />
+    </TooltipProvider>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

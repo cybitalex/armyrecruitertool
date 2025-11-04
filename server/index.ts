@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
@@ -74,6 +75,26 @@ app.use(
   })
 );
 app.use(express.urlencoded({ extended: false }));
+
+// Session management
+// Trust proxy for secure cookies behind reverse proxy
+app.set('trust proxy', 1);
+
+app.use(
+  session({
+    secret: process.env.JWT_SECRET || 'army-recruiter-secret-change-in-production',
+    resave: true, // Force save session even if not modified
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: true, // Always secure for HTTPS
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'lax',
+      path: '/', // Ensure cookie is available for all paths
+    },
+    name: 'army-recruiter-session', // Custom session name
+  })
+);
 
 app.use((req, res, next) => {
   const start = Date.now();

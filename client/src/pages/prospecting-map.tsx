@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { ProtectedRoute } from "@/lib/auth-context";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { Icon, LatLngBounds, LatLngTuple } from "leaflet";
 import type { Location, Event } from "@shared/schema";
@@ -17,14 +18,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -34,7 +27,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { AIAssistant } from "@/components/ai-assistant";
-import { Footer } from "@/components/footer";
 import {
   MapPin,
   Calendar,
@@ -52,9 +44,6 @@ import {
   Clock,
   MapPinIcon,
   Globe,
-  Home,
-  FileText,
-  Menu,
 } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
@@ -96,9 +85,8 @@ function MapBoundsUpdater({
   return null;
 }
 
-export default function ProspectingMap() {
+function ProspectingMap() {
   const [, navigate] = useLocation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(
@@ -364,144 +352,11 @@ export default function ProspectingMap() {
   }
 
   return (
-    <div className="md:fixed md:inset-0 bg-army-green min-h-screen md:h-screen md:overflow-hidden">
-      {/* Desktop: Fixed height container, Mobile: Allow scrolling */}
-      <div className="flex flex-col h-full md:overflow-hidden">
-        {/* Top Navigation Bar */}
-        <div className="bg-[#006400] w-full shrink-0">
-          <div className="w-full px-3 md:px-6 py-1.5 flex items-center justify-between">
-            <div className="flex-1 text-left">
-              <span className="font-mono text-[10px] md:text-xs text-white/90 uppercase tracking-wide">
-                Army Recruiting Tool | CyBit Devs
-              </span>
-            </div>
-            <div className="flex-1 text-center">
-              <span className="font-mono font-bold text-sm md:text-base text-white uppercase tracking-wider">
-                UNCLASSIFIED
-              </span>
-            </div>
-            <div className="flex-1 text-right">
-              <span className="font-mono text-[10px] md:text-xs text-white/90 uppercase tracking-wide">
-                FPCON NORMAL
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Main App Navigation */}
-        <div className="bg-army-black border-b border-army-field01 shrink-0">
-          <div className="px-3 md:px-6 py-2 flex items-center justify-between">
-            <div className="flex items-center gap-2 md:gap-3">
-              <div className="relative h-8 w-8 md:h-10 md:w-10 shrink-0">
-                <img
-                  src="/logos/Mark_of_the_United_States_Army.svg"
-                  alt="U.S. Army"
-                  className="w-full h-full object-contain drop-shadow-lg"
-                />
-              </div>
-              <div className="border-l-2 border-army-gold pl-2">
-                <h1 className="text-xs md:text-sm font-bold text-army-gold tracking-wider">
-                  U.S. ARMY
-                </h1>
-                <p className="text-[10px] text-army-tan font-medium">
-                  RECRUITING OPERATIONS
-                </p>
-              </div>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <div className="md:hidden">
-              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="border-army-gold text-army-gold hover:bg-army-gold hover:text-army-black"
-                  >
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent
-                  side="right"
-                  className="bg-army-black border-army-field01 w-72"
-                >
-                  <SheetHeader>
-                    <SheetTitle className="text-army-gold">
-                      Navigation
-                    </SheetTitle>
-                    <SheetDescription className="text-army-tan">
-                      Army Recruiting Operations
-                    </SheetDescription>
-                  </SheetHeader>
-                  <nav className="mt-6 space-y-2">
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        navigate("/");
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full justify-start text-army-tan hover:text-army-gold hover:bg-army-green"
-                    >
-                      <Home className="w-4 h-4 mr-3" />
-                      Dashboard
-                    </Button>
-                    <Button
-                      variant="default"
-                      className="w-full justify-start bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold"
-                    >
-                      <MapPin className="w-4 h-4 mr-3" />
-                      Prospecting
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        navigate("/intake");
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full justify-start text-army-tan hover:text-army-gold hover:bg-army-green"
-                    >
-                      <FileText className="w-4 h-4 mr-3" />
-                      New Application
-                    </Button>
-                  </nav>
-                </SheetContent>
-              </Sheet>
-            </div>
-
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/")}
-                className="text-army-tan hover:text-army-gold hover:bg-army-green text-xs md:text-sm"
-              >
-                <Home className="w-4 h-4 mr-2" />
-                Dashboard
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                className="bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold text-xs md:text-sm"
-              >
-                <MapPin className="w-4 h-4 mr-2" />
-                Prospecting
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/intake")}
-                className="text-army-tan hover:text-army-gold hover:bg-army-green text-xs md:text-sm"
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                New Application
-              </Button>
-            </nav>
-          </div>
-        </div>
-
-        {/* Page Header - Fixed at top */}
-        <div className="bg-army-black border-b border-army-field01 px-3 md:px-6 py-3 md:py-4 shadow-lg shrink-0">
+    <div className="bg-army-green min-h-screen w-full">
+      {/* Content container */}
+      <div className="flex flex-col w-full">
+        {/* Page Header */}
+        <div className="bg-army-black border-b border-army-field01 px-3 md:px-6 py-3 md:py-4 shadow-lg">
           <div className="max-w-full">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3 md:mb-4 gap-3">
               <div className="flex-1 min-w-0">
@@ -622,9 +477,9 @@ export default function ProspectingMap() {
         </div>
 
         {/* Map and List Layout - Mobile: Stack vertically and scroll, Desktop: Side-by-side with fixed height */}
-        <div className="flex flex-col md:flex-row md:flex-1 md:overflow-hidden md:min-h-0">
+        <div className="flex flex-col md:flex-row md:overflow-hidden">
           {/* Map Container - Mobile: Fixed height, Desktop: Fill available space */}
-          <div className="relative h-[50vh] md:h-full md:flex-1">
+          <div className="relative h-[60vh] md:h-[calc(100vh-280px)] md:flex-1 md:min-w-0">
             <MapContainer
               center={mapCenter}
               zoom={13}
@@ -832,11 +687,11 @@ export default function ProspectingMap() {
           </div>
 
           {/* Results List - Mobile: Scrollable below map, Desktop: Fixed sidebar with scroll */}
-          <div className="w-full md:w-96 border-t md:border-t-0 md:border-l bg-card md:h-full">
+          <div className="w-full md:w-96 border-t md:border-t-0 md:border-l bg-card md:h-[calc(100vh-280px)] flex flex-col">
             <Tabs
               value={activeTab}
               onValueChange={(v) => setActiveTab(v as "locations" | "events")}
-              className="flex flex-col md:h-full"
+              className="flex flex-col h-full"
             >
               <div className="bg-card border-b shrink-0 sticky top-0 z-10">
                 <TabsList className="w-full grid grid-cols-2">
@@ -851,7 +706,7 @@ export default function ProspectingMap() {
 
               <TabsContent
                 value="locations"
-                className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 md:overflow-y-auto md:flex-1"
+                className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 flex-1 overflow-y-auto min-h-0"
               >
                 {filteredLocations.map((location) => (
                   <Card
@@ -915,7 +770,7 @@ export default function ProspectingMap() {
 
               <TabsContent
                 value="events"
-                className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 md:overflow-y-auto md:flex-1"
+                className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 flex-1 overflow-y-auto min-h-0"
               >
                 {filteredEvents.map((event) => (
                   <Card
@@ -1056,10 +911,6 @@ export default function ProspectingMap() {
           </div>
         </div>
 
-        {/* Footer - Desktop Only */}
-        <div className="hidden md:block shrink-0">
-          <Footer />
-        </div>
       </div>
 
       {/* Location Details Dialog - Condensed */}
@@ -1473,5 +1324,13 @@ export default function ProspectingMap() {
         }
       />
     </div>
+  );
+}
+
+export default function ProspectingMapPage() {
+  return (
+    <ProtectedRoute>
+      <ProspectingMap />
+    </ProtectedRoute>
   );
 }

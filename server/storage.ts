@@ -5,8 +5,11 @@ import {
   type InsertLocation,
   type Event,
   type InsertEvent,
+  recruits as recruitsTable,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./database";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   getAllRecruits(): Promise<Recruit[]>;
@@ -37,12 +40,11 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
-  private recruits: Map<string, Recruit>;
   private locations: Map<string, Location>;
   private events: Map<string, Event>;
+  // Recruits are now stored in PostgreSQL database, not in memory
 
   constructor() {
-    this.recruits = new Map();
     this.locations = new Map();
     this.events = new Map();
     // No seed data - users will add their own locations and events
@@ -274,50 +276,82 @@ export class MemStorage implements IStorage {
     */
   }
 
+  // Recruit methods - now using PostgreSQL database
   async getAllRecruits(): Promise<Recruit[]> {
-    return Array.from(this.recruits.values()).sort(
-      (a, b) =>
-        new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
-    );
+    try {
+      const allRecruits = await db.select().from(recruitsTable);
+      return allRecruits.sort(
+        (a, b) =>
+          new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+      );
+    } catch (error) {
+      console.error('❌ Failed to get all recruits from database:', error);
+      return [];
+    }
   }
 
   async getRecruit(id: string): Promise<Recruit | undefined> {
-    return this.recruits.get(id);
+    try {
+      const [recruit] = await db
+        .select()
+        .from(recruitsTable)
+        .where(eq(recruitsTable.id, id))
+        .limit(1);
+      return recruit;
+    } catch (error) {
+      console.error(`❌ Failed to get recruit ${id} from database:`, error);
+      return undefined;
+    }
   }
 
   async createRecruit(insertRecruit: InsertRecruit): Promise<Recruit> {
-    const id = randomUUID();
-    const submittedAt = new Date().toISOString();
-    const recruit: Recruit = {
-      ...insertRecruit,
-      middleName: insertRecruit.middleName ?? null,
-      priorServiceBranch: insertRecruit.priorServiceBranch ?? null,
-      priorServiceYears: insertRecruit.priorServiceYears ?? null,
-      medicalConditions: insertRecruit.medicalConditions ?? null,
-      preferredMOS: insertRecruit.preferredMOS ?? null,
-      additionalNotes: insertRecruit.additionalNotes ?? null,
-      id,
-      submittedAt,
-      status: insertRecruit.status || "pending",
-    };
-    this.recruits.set(id, recruit);
-    return recruit;
+    try {
+      const [newRecruit] = await db
+        .insert(recruitsTable)
+        .values({
+          ...insertRecruit,
+          status: insertRecruit.status || "pending",
+        })
+        .returning();
+      
+      console.log(`✅ Created recruit in database: ${newRecruit.id}`);
+      return newRecruit;
+    } catch (error) {
+      console.error('❌ Failed to create recruit in database:', error);
+      throw error;
+    }
   }
 
   async updateRecruitStatus(
     id: string,
     status: string
   ): Promise<Recruit | undefined> {
-    const recruit = this.recruits.get(id);
-    if (!recruit) return undefined;
-
-    const updated: Recruit = { ...recruit, status };
-    this.recruits.set(id, updated);
-    return updated;
+    try {
+      const [updated] = await db
+        .update(recruitsTable)
+        .set({ status })
+        .where(eq(recruitsTable.id, id))
+        .returning();
+      
+      return updated || undefined;
+    } catch (error) {
+      console.error(`❌ Failed to update recruit ${id} status:`, error);
+      return undefined;
+    }
   }
 
   async deleteRecruit(id: string): Promise<boolean> {
-    return this.recruits.delete(id);
+    try {
+      const result = await db
+        .delete(recruitsTable)
+        .where(eq(recruitsTable.id, id))
+        .returning();
+      
+      return result.length > 0;
+    } catch (error) {
+      console.error(`❌ Failed to delete recruit ${id}:`, error);
+      return false;
+    }
   }
 
   // Location methods

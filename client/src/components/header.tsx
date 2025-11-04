@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth-context";
 import {
   Sheet,
   SheetContent,
@@ -9,11 +10,15 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { FileText, Home, Shield, MapPin, Menu } from "lucide-react";
+import { FileText, Home, Shield, MapPin, Menu, LogOut } from "lucide-react";
 
 export function Header() {
   const [location, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+  
+  // Only show logout if user is logged in
+  const isLoggedIn = !!user;
 
   const navigationItems = [
     {
@@ -125,6 +130,20 @@ export function Header() {
                     </Button>
                   );
                 })}
+                {isLoggedIn && (
+                  <Button
+                    variant="ghost"
+                    onClick={async () => {
+                      await logout();
+                      navigate("/login");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full justify-start text-army-tan hover:text-red-400 hover:bg-red-900/20 border-t border-army-field01 mt-4 pt-4"
+                  >
+                    <LogOut className="w-4 h-4 mr-3" />
+                    Logout
+                  </Button>
+                )}
               </nav>
             </SheetContent>
           </Sheet>
@@ -151,6 +170,19 @@ export function Header() {
               </Button>
             );
           })}
+          {isLoggedIn && (
+            <Button
+              variant="ghost"
+              onClick={async () => {
+                await logout();
+                navigate("/login");
+              }}
+              className="text-army-tan hover:text-red-400 hover:bg-red-900/20 ml-2 border-l border-army-field01 pl-3"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          )}
         </nav>
       </div>
     </header>

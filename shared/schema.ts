@@ -1,12 +1,49 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, date, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, date, integer, timestamp, boolean, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const recruits = pgTable("recruits", {
-  id: varchar("id")
+// Users/Recruiters table
+export const users = pgTable("users", {
+  id: uuid("id")
     .primaryKey()
     .default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  fullName: text("full_name").notNull(),
+  rank: text("rank"), // e.g., "SGT", "SSG", "SFC"
+  unit: text("unit"),
+  phoneNumber: text("phone_number"),
+  isVerified: boolean("is_verified").notNull().default(false),
+  verificationToken: text("verification_token"),
+  verificationExpires: timestamp("verification_expires"),
+  qrCode: text("qr_code").notNull().unique(), // Unique QR code identifier
+  resetPasswordToken: text("reset_password_token"),
+  resetPasswordExpires: timestamp("reset_password_expires"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  qrCode: true,
+  verificationToken: true,
+  verificationExpires: true,
+  resetPasswordToken: true,
+  resetPasswordExpires: true,
+});
+
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+
+// Recruits/Applicants table (updated with recruiter tracking)
+export const recruits = pgTable("recruits", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  recruiterId: uuid("recruiter_id").references(() => users.id), // Which recruiter they came from
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   middleName: text("middle_name"),
@@ -31,12 +68,15 @@ export const recruits = pgTable("recruits", {
   availability: text("availability").notNull(),
   additionalNotes: text("additional_notes"),
   status: text("status").notNull().default("pending"),
-  submittedAt: text("submitted_at").notNull(),
+  source: text("source").notNull().default("direct"), // "qr_code" or "direct"
+  ipAddress: text("ip_address"), // Track submission IP
+  submittedAt: timestamp("submitted_at").notNull().defaultNow(),
 });
 
 export const insertRecruitSchema = createInsertSchema(recruits).omit({
   id: true,
   submittedAt: true,
+  ipAddress: true,
 });
 
 export type InsertRecruit = z.infer<typeof insertRecruitSchema>;
