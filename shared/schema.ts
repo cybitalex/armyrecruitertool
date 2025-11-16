@@ -1,5 +1,14 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, date, integer, timestamp, boolean, uuid } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  varchar,
+  date,
+  integer,
+  timestamp,
+  boolean,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -14,6 +23,7 @@ export const users = pgTable("users", {
   rank: text("rank"), // e.g., "SGT", "SSG", "SFC"
   unit: text("unit"),
   phoneNumber: text("phone_number"),
+  zipCode: text("zip_code"), // Recruiter's assigned zip code for searches
   isVerified: boolean("is_verified").notNull().default(false),
   verificationToken: text("verification_token"),
   verificationExpires: timestamp("verification_expires"),
@@ -150,3 +160,30 @@ export const insertEventSchema = createInsertSchema(events).omit({
 
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type Event = typeof events.$inferSelect;
+
+// QR Survey Responses table (for presentation/quick feedback scans)
+export const qrSurveyResponses = pgTable("qr_survey_responses", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  recruiterId: uuid("recruiter_id")
+    .references(() => users.id)
+    .notNull(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone").notNull(),
+  rating: integer("rating").notNull(), // 1-5 rating
+  feedback: text("feedback"),
+  source: text("source").notNull().default("presentation"), // e.g., "presentation", "event"
+  ipAddress: text("ip_address"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertQrSurveyResponseSchema = createInsertSchema(qrSurveyResponses).omit({
+  id: true,
+  createdAt: true,
+  ipAddress: true,
+});
+
+export type InsertQrSurveyResponse = z.infer<typeof insertQrSurveyResponseSchema>;
+export type QrSurveyResponse = typeof qrSurveyResponses.$inferSelect;

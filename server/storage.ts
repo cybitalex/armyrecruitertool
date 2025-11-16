@@ -27,6 +27,7 @@ export interface IStorage {
     location: Partial<InsertLocation>
   ): Promise<Location | undefined>;
   deleteLocation(id: string): Promise<boolean>;
+  clearAllLocations(): Promise<void>;
 
   // Event methods
   getAllEvents(): Promise<Event[]>;
@@ -37,6 +38,7 @@ export interface IStorage {
     event: Partial<InsertEvent>
   ): Promise<Event | undefined>;
   deleteEvent(id: string): Promise<boolean>;
+  clearAllEvents(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -397,6 +399,10 @@ export class MemStorage implements IStorage {
     return this.locations.delete(id);
   }
 
+  async clearAllLocations(): Promise<void> {
+    this.locations.clear();
+  }
+
   // Event methods
   async getAllEvents(): Promise<Event[]> {
     return Array.from(this.events.values()).sort(
@@ -445,6 +451,10 @@ export class MemStorage implements IStorage {
 
   async deleteEvent(id: string): Promise<boolean> {
     return this.events.delete(id);
+  }
+
+  async clearAllEvents(): Promise<void> {
+    this.events.clear();
   }
 }
 

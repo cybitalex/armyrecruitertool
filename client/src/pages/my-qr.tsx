@@ -3,29 +3,41 @@ import { useLocation } from "wouter";
 import { useAuth, ProtectedRoute } from "../lib/auth-context";
 import { auth } from "../lib/api";
 import { Button } from "../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { ArrowLeft, Download, Share2, Copy, CheckCircle2 } from "lucide-react";
 
 function MyQRCodeContent() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [qrCodeImage, setQrCodeImage] = useState("");
+  const [surveyQrCodeImage, setSurveyQrCodeImage] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
   const qrUrl = `${window.location.origin}/apply?r=${user?.qrCode}`;
+  const surveyUrl = `${window.location.origin}/survey?r=${user?.qrCode}`;
 
   useEffect(() => {
-    loadQRCode();
+    loadQRCodes();
   }, []);
 
-  const loadQRCode = async () => {
+  const loadQRCodes = async () => {
     try {
-      const { qrCode } = await auth.getQRCode();
+      const [{ qrCode }, survey] = await Promise.all([
+        auth.getQRCode(),
+        auth.getSurveyQRCode(),
+      ]);
       setQrCodeImage(qrCode);
+      setSurveyQrCodeImage(survey.qrCode);
     } catch (err) {
-      setError("Failed to load QR code");
+      setError("Failed to load QR codes");
     } finally {
       setLoading(false);
     }
@@ -40,8 +52,8 @@ function MyQRCodeContent() {
     document.body.removeChild(link);
   };
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(qrUrl);
+  const copyLink = (url: string) => {
+    navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -58,7 +70,7 @@ function MyQRCodeContent() {
         console.log("Share cancelled");
       }
     } else {
-      copyLink();
+      copyLink(qrUrl);
     }
   };
 
@@ -93,12 +105,12 @@ function MyQRCodeContent() {
         )}
 
         <div className="grid md:grid-cols-2 gap-6">
-          {/* QR Code Display */}
+          {/* Application QR Code */}
           <Card>
             <CardHeader className="text-center">
-              <CardTitle>Your Recruiter QR Code</CardTitle>
+              <CardTitle>Application QR Code</CardTitle>
               <CardDescription>
-                Applicants scan this to be linked to you
+                Applicants scan this to start the full interest/application form
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center">
@@ -123,7 +135,7 @@ function MyQRCodeContent() {
                   disabled={loading}
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Download QR Code
+                  Download Application QR
                 </Button>
 
                 <Button
@@ -133,7 +145,62 @@ function MyQRCodeContent() {
                   disabled={loading}
                 >
                   <Share2 className="w-4 h-4 mr-2" />
-                  Share QR Code
+                  Share Application QR
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Presentation Survey QR Code */}
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle>Presentation Survey QR</CardTitle>
+              <CardDescription>
+                Use this in briefings to capture quick ratings and contact info
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center">
+              {loading ? (
+                <div className="w-64 h-64 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
+                  <p className="text-gray-500">Loading QR Code...</p>
+                </div>
+              ) : (
+                <div className="bg-white p-4 rounded-lg border-4 border-green-700">
+                  <img
+                    src={surveyQrCodeImage}
+                    alt="Presentation Survey QR Code"
+                    className="w-64 h-64"
+                  />
+                </div>
+              )}
+
+              <div className="mt-6 w-full space-y-3">
+                <Button
+                  onClick={() => {
+                    const link = document.createElement("a");
+                    link.href = surveyQrCodeImage;
+                    link.download = `army-recruiter-survey-qr-${user?.fullName
+                      ?.replace(/\s+/g, "-")
+                      .toLowerCase()}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className="w-full bg-green-700 hover:bg-green-800"
+                  disabled={loading}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Survey QR
+                </Button>
+
+                <Button
+                  onClick={() => copyLink(surveyUrl)}
+                  variant="outline"
+                  className="w-full"
+                  disabled={loading}
+                >
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Copy Survey Link
                 </Button>
               </div>
             </CardContent>
@@ -186,36 +253,65 @@ function MyQRCodeContent() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Direct Link</CardTitle>
+                <CardTitle className="text-lg">Direct Links</CardTitle>
                 <CardDescription>
-                  Share this link via email or text
+                  Share these links via email, text, or chat
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={qrUrl}
-                    readOnly
-                    className="flex-1 px-3 py-2 border rounded text-sm bg-gray-50"
-                  />
-                  <Button
-                    onClick={copyLink}
-                    variant="outline"
-                    className="flex-shrink-0"
-                  >
-                    {copied ? (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 mr-2" />
-                        Copied!
-                      </>
-                    ) : (
-                      <>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700 mb-1">
+                      Application Form
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={qrUrl}
+                        readOnly
+                        className="flex-1 px-3 py-2 border rounded text-sm bg-gray-50"
+                      />
+                      <Button
+                        onClick={() => copyLink(qrUrl)}
+                        variant="outline"
+                        className="flex-shrink-0"
+                      >
+                        {copied ? (
+                          <>
+                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4 mr-2" />
+                            Copy
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700 mb-1">
+                      Presentation Survey
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={surveyUrl}
+                        readOnly
+                        className="flex-1 px-3 py-2 border rounded text-sm bg-gray-50"
+                      />
+                      <Button
+                        onClick={() => copyLink(surveyUrl)}
+                        variant="outline"
+                        className="flex-shrink-0"
+                      >
                         <Copy className="w-4 h-4 mr-2" />
                         Copy
-                      </>
-                    )}
-                  </Button>
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

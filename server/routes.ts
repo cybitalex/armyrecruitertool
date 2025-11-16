@@ -5,24 +5,27 @@ import {
   insertRecruitSchema,
   insertLocationSchema,
   insertEventSchema,
+  insertQrSurveyResponseSchema,
+  qrSurveyResponses,
 } from "@shared/schema";
 import { z } from "zod";
 import { askAI, createProspectingSystemPrompt, type AIMessage } from "./llm";
-import { searchNearbyLocations, searchNearbyEvents } from "./places";
-import { 
-  registerUser, 
-  verifyEmail, 
-  loginUser, 
-  createSession, 
+import { searchNearbyLocations, searchNearbyEvents, geocodeZipCode } from "./places";
+import {
+  registerUser,
+  verifyEmail,
+  loginUser,
+  createSession,
   destroySession,
   generateQRCodeImage,
+  generateSurveyQRCodeImage,
   requestPasswordReset,
   resetPassword as resetPasswordHandler,
-  sendApplicantConfirmationEmail
+  sendApplicantConfirmationEmail,
 } from "./auth";
 import { db } from "./database";
 import { users } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // AUTHENTICATION ENDPOINTS
@@ -179,7 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get recruiter's QR code
+  // Get recruiter's QR code (application form)
   app.get("/api/auth/qr-code", async (req, res) => {
     try {
       const userId = (req as any).session?.userId;
@@ -200,6 +203,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ Failed to generate QR code:', error);
       res.status(500).json({ error: "Failed to fetch QR code" });
+    }
+  });
+
+  // Get recruiter's survey QR code (presentation feedback form)
+  app.get("/api/auth/qr-code-survey", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+
+      if (!user || !user.qrCode) {
+        return res.status(404).json({ error: "QR code not found" });
+      }
+
+      const qrCodeImage = await generateSurveyQRCodeImage(user.qrCode);
+      res.json({ qrCode: qrCodeImage });
+    } catch (error) {
+      console.error("❌ Failed to generate survey QR code:", error);
+      res.status(500).json({ error: "Failed to fetch survey QR code" });
+    }
+  });
+
+  // Get/Update recruiter zip code
+  app.get("/api/recruiter/zip-code", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json({ zipCode: user.zipCode || null });
+    } catch (error) {
+      console.error('❌ Failed to get zip code:', error);
+      res.status(500).json({ error: "Failed to fetch zip code" });
+    }
+  });
+
+  app.put("/api/recruiter/zip-code", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { zipCode } = req.body;
+
+      if (!zipCode) {
+        return res.status(400).json({ error: "Zip code is required" });
+      }
+
+      // Validate zip code format (5 digits)
+      const cleanZip = zipCode.replace(/\D/g, '');
+      if (cleanZip.length !== 5) {
+        return res.status(400).json({ error: "Invalid zip code format. Must be 5 digits." });
+      }
+
+      // Update user's zip code
+      const [updatedUser] = await db
+        .update(users)
+        .set({ zipCode: cleanZip, updatedAt: new Date() })
+        .where(eq(users.id, userId))
+        .returning();
+
+      console.log(`✅ Updated zip code for user ${userId}: ${cleanZip}`);
+
+      res.json({ zipCode: updatedUser.zipCode });
+    } catch (error) {
+      console.error('❌ Failed to update zip code:', error);
+      res.status(500).json({ error: "Failed to update zip code" });
     }
   });
 
@@ -391,6 +475,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // QR SURVEY ENDPOINTS
+
+  // Public endpoint: submit quick survey / presentation feedback
+  app.post("/api/surveys", async (req, res) => {
+    try {
+      const { recruiterCode, ...body } = req.body;
+
+      if (!recruiterCode || typeof recruiterCode !== "string") {
+        return res.status(400).json({ error: "Recruiter QR code is required" });
+      }
+
+      // Find recruiter by QR code identifier
+      const [recruiter] = await db
+        .select()
+        .from(users)
+        .where(eq(users.qrCode, recruiterCode));
+
+      if (!recruiter) {
+        return res.status(404).json({ error: "Recruiter not found" });
+      }
+
+      // Attach recruiterId and capture IP
+      const ipAddress =
+        (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+        req.ip ||
+        req.socket.remoteAddress ||
+        null;
+
+      const validated = insertQrSurveyResponseSchema.parse({
+        ...body,
+        recruiterId: recruiter.id,
+        ipAddress,
+      });
+
+      const [created] = await db
+        .insert(qrSurveyResponses)
+        .values(validated)
+        .returning();
+
+      res.status(201).json(created);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          error: "Validation failed",
+          details: error.errors,
+        });
+      }
+
+      console.error("❌ Failed to submit survey response:", error);
+      res.status(500).json({ error: "Failed to submit survey response" });
+    }
+  });
+
+  // Authenticated recruiter: get my survey responses + summary
+  app.get("/api/surveys/my", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const responses = await db
+        .select()
+        .from(qrSurveyResponses)
+        .where(eq(qrSurveyResponses.recruiterId, userId))
+        .orderBy(sql`${qrSurveyResponses.createdAt} DESC`);
+
+      const total = responses.length;
+      const averageRating =
+        total > 0
+          ? responses.reduce((sum, r) => sum + (r.rating || 0), 0) / total
+          : 0;
+
+      res.json({
+        total,
+        averageRating,
+        responses,
+      });
+    } catch (error) {
+      console.error("❌ Failed to fetch survey responses:", error);
+      res.status(500).json({ error: "Failed to fetch survey responses" });
+    }
+  });
+
   // Update recruit status
   app.patch("/api/recruits/:id/status", async (req, res) => {
     try {
@@ -552,6 +721,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Batch create locations (to avoid rate limiting)
+  app.post("/api/locations/batch", async (req, res) => {
+    try {
+      const { locations } = req.body;
+      
+      if (!Array.isArray(locations)) {
+        return res.status(400).json({
+          message: "Locations must be an array",
+        });
+      }
+
+      const createdLocations = [];
+      const errors = [];
+
+      // Process locations in batches to avoid overwhelming the database
+      const batchSize = 10;
+      for (let i = 0; i < locations.length; i += batchSize) {
+        const batch = locations.slice(i, i + batchSize);
+        
+        for (const locationData of batch) {
+          try {
+            const validatedData = insertLocationSchema.parse(locationData);
+            const location = await storage.createLocation(validatedData);
+            createdLocations.push(location);
+          } catch (error) {
+            if (error instanceof z.ZodError) {
+              errors.push({
+                location: locationData.name || "Unknown",
+                error: "Validation failed",
+                details: error.errors,
+              });
+            } else {
+              errors.push({
+                location: locationData.name || "Unknown",
+                error: error instanceof Error ? error.message : "Failed to create location",
+              });
+            }
+          }
+        }
+
+        // Add a small delay between batches to avoid rate limiting
+        if (i + batchSize < locations.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+
+      res.status(201).json({
+        created: createdLocations.length,
+        total: locations.length,
+        locations: createdLocations,
+        errors: errors.length > 0 ? errors : undefined,
+      });
+    } catch (error) {
+      res.status(500).json({
+        message:
+          error instanceof Error ? error.message : "Failed to create locations",
+      });
+    }
+  });
+
   // Update location
   app.patch("/api/locations/:id", async (req, res) => {
     try {
@@ -566,6 +795,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         message:
           error instanceof Error ? error.message : "Failed to update location",
+      });
+    }
+  });
+
+  // Clear all locations (for logout) - must come before /api/locations/:id
+  app.delete("/api/locations", async (_req, res) => {
+    try {
+      await storage.clearAllLocations();
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({
+        message:
+          error instanceof Error ? error.message : "Failed to clear locations",
       });
     }
   });
@@ -661,6 +903,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clear all events (for logout) - must come before /api/events/:id
+  app.delete("/api/events", async (_req, res) => {
+    try {
+      await storage.clearAllEvents();
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({
+        message:
+          error instanceof Error ? error.message : "Failed to clear events",
+      });
+    }
+  });
+
   // Delete event
   app.delete("/api/events/:id", async (req, res) => {
     try {
@@ -681,10 +936,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // PLACES SEARCH ENDPOINT
 
+  // Geocode zip code to coordinates
+  app.post("/api/places/geocode-zip", async (req, res) => {
+    try {
+      const { zipCode } = req.body;
+      
+      if (!zipCode) {
+        return res.status(400).json({ message: "Zip code is required" });
+      }
+
+      const coords = await geocodeZipCode(zipCode);
+      
+      if (!coords) {
+        return res.status(404).json({ 
+          message: `Could not find coordinates for zip code ${zipCode}. Please check the zip code and try again.` 
+        });
+      }
+
+      res.json({
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        zipCode,
+      });
+    } catch (error) {
+      console.error("Error geocoding zip code:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to geocode zip code",
+      });
+    }
+  });
+
   // Search for nearby locations using Google Places API
   app.post("/api/places/search", async (req, res) => {
     try {
-      const { latitude, longitude, radius } = req.body;
+      const userId = (req as any).session?.userId;
+      let { latitude, longitude, radius, useZipCode } = req.body;
+
+      // If recruiter is logged in and useZipCode is true, use their zip code instead of provided coordinates
+      if (userId && useZipCode === true) {
+        const [user] = await db.select().from(users).where(eq(users.id, userId));
+        
+        if (user?.zipCode) {
+          console.log(`📍 Using recruiter zip code: ${user.zipCode}`);
+          const coords = await geocodeZipCode(user.zipCode);
+          
+          if (coords) {
+            latitude = coords.latitude;
+            longitude = coords.longitude;
+            console.log(`📍 Geocoded to: ${latitude}, ${longitude}`);
+          } else {
+            console.warn(`⚠️ Failed to geocode zip code ${user.zipCode}, using provided coordinates`);
+            useZipCode = false; // Fall back to provided coordinates
+          }
+        } else {
+          console.warn(`⚠️ User has no zip code set, using provided coordinates`);
+          useZipCode = false;
+        }
+      }
 
       if (!latitude || !longitude) {
         return res
@@ -692,13 +1000,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ message: "Latitude and longitude are required" });
       }
 
-      const radiusMeters = radius || 5000; // Default 5km
+      // Increased radius for both current location and zip code searches
+      const isCurrentLocation = !userId || useZipCode === false;
+      const radiusMeters = radius || 5000; // 5km for both current location and zip code
 
-      const locations = await searchNearbyLocations(
+      console.log(`🔍 Searching locations: ${latitude}, ${longitude}, radius: ${radiusMeters}m (${isCurrentLocation ? 'current location' : 'zip code'})`);
+
+      let locations = await searchNearbyLocations(
         latitude,
         longitude,
         radiusMeters
       );
+
+      // If using zip code, filter to only include locations within that zip code
+      // Check both the user's saved zip code and the zip code passed in the request
+      if (useZipCode) {
+        let targetZipCode: string | undefined;
+        
+        if (userId) {
+          const [user] = await db.select().from(users).where(eq(users.id, userId));
+          targetZipCode = user?.zipCode;
+        }
+        
+        // Also check if zip code was passed directly in the request
+        if (req.body.zipCode) {
+          targetZipCode = req.body.zipCode;
+        }
+        
+        if (targetZipCode) {
+          const beforeFilter = locations.length;
+          locations = locations.filter(loc => {
+            // Check if location's zip code matches the target zip code
+            return loc.zipCode === targetZipCode;
+          });
+          console.log(`📍 Filtered locations by zip code ${targetZipCode}: ${beforeFilter} → ${locations.length}`);
+        }
+      }
 
       res.json({
         count: locations.length,
@@ -721,7 +1058,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Search for nearby events using PredictHQ API
   app.post("/api/places/search-events", async (req, res) => {
     try {
-      const { latitude, longitude, radius } = req.body;
+      const userId = (req as any).session?.userId;
+      let { latitude, longitude, radius, useZipCode } = req.body;
+
+      // If recruiter is logged in and useZipCode is true, use their zip code instead of provided coordinates
+      if (userId && useZipCode === true) {
+        const [user] = await db.select().from(users).where(eq(users.id, userId));
+        
+        if (user?.zipCode) {
+          console.log(`📍 Using recruiter zip code for events: ${user.zipCode}`);
+          const coords = await geocodeZipCode(user.zipCode);
+          
+          if (coords) {
+            latitude = coords.latitude;
+            longitude = coords.longitude;
+            console.log(`📍 Geocoded to: ${latitude}, ${longitude}`);
+          } else {
+            console.warn(`⚠️ Failed to geocode zip code ${user.zipCode}, using provided coordinates`);
+            useZipCode = false; // Fall back to provided coordinates
+          }
+        } else {
+          console.warn(`⚠️ User has no zip code set, using provided coordinates`);
+          useZipCode = false;
+        }
+      }
 
       if (!latitude || !longitude) {
         return res
@@ -729,9 +1089,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ message: "Latitude and longitude are required" });
       }
 
-      const radiusMiles = radius || 25; // Default 25 miles
+      // Increased radius for both current location and zip code searches
+      const isCurrentLocation = !userId || useZipCode === false;
+      const radiusMiles = radius || 10; // 10 miles for both current location and zip code
 
-      const events = await searchNearbyEvents(latitude, longitude, radiusMiles);
+      console.log(`🔍 Searching events: ${latitude}, ${longitude}, radius: ${radiusMiles}mi (${isCurrentLocation ? 'current location' : 'zip code'})`);
+
+      let events = await searchNearbyEvents(latitude, longitude, radiusMiles);
+
+      // If using zip code, filter to only include events within that zip code
+      // Check both the user's saved zip code and the zip code passed in the request
+      if (useZipCode) {
+        let targetZipCode: string | undefined;
+        
+        if (userId) {
+          const [user] = await db.select().from(users).where(eq(users.id, userId));
+          targetZipCode = user?.zipCode;
+        }
+        
+        // Also check if zip code was passed directly in the request
+        if (req.body.zipCode) {
+          targetZipCode = req.body.zipCode;
+        }
+        
+        if (targetZipCode) {
+          const beforeFilter = events.length;
+          events = events.filter(evt => {
+            // Check if event's zip code matches the target zip code
+            return evt.zipCode === targetZipCode;
+          });
+          console.log(`📍 Filtered events by zip code ${targetZipCode}: ${beforeFilter} → ${events.length}`);
+        }
+      }
 
       res.json({
         count: events.length,

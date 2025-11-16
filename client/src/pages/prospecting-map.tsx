@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { ProtectedRoute } from "@/lib/auth-context";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from "react-leaflet";
 import { Icon, LatLngBounds, LatLngTuple } from "leaflet";
 import type { Location, Event } from "@shared/schema";
 import { Card } from "@/components/ui/card";
@@ -10,6 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+} from "@/components/ui/pagination";
 import {
   Dialog,
   DialogContent,
@@ -44,24 +49,40 @@ import {
   Clock,
   MapPinIcon,
   Globe,
+  Hash,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { recruiter } from "@/lib/api";
 import "leaflet/dist/leaflet.css";
 
-// Component to fit map bounds when markers change
+// Component to fit map bounds when markers change and update center
 function MapBoundsUpdater({
   locations,
   events,
   showLocations,
   showEvents,
+  searchCenter,
+  searchRadius,
 }: {
   locations: Location[];
   events: Event[];
   showLocations: boolean;
   showEvents: boolean;
+  searchCenter?: LatLngTuple | null;
+  searchRadius?: number;
 }) {
   const map = useMap();
 
   useEffect(() => {
+    // If we have a search center (from zip code or current location), center on it
+    if (searchCenter) {
+      map.setView(searchCenter, searchRadius ? 12 : 13);
+      return;
+    }
+
+    // Otherwise, fit bounds to markers
     const markers: LatLngTuple[] = [];
 
     if (showLocations) {
@@ -80,7 +101,7 @@ function MapBoundsUpdater({
       const bounds = new LatLngBounds(markers);
       map.fitBounds(bounds, { padding: [50, 50] });
     }
-  }, [map, locations, events, showLocations, showEvents]);
+  }, [map, locations, events, showLocations, showEvents, searchCenter, searchRadius]);
 
   return null;
 }
@@ -102,7 +123,52 @@ function ProspectingMap() {
   );
   const [userLocation, setUserLocation] = useState<LatLngTuple | null>(null);
   const [locationError, setLocationError] = useState<string>("");
+  const [zipCode, setZipCode] = useState<string>("");
+  const [searchMode, setSearchMode] = useState<"current" | "zip">("current");
+  const [searchCenter, setSearchCenter] = useState<LatLngTuple | null>(null);
+  const [searchRadius, setSearchRadius] = useState<number | null>(null);
+  const [zipCodeCoords, setZipCodeCoords] = useState<LatLngTuple | null>(null);
+  const [locationsPage, setLocationsPage] = useState(1);
+  const [eventsPage, setEventsPage] = useState(1);
+  const itemsPerPage = 15;
+  const [activeSearchType, setActiveSearchType] = useState<"locations-current" | "locations-zip" | "events-current" | "events-zip" | null>(null);
   const { toast } = useToast();
+
+  // Get recruiter's zip code
+  const { data: recruiterZipCode } = useQuery({
+    queryKey: ["/recruiter/zip-code"],
+    queryFn: async () => {
+      const response = await recruiter.getZipCode();
+      return response.zipCode || "";
+    },
+  });
+
+  useEffect(() => {
+    if (recruiterZipCode) {
+      setZipCode(recruiterZipCode);
+    }
+  }, [recruiterZipCode]);
+
+  // Update zip code mutation
+  const updateZipCodeMutation = useMutation({
+    mutationFn: async (zip: string) => {
+      return recruiter.updateZipCode(zip);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/recruiter/zip-code"] });
+      toast({
+        title: "Zip Code Saved",
+        description: "Your zip code has been saved. Searches will use this area.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to save zip code",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Prevent body scrolling on desktop only
   useEffect(() => {
@@ -125,50 +191,175 @@ function ProspectingMap() {
     };
   }, []);
 
-  const { data: locations = [] } = useQuery<Location[]>({
+  const { data: locations = [], refetch: refetchLocations, isLoading: locationsLoading, error: locationsError } = useQuery<Location[]>({
     queryKey: ["/api/locations"],
+    queryFn: async () => {
+      const response = await fetch("/api/locations", {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch locations: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log("📍 Fetched locations:", data?.length || 0, "locations");
+      return Array.isArray(data) ? data : [];
+    },
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
-  const { data: events = [] } = useQuery<Event[]>({
+  const { data: events = [], refetch: refetchEvents } = useQuery<Event[]>({
     queryKey: ["/api/events"],
+    queryFn: async () => {
+      const response = await fetch("/api/events", {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch events: ${response.status}`);
+      }
+      return response.json();
+    },
   });
+
+  // Geocode zip code to get coordinates (via backend API)
+  const geocodeZipCode = async (zip: string): Promise<LatLngTuple | null> => {
+    try {
+      const response = await apiRequest("POST", "/api/places/geocode-zip", {
+        zipCode: zip,
+      });
+      
+      if (response.latitude && response.longitude) {
+        return [response.latitude, response.longitude];
+      }
+      return null;
+    } catch (error) {
+      console.error('Error geocoding zip code:', error);
+      throw error; // Re-throw so the mutation can handle it
+    }
+  };
 
   // Mutation to search nearby and add locations
   const searchNearbyMutation = useMutation({
-    mutationFn: async () => {
-      if (!userLocation) throw new Error("Location not available");
+    mutationFn: async (useZip: boolean) => {
+      let latitude: number;
+      let longitude: number;
+      let useZipCode = false;
+      let center: LatLngTuple | null = null;
 
-      // Search for nearby locations
+      if (useZip) {
+        if (!zipCode || zipCode.length !== 5) {
+          throw new Error("Please enter a valid 5-digit zip code");
+        }
+        // Geocode zip code to get coordinates via backend API
+        try {
+          const coords = await geocodeZipCode(zipCode);
+          if (!coords) {
+            throw new Error("Could not find coordinates for that zip code. Please check the zip code and try again.");
+          }
+          latitude = coords[0];
+          longitude = coords[1];
+          center = coords;
+          useZipCode = true;
+          setZipCodeCoords(coords);
+        } catch (error: any) {
+          // Re-throw with a more user-friendly message
+          throw new Error(error?.message || "Could not find coordinates for that zip code. Please check the zip code and try again.");
+        }
+      } else {
+        if (!userLocation) {
+          throw new Error("Location not available. Please enable location access.");
+        }
+        latitude = userLocation[0];
+        longitude = userLocation[1];
+        center = userLocation;
+        useZipCode = false;
+      }
+
       const searchResult = await apiRequest("POST", "/api/places/search", {
-        latitude: userLocation[0],
-        longitude: userLocation[1],
-        radius: 5000, // 5km
+        latitude,
+        longitude,
+        useZipCode,
+        zipCode: useZip ? zipCode : undefined, // Pass zip code for filtering
       });
 
-      // Add each found location to the database
-      const addedLocations = [];
-      const locations = searchResult.locations || [];
+      // Set search center and radius for map display
+      setSearchCenter(center);
+      setSearchRadius(useZipCode ? 5000 : 5000); // 5km for both zip and current location
 
-      for (const location of locations) {
+      // Clear old locations before adding new ones (only if this is a new search)
+      // Delete all existing locations to start fresh
+      try {
+        const existingLocations = await apiRequest("GET", "/api/locations");
+        if (Array.isArray(existingLocations) && existingLocations.length > 0) {
+          // Delete all existing locations
+          for (const loc of existingLocations) {
+            try {
+              await apiRequest("DELETE", `/api/locations/${loc.id}`);
+            } catch (err) {
+              // Ignore errors for individual deletes
+              console.warn("Could not delete location:", loc.id);
+            }
+          }
+          console.log(`🗑️ Cleared ${existingLocations.length} old locations`);
+        }
+      } catch (error) {
+        console.warn("Could not clear old locations:", error);
+        // Continue anyway
+      }
+
+      // Add all found locations to the database in a batch to avoid rate limiting
+      const locations = searchResult.locations || [];
+      let addedLocations = [];
+
+      if (locations.length > 0) {
         try {
-          const added = await apiRequest("POST", "/api/locations", location);
-          addedLocations.push(added);
+          const batchResult = await apiRequest("POST", "/api/locations/batch", {
+            locations: locations,
+          });
+          addedLocations = batchResult.locations || [];
+          
+          if (batchResult.errors && batchResult.errors.length > 0) {
+            console.warn(`⚠️ Some locations failed to add:`, batchResult.errors);
+          }
         } catch (error) {
-          console.error("Error adding location:", location.name, error);
-          console.error("Location data:", location);
+          console.error("Error batch adding locations:", error);
+          // Fallback: try adding them one by one with delays (for backwards compatibility)
+          console.log("Falling back to individual location creation with delays...");
+          for (const location of locations) {
+            try {
+              const added = await apiRequest("POST", "/api/locations", location);
+              addedLocations.push(added);
+              // Add delay to avoid rate limiting
+              await new Promise(resolve => setTimeout(resolve, 200));
+            } catch (err) {
+              console.error("Error adding location:", location.name, err);
+            }
+          }
         }
       }
 
-      return { searchResult, addedLocations };
+      return { searchResult, addedLocations, center };
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/locations"] });
+    onSuccess: async (data) => {
+      console.log("✅ Search completed. Added locations:", data.addedLocations.length);
+      setActiveSearchType(null); // Clear active search type
+      // Reset to page 1 to show new locations
+      setLocationsPage(1);
+      // Small delay to ensure backend has processed all locations
+      await new Promise(resolve => setTimeout(resolve, 500));
+      // Invalidate and refetch locations to show them in the list
+      await queryClient.invalidateQueries({ queryKey: ["/api/locations"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/locations"] });
+      // Also manually refetch to ensure data is updated
+      const refetchResult = await refetchLocations();
+      console.log("🔄 Refetched locations:", refetchResult.data?.length || 0, "locations");
       toast({
         title: "Locations Found!",
         description: `Found and added ${data.addedLocations.length} nearby recruiting locations.`,
       });
     },
     onError: (error: Error) => {
+      setActiveSearchType(null); // Clear active search type on error
       toast({
         title: "Search Failed",
         description: error.message,
@@ -178,37 +369,103 @@ function ProspectingMap() {
   });
 
   const searchNearbyEventsMutation = useMutation({
-    mutationFn: async () => {
-      if (!userLocation) throw new Error("Location not available");
+    mutationFn: async (useZip: boolean) => {
+      let latitude: number;
+      let longitude: number;
+      let useZipCode = false;
+      let center: LatLngTuple | null = null;
 
-      // Search for nearby events
+      if (useZip) {
+        if (!zipCode || zipCode.length !== 5) {
+          throw new Error("Please enter a valid 5-digit zip code");
+        }
+        // Geocode zip code to get coordinates via backend API
+        try {
+          const coords = await geocodeZipCode(zipCode);
+          if (!coords) {
+            throw new Error("Could not find coordinates for that zip code. Please check the zip code and try again.");
+          }
+          latitude = coords[0];
+          longitude = coords[1];
+          center = coords;
+          useZipCode = true;
+          setZipCodeCoords(coords);
+        } catch (error: any) {
+          // Re-throw with a more user-friendly message
+          throw new Error(error?.message || "Could not find coordinates for that zip code. Please check the zip code and try again.");
+        }
+      } else {
+        if (!userLocation) {
+          throw new Error("Location not available. Please enable location access.");
+        }
+        latitude = userLocation[0];
+        longitude = userLocation[1];
+        center = userLocation;
+        useZipCode = false;
+      }
+
       const searchResult = await apiRequest(
         "POST",
         "/api/places/search-events",
         {
-          latitude: userLocation[0],
-          longitude: userLocation[1],
-          radius: 25, // 25 miles
+          latitude,
+          longitude,
+          useZipCode,
+          zipCode: useZip ? zipCode : undefined, // Pass zip code for filtering
         }
       );
 
-      // Add each found event to the database
-      const addedEvents = [];
+      // Set search center and radius for map display
+      setSearchCenter(center);
+      setSearchRadius(useZipCode ? 16093 : 16093); // ~10 miles (16093m) for both zip and current location
+
+      // Clear old events before adding new ones (only if this is a new search)
+      try {
+        const existingEvents = await apiRequest("GET", "/api/events");
+        if (Array.isArray(existingEvents) && existingEvents.length > 0) {
+          // Delete all existing events
+          for (const evt of existingEvents) {
+            try {
+              await apiRequest("DELETE", `/api/events/${evt.id}`);
+            } catch (err) {
+              // Ignore errors for individual deletes
+              console.warn("Could not delete event:", evt.id);
+            }
+          }
+          console.log(`🗑️ Cleared ${existingEvents.length} old events`);
+        }
+      } catch (error) {
+        console.warn("Could not clear old events:", error);
+        // Continue anyway
+      }
+
+      // Add all found events to the database with delays to avoid rate limiting
       const events = searchResult.events || [];
+      const addedEvents = [];
 
       for (const event of events) {
         try {
           const added = await apiRequest("POST", "/api/events", event);
           addedEvents.push(added);
+          // Add delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 200));
         } catch (error) {
           console.error("Error adding event:", error);
+          // Continue with next event even if one fails
         }
       }
 
-      return { searchResult, addedEvents };
+      return { searchResult, addedEvents, center };
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+    onSuccess: async (data) => {
+      setActiveSearchType(null); // Clear active search type
+      // Reset to page 1 to show new events
+      setEventsPage(1);
+      // Invalidate and refetch events to show them in the list
+      await queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/events"] });
+      // Also manually refetch to ensure data is updated
+      await refetchEvents();
       if (data.addedEvents.length > 0) {
         toast({
           title: "Events Found!",
@@ -218,12 +475,13 @@ function ProspectingMap() {
         toast({
           title: "No Events Found",
           description:
-            "Add EVENTBRITE_API_KEY to .env to discover real events nearby.",
+            "Add PREDICTHQ_API_KEY to .env to discover real events nearby.",
           variant: "default",
         });
       }
     },
     onError: (error: Error) => {
+      setActiveSearchType(null); // Clear active search type on error
       toast({
         title: "Search Failed",
         description: error.message,
@@ -232,40 +490,68 @@ function ProspectingMap() {
     },
   });
 
-  // Get user's current location on component mount
-  useEffect(() => {
+  // Get user's current location only when requested (not automatically)
+  const requestCurrentLocation = () => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          setUserLocation([latitude, longitude]);
+          const newLocation: LatLngTuple = [latitude, longitude];
+          setUserLocation(newLocation);
+          setLocationError("");
+          setSearchMode("current");
+          // Center map on user's current location
+          setSearchCenter(newLocation);
+          setSearchRadius(null); // Clear radius until a search is performed
         },
         (error) => {
           console.error("Error getting location:", error);
-          setLocationError("Could not get your location. Using default view.");
-          // Default to US center if geolocation fails
-          setUserLocation([39.8283, -98.5795]);
+          setLocationError("Could not get your location. Please try using zip code search.");
+          toast({
+            title: "Location Error",
+            description: "Could not get your location. Please try using zip code search.",
+            variant: "destructive",
+          });
         }
       );
     } else {
       setLocationError("Geolocation not supported by your browser.");
-      setUserLocation([39.8283, -98.5795]); // US center
+      toast({
+        title: "Location Not Supported",
+        description: "Your browser doesn't support location services. Please use zip code search.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Set default map center (US center) but don't get location automatically
+  useEffect(() => {
+    if (!userLocation) {
+      setUserLocation([39.8283, -98.5795]); // US center as default view
     }
   }, []);
 
   // Filter locations
   const filteredLocations = useMemo(() => {
-    return locations.filter((location) => {
+    if (!Array.isArray(locations) || locations.length === 0) {
+      console.log("📍 No locations to filter");
+      return [];
+    }
+    
+    const filtered = locations.filter((location) => {
       const matchesSearch =
         searchQuery === "" ||
-        location.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        location.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        location.address.toLowerCase().includes(searchQuery.toLowerCase());
+        location.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        location.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        location.address?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesType = typeFilter === "all" || location.type === typeFilter;
 
       return matchesSearch && matchesType;
     });
+    
+    console.log(`🔍 Filtered ${locations.length} locations to ${filtered.length} (query: "${searchQuery}", type: "${typeFilter}")`);
+    return filtered;
   }, [locations, searchQuery, typeFilter]);
 
   // Filter events
@@ -280,6 +566,33 @@ function ProspectingMap() {
       return matchesSearch;
     });
   }, [events, searchQuery]);
+
+  // Paginate locations
+  const paginatedLocations = useMemo(() => {
+    const startIndex = (locationsPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredLocations.slice(startIndex, endIndex);
+  }, [filteredLocations, locationsPage]);
+
+  // Paginate events
+  const paginatedEvents = useMemo(() => {
+    const startIndex = (eventsPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredEvents.slice(startIndex, endIndex);
+  }, [filteredEvents, eventsPage]);
+
+  // Calculate total pages
+  const locationsTotalPages = Math.ceil(filteredLocations.length / itemsPerPage);
+  const eventsTotalPages = Math.ceil(filteredEvents.length / itemsPerPage);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setLocationsPage(1);
+  }, [searchQuery, typeFilter, filteredLocations.length]);
+
+  useEffect(() => {
+    setEventsPage(1);
+  }, [searchQuery, filteredEvents.length]);
 
   // Custom icons for different location types
   const getLocationIcon = (type: string) => {
@@ -333,132 +646,214 @@ function ProspectingMap() {
     return "outline";
   };
 
-  // Use user's location or default center
-  const mapCenter: LatLngTuple = userLocation || [39.8283, -98.5795]; // US center as fallback
+  // Use search center if available, otherwise user location, otherwise default
+  const mapCenter: LatLngTuple = searchCenter || userLocation || [39.8283, -98.5795]; // Search center, user location, or US center as fallback
 
-  // Don't render map until we have a location
-  if (!userLocation) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Getting your location...</p>
-          {locationError && (
-            <p className="text-sm text-destructive mt-2">{locationError}</p>
-          )}
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="bg-army-green min-h-screen w-full">
+    <div className="bg-army-green w-full">
       {/* Content container */}
       <div className="flex flex-col w-full">
         {/* Page Header */}
-        <div className="bg-army-black border-b border-army-field01 px-3 md:px-6 py-3 md:py-4 shadow-lg">
+        <div className="bg-army-black border-b border-army-field01 px-3 md:px-6 py-2 md:py-3 shadow-lg">
           <div className="max-w-full">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3 md:mb-4 gap-3">
+            <div className="flex flex-col gap-2 md:gap-3 mb-2 md:mb-3">
               <div className="flex-1 min-w-0">
-                <h1 className="text-xl md:text-3xl font-bold text-army-gold flex items-center gap-2 tracking-wide">
-                  <Navigation className="w-6 h-6 md:w-8 md:h-8 drop-shadow-lg" />
+                <h1 className="text-xl md:text-2xl font-bold text-army-gold flex items-center gap-2 tracking-wide">
+                  <Navigation className="w-5 h-5 md:w-6 md:h-6 drop-shadow-lg" />
                   🗺️ PROSPECTING MAP
                 </h1>
-                <p className="text-army-tan mt-1 font-medium text-sm md:text-base">
+                <p className="text-army-tan mt-1 font-medium text-xs md:text-sm">
                   Discover prime locations and events for Army recruiting
                 </p>
-                {userLocation && (
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                    <Badge
-                      variant="secondary"
-                      className="bg-blue-500/20 text-blue-300 border-blue-400"
-                    >
-                      📍 {userLocation[0].toFixed(2)}°,{" "}
-                      {userLocation[1].toFixed(2)}°
-                    </Badge>
-                  </div>
-                )}
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-2">
+              {/* Zip Code Input */}
+              <div className="w-full sm:w-auto sm:min-w-[140px] md:min-w-[160px] flex-shrink-0">
+                <Label htmlFor="zipCode" className="text-xs text-army-tan mb-1 block">
+                  ZIP Code
+                </Label>
+                <div className="flex gap-1">
+                  <div className="relative flex-1">
+                    <Hash className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 md:w-4 md:h-4 text-army-tan" />
+                    <Input
+                      id="zipCode"
+                      type="text"
+                      maxLength={5}
+                      placeholder="12345"
+                      value={zipCode}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 5);
+                        setZipCode(value);
+                      }}
+                      className="pl-7 md:pl-8 h-8 md:h-9 text-xs md:text-sm bg-army-field01/50 border-army-field01 text-army-gold placeholder:text-army-tan/50"
+                    />
+                  </div>
+                  {zipCode.length === 5 && zipCode !== recruiterZipCode && (
+                    <Button
+                      onClick={() => updateZipCodeMutation.mutate(zipCode)}
+                      disabled={updateZipCodeMutation.isPending}
+                      size="sm"
+                      className="h-8 md:h-9 px-2 text-xs bg-army-field01 hover:bg-army-field01/80 text-army-gold"
+                      title="Save zip code"
+                    >
+                      {updateZipCodeMutation.isPending ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        "💾"
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Search Buttons - Four Clear Options */}
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <Button
-                  onClick={() => searchNearbyMutation.mutate()}
-                  disabled={!userLocation || searchNearbyMutation.isPending}
-                  className="bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold shadow-lg"
+                  onClick={() => {
+                    setSearchMode("current");
+                    requestCurrentLocation();
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 md:h-9 border-army-gold text-army-gold hover:bg-army-gold hover:text-army-black text-xs flex-1 sm:flex-none min-w-[140px]"
                 >
-                  {searchNearbyMutation.isPending ? (
+                  <MapPin className="w-3 h-3 mr-1" />
+                  Use My Location
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (!userLocation) {
+                      toast({
+                        title: "Location Required",
+                        description: "Please click 'Use My Location' first",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    setSearchMode("current");
+                    setActiveSearchType("locations-current");
+                    searchNearbyMutation.mutate(false);
+                  }}
+                  disabled={!userLocation || (activeSearchType !== null && activeSearchType !== "locations-current")}
+                  className="bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold h-8 md:h-9 text-xs flex-1 sm:flex-none min-w-[140px]"
+                >
+                  {searchNearbyMutation.isPending && activeSearchType === "locations-current" ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                       Searching...
                     </>
                   ) : (
                     <>
-                      <Radar className="w-4 h-4 mr-2" />
+                      <Radar className="w-3 h-3 mr-1" />
                       Find Locations Near Me
                     </>
                   )}
                 </Button>
                 <Button
-                  onClick={() => searchNearbyEventsMutation.mutate()}
-                  disabled={
-                    !userLocation || searchNearbyEventsMutation.isPending
-                  }
-                  className="bg-army-green text-army-gold hover:bg-army-green/80 border-2 border-army-gold font-semibold shadow-lg"
+                  onClick={() => {
+                    if (!userLocation) {
+                      toast({
+                        title: "Location Required",
+                        description: "Please click 'Use My Location' first",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    setSearchMode("current");
+                    setActiveSearchType("events-current");
+                    searchNearbyEventsMutation.mutate(false);
+                  }}
+                  disabled={!userLocation || (activeSearchType !== null && activeSearchType !== "events-current")}
+                  className="bg-army-green text-army-gold hover:bg-army-green/80 border-2 border-army-gold font-semibold h-8 md:h-9 text-xs flex-1 sm:flex-none min-w-[140px]"
                 >
-                  {searchNearbyEventsMutation.isPending ? (
+                  {searchNearbyEventsMutation.isPending && activeSearchType === "events-current" ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                       Searching...
                     </>
                   ) : (
                     <>
-                      <Calendar className="w-4 h-4 mr-2" />
+                      <Calendar className="w-3 h-3 mr-1" />
                       Find Events Near Me
                     </>
                   )}
                 </Button>
                 <Button
-                  variant={showLocations ? "default" : "outline"}
-                  onClick={() => setShowLocations(!showLocations)}
-                  className={
-                    showLocations
-                      ? "bg-army-field01 text-army-gold hover:bg-army-field01/90 font-semibold"
-                      : "border-army-field01 text-army-tan hover:bg-army-field01/20 hover:text-army-gold"
-                  }
+                  onClick={() => {
+                    if (!zipCode || zipCode.length !== 5) {
+                      toast({
+                        title: "Zip Code Required",
+                        description: "Please enter a valid 5-digit zip code",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    setSearchMode("zip");
+                    setActiveSearchType("locations-zip");
+                    searchNearbyMutation.mutate(true);
+                  }}
+                  disabled={zipCode.length !== 5 || (activeSearchType !== null && activeSearchType !== "locations-zip")}
+                  className="bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold h-8 md:h-9 text-xs flex-1 sm:flex-none min-w-[140px]"
                 >
-                  <MapPin className="w-4 h-4 mr-2" />
-                  Locations ({locations.length})
+                  {searchNearbyMutation.isPending && activeSearchType === "locations-zip" ? (
+                    <>
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <Radar className="w-3 h-3 mr-1" />
+                      Find Locations by Zip Code
+                    </>
+                  )}
                 </Button>
                 <Button
-                  variant={showEvents ? "default" : "outline"}
-                  onClick={() => setShowEvents(!showEvents)}
-                  className={
-                    showEvents
-                      ? "bg-army-field01 text-army-gold hover:bg-army-field01/90 font-semibold"
-                      : "border-army-field01 text-army-tan hover:bg-army-field01/20 hover:text-army-gold"
-                  }
+                  onClick={() => {
+                    if (!zipCode || zipCode.length !== 5) {
+                      toast({
+                        title: "Zip Code Required",
+                        description: "Please enter a valid 5-digit zip code",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    setSearchMode("zip");
+                    setActiveSearchType("events-zip");
+                    searchNearbyEventsMutation.mutate(true);
+                  }}
+                  disabled={zipCode.length !== 5 || (activeSearchType !== null && activeSearchType !== "events-zip")}
+                  className="bg-army-green text-army-gold hover:bg-army-green/80 border-2 border-army-gold font-semibold h-8 md:h-9 text-xs flex-1 sm:flex-none min-w-[140px]"
                 >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Events ({events.length})
+                  {searchNearbyEventsMutation.isPending && activeSearchType === "events-zip" ? (
+                    <>
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <Calendar className="w-3 h-3 mr-1" />
+                      Find Events by Zip Code
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
 
             {/* Search and Filters */}
-            <div className="flex flex-col sm:flex-row gap-2 md:gap-4">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 md:w-4 md:h-4 text-muted-foreground" />
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 md:w-4 md:h-4 text-muted-foreground" />
                 <Input
                   placeholder="Search locations or events..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 md:pl-10 text-sm"
+                  className="pl-7 md:pl-9 text-xs md:text-sm h-8 md:h-9"
                 />
               </div>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-full sm:w-[180px] md:w-[200px]">
-                  <Filter className="w-3 h-3 md:w-4 md:h-4 mr-2" />
+                <SelectTrigger className="w-full sm:w-[140px] md:w-[160px] h-8 md:h-9 text-xs">
+                  <Filter className="w-3 h-3 md:w-4 md:h-4 mr-1" />
                   <SelectValue placeholder="Filter by type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -472,14 +867,42 @@ function ProspectingMap() {
                   </SelectItem>
                 </SelectContent>
               </Select>
+              <div className="flex gap-2">
+                <Button
+                  variant={showLocations ? "default" : "outline"}
+                  onClick={() => setShowLocations(!showLocations)}
+                  size="sm"
+                  className={`h-8 md:h-9 text-xs ${
+                    showLocations
+                      ? "bg-army-field01 text-army-gold hover:bg-army-field01/90"
+                      : "border-army-field01 text-army-tan hover:bg-army-field01/20 hover:text-army-gold"
+                  }`}
+                >
+                  <MapPin className="w-3 h-3 mr-1" />
+                  Locations ({locations.length})
+                </Button>
+                <Button
+                  variant={showEvents ? "default" : "outline"}
+                  onClick={() => setShowEvents(!showEvents)}
+                  size="sm"
+                  className={`h-8 md:h-9 text-xs ${
+                    showEvents
+                      ? "bg-army-field01 text-army-gold hover:bg-army-field01/90"
+                      : "border-army-field01 text-army-tan hover:bg-army-field01/20 hover:text-army-gold"
+                  }`}
+                >
+                  <Calendar className="w-3 h-3 mr-1" />
+                  Events ({events.length})
+                </Button>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Map and List Layout - Mobile: Stack vertically and scroll, Desktop: Side-by-side with fixed height */}
-        <div className="flex flex-col md:flex-row md:overflow-hidden">
+        <div className="flex flex-col md:flex-row md:h-[calc(100vh-420px)]">
           {/* Map Container - Mobile: Fixed height, Desktop: Fill available space */}
-          <div className="relative h-[60vh] md:h-[calc(100vh-280px)] md:flex-1 md:min-w-0">
+          <div className="relative h-[60vh] md:h-full md:flex-1 md:min-w-0">
             <MapContainer
               center={mapCenter}
               zoom={13}
@@ -496,7 +919,23 @@ function ProspectingMap() {
                 events={filteredEvents}
                 showLocations={showLocations}
                 showEvents={showEvents}
+                searchCenter={searchCenter}
+                searchRadius={searchRadius || undefined}
               />
+
+              {/* Search Radius Circle - Shows area of responsibility */}
+              {searchCenter && searchRadius && (
+                <Circle
+                  center={searchCenter}
+                  radius={searchRadius}
+                  pathOptions={{
+                    color: '#f87171', // Light red border
+                    fillColor: '#fca5a5', // Light red fill
+                    fillOpacity: 0.2, // Light red highlight
+                    weight: 2,
+                  }}
+                />
+              )}
 
               {/* Location Markers */}
               {showLocations &&
@@ -687,7 +1126,7 @@ function ProspectingMap() {
           </div>
 
           {/* Results List - Mobile: Scrollable below map, Desktop: Fixed sidebar with scroll */}
-          <div className="w-full md:w-96 border-t md:border-t-0 md:border-l bg-card md:h-[calc(100vh-280px)] flex flex-col">
+          <div className="w-full md:w-[450px] lg:w-[500px] border-t md:border-t-0 md:border-l bg-card md:h-full flex flex-col shadow-lg">
             <Tabs
               value={activeTab}
               onValueChange={(v) => setActiveTab(v as "locations" | "events")}
@@ -706,9 +1145,27 @@ function ProspectingMap() {
 
               <TabsContent
                 value="locations"
-                className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 flex-1 overflow-y-auto min-h-0"
+                className="mt-0 flex-1 min-h-0 flex flex-col overflow-hidden"
               >
-                {filteredLocations.map((location) => (
+                <div className="flex-1 overflow-y-auto min-h-0 p-2 md:p-4 space-y-2 md:space-y-3">
+                {locationsLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Loading locations...
+                  </div>
+                ) : locationsError ? (
+                  <div className="text-center py-8 text-destructive">
+                    Error loading locations: {locationsError instanceof Error ? locationsError.message : "Unknown error"}
+                  </div>
+                ) : paginatedLocations.length === 0 && filteredLocations.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No locations found. Try searching for nearby locations.
+                  </div>
+                ) : paginatedLocations.length === 0 && filteredLocations.length > 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No locations on this page. Try adjusting filters or pagination.
+                  </div>
+                ) : (
+                  paginatedLocations.map((location) => (
                   <Card
                     key={location.id}
                     className={`p-3 md:p-4 cursor-pointer transition-all hover:shadow-md ${
@@ -760,19 +1217,64 @@ function ProspectingMap() {
                       </div>
                     </div>
                   </Card>
-                ))}
-                {filteredLocations.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No locations found
+                  ))
+                )}
+                </div>
+                
+                {/* Pagination for Locations */}
+                {filteredLocations.length > 0 && (
+                  <div className="border-t pt-2 px-2 md:px-4 shrink-0">
+                    <Pagination>
+                      <PaginationContent className="flex items-center justify-center gap-2">
+                        <PaginationItem>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (locationsPage > 1) {
+                                setLocationsPage(locationsPage - 1);
+                              }
+                            }}
+                            disabled={locationsPage === 1 || locationsTotalPages <= 1}
+                            className="gap-1"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                            Previous
+                          </Button>
+                        </PaginationItem>
+                        <PaginationItem>
+                          <span className="text-sm text-muted-foreground px-2 whitespace-nowrap">
+                            Page {locationsPage} of {locationsTotalPages}
+                          </span>
+                        </PaginationItem>
+                        <PaginationItem>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (locationsPage < locationsTotalPages) {
+                                setLocationsPage(locationsPage + 1);
+                              }
+                            }}
+                            disabled={locationsPage >= locationsTotalPages || locationsTotalPages <= 1}
+                            className="gap-1"
+                          >
+                            Next
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
                   </div>
                 )}
               </TabsContent>
 
               <TabsContent
                 value="events"
-                className="p-2 md:p-4 space-y-2 md:space-y-3 mt-0 flex-1 overflow-y-auto min-h-0"
+                className="mt-0 flex-1 min-h-0 flex flex-col overflow-hidden"
               >
-                {filteredEvents.map((event) => (
+                <div className="flex-1 overflow-y-auto min-h-0 p-2 md:p-4 space-y-2 md:space-y-3">
+                {paginatedEvents.map((event) => (
                   <Card
                     key={event.id}
                     className={`p-3 md:p-4 transition-all hover:shadow-md ${
@@ -904,6 +1406,54 @@ function ProspectingMap() {
                 {filteredEvents.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     No events found
+                  </div>
+                )}
+                </div>
+                
+                {/* Pagination for Events */}
+                {filteredEvents.length > 0 && (
+                  <div className="border-t pt-2 px-2 md:px-4 shrink-0">
+                    <Pagination>
+                      <PaginationContent className="flex items-center justify-center gap-2">
+                        <PaginationItem>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (eventsPage > 1) {
+                                setEventsPage(eventsPage - 1);
+                              }
+                            }}
+                            disabled={eventsPage === 1 || eventsTotalPages <= 1}
+                            className="gap-1"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                            Previous
+                          </Button>
+                        </PaginationItem>
+                        <PaginationItem>
+                          <span className="text-sm text-muted-foreground px-2 whitespace-nowrap">
+                            Page {eventsPage} of {eventsTotalPages}
+                          </span>
+                        </PaginationItem>
+                        <PaginationItem>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (eventsPage < eventsTotalPages) {
+                                setEventsPage(eventsPage + 1);
+                              }
+                            }}
+                            disabled={eventsPage >= eventsTotalPages || eventsTotalPages <= 1}
+                            className="gap-1"
+                          >
+                            Next
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
                   </div>
                 )}
               </TabsContent>

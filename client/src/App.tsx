@@ -23,6 +23,7 @@ import ProspectingMap from "@/pages/prospecting-map";
 
 // Public pages
 import ApplyPage from "@/pages/apply";
+import SurveyPage from "@/pages/survey";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/forgot-password" component={ForgotPasswordPage} />
       <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/apply" component={ApplyPage} />
+       <Route path="/survey" component={SurveyPage} />
       
       {/* Protected routes */}
       <Route path="/" component={Dashboard} />

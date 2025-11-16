@@ -2,18 +2,25 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth, ProtectedRoute } from "../lib/auth-context";
-import { recruits, stats } from "../lib/api";
-import type { Recruit } from "@shared/schema";
+import { recruits, stats, surveys } from "../lib/api";
+import type { Recruit, QrSurveyResponse } from "@shared/schema";
 import { Button } from "../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
-import { Users, QrCode, UserPlus, TrendingUp, LogOut, Menu } from "lucide-react";
+import { Users, QrCode, UserPlus, Star } from "lucide-react";
 import { format } from "date-fns";
 
 function DashboardContent() {
   const { user, logout } = useAuth();
   const [, setLocation] = useLocation();
   const [recruitsList, setRecruitsList] = useState<Recruit[]>([]);
+  const [surveyResponses, setSurveyResponses] = useState<QrSurveyResponse[]>([]);
 
   // Use React Query for stats to auto-update when invalidated
   const { data: statsData, isLoading: statsLoading, error: statsError, refetch: refetchStats } = useQuery({
@@ -37,19 +44,41 @@ function DashboardContent() {
     retry: 1,
   });
 
+  const {
+    data: surveyData,
+    isLoading: surveyLoading,
+    error: surveyError,
+    refetch: refetchSurveys,
+  } = useQuery({
+    queryKey: ["/api/surveys/my"],
+    queryFn: () => surveys.getMyResponses(),
+    refetchInterval: 60000,
+    retry: 1,
+  });
+
   useEffect(() => {
     if (recruitsData) {
       setRecruitsList(recruitsData);
     }
   }, [recruitsData]);
 
-  const loading = statsLoading || recruitsLoading;
-  const error = statsError?.message || recruitsError?.message || "";
+  useEffect(() => {
+    if (surveyData?.responses) {
+      setSurveyResponses(surveyData.responses);
+    }
+  }, [surveyData]);
+
+  const loading = statsLoading || recruitsLoading || surveyLoading;
+  const error =
+    statsError?.message ||
+    recruitsError?.message ||
+    (surveyError instanceof Error ? surveyError.message : "");
   
   // Ensure stats refresh when returning to dashboard
   useEffect(() => {
     refetchStats();
     refetchRecruits();
+    refetchSurveys();
   }, []);
 
   const handleLogout = async () => {
@@ -95,7 +124,7 @@ function DashboardContent() {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -143,6 +172,34 @@ function DashboardContent() {
               </div>
               <p className="text-xs text-gray-500 mt-1">
                 In-person submissions
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                Presentation Feedback
+              </CardTitle>
+              <Star className="w-4 h-4 text-gray-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-500 flex items-baseline gap-1">
+                {loading
+                  ? "..."
+                  : surveyData && surveyData.total > 0
+                  ? surveyData.averageRating.toFixed(1)
+                  : "—"}
+                {!loading && surveyData && surveyData.total > 0 && (
+                  <span className="text-xs text-gray-500">/ 5</span>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {loading
+                  ? ""
+                  : `${surveyData?.total || 0} response${
+                      (surveyData?.total || 0) === 1 ? "" : "s"
+                    }`}
               </p>
             </CardContent>
           </Card>
@@ -224,6 +281,74 @@ function DashboardContent() {
                     </div>
                     <div className="text-right text-sm text-gray-500">
                       {recruit.submittedAt && format(new Date(recruit.submittedAt), "MMM d, yyyy")}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Presentation Feedback */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Recent Presentation Feedback</CardTitle>
+            <CardDescription>
+              Quick survey responses from your QR code briefings
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {surveyLoading ? (
+              <div className="text-center py-8 text-gray-500">
+                Loading feedback...
+              </div>
+            ) : surveyResponses.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Star className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                <p>No feedback submitted yet</p>
+                <p className="text-sm mt-2">
+                  Use your Presentation Survey QR code during briefings to collect quick ratings.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {surveyResponses.slice(0, 5).map((response) => (
+                  <div
+                    key={response.id}
+                    className="p-4 border rounded-lg bg-white flex items-start justify-between gap-4"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {response.name}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {response.email} • {response.phone}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`w-4 h-4 ${
+                                response.rating >= star
+                                  ? "text-yellow-500 fill-yellow-500"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      {response.feedback && (
+                        <p className="text-sm text-gray-700 mt-2">
+                          {response.feedback}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right text-xs text-gray-500 whitespace-nowrap">
+                      {response.createdAt &&
+                        format(new Date(response.createdAt), "MMM d, yyyy")}
                     </div>
                   </div>
                 ))}

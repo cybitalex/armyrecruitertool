@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import type { User } from "@shared/schema";
 import { auth } from "./api";
+import { queryClient } from "./queryClient";
 
 interface AuthContextType {
   user: Partial<User> | null;
@@ -40,6 +41,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Update user state immediately from login response
     setUser(loggedInUser);
     
+    // Clear React Query cache for locations and events on login to ensure fresh state
+    queryClient.removeQueries({ queryKey: ["/api/locations"] });
+    queryClient.removeQueries({ queryKey: ["/api/events"] });
+    
     // Wait a bit for session cookie to be set, then verify
     await new Promise(resolve => setTimeout(resolve, 200));
     
@@ -57,6 +62,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    // Clear all locations and events before logging out
+    try {
+      await fetch("/api/locations", {
+        method: "DELETE",
+        credentials: "include",
+      }).catch(() => {}); // Ignore errors
+      
+      await fetch("/api/events", {
+        method: "DELETE",
+        credentials: "include",
+      }).catch(() => {}); // Ignore errors
+    } catch (error) {
+      // Continue with logout even if clearing fails
+      console.warn("Could not clear locations/events on logout:", error);
+    }
+    
+    // Clear React Query cache for locations and events
+    queryClient.removeQueries({ queryKey: ["/api/locations"] });
+    queryClient.removeQueries({ queryKey: ["/api/events"] });
+    
     await auth.logout();
     setUser(null);
   };

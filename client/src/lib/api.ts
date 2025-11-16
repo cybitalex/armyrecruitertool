@@ -1,4 +1,4 @@
-import type { User, Recruit } from "@shared/schema";
+import type { User, Recruit, QrSurveyResponse } from "@shared/schema";
 
 const API_BASE = "/api";
 
@@ -73,6 +73,10 @@ export const auth = {
     return apiCall<{ qrCode: string }>("/auth/qr-code");
   },
 
+  getSurveyQRCode: async () => {
+    return apiCall<{ qrCode: string }>("/auth/qr-code-survey");
+  },
+
   forgotPassword: async (email: string) => {
     return apiCall<{ message: string }>("/auth/forgot-password", {
       method: "POST",
@@ -118,6 +122,17 @@ export const recruiter = {
   getByQRCode: async (qrCode: string) => {
     return apiCall<{ recruiter: Partial<User> }>(`/recruiter/by-qr/${qrCode}`);
   },
+  
+  getZipCode: async () => {
+    return apiCall<{ zipCode: string | null }>("/recruiter/zip-code");
+  },
+  
+  updateZipCode: async (zipCode: string) => {
+    return apiCall<{ zipCode: string }>("/recruiter/zip-code", {
+      method: "PUT",
+      body: JSON.stringify({ zipCode }),
+    });
+  },
 };
 
 // Stats API
@@ -129,6 +144,32 @@ export const stats = {
       directEntries: number;
       recentRecruits: Recruit[];
     }>("/recruiter/stats");
+  },
+};
+
+// QR Survey API
+export const surveys = {
+  submit: async (data: {
+    recruiterCode: string;
+    name: string;
+    email: string;
+    phone: string;
+    rating: number;
+    feedback?: string;
+    source?: string;
+  }) => {
+    return apiCall<QrSurveyResponse>("/surveys", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  getMyResponses: async () => {
+    return apiCall<{
+      total: number;
+      averageRating: number;
+      responses: QrSurveyResponse[];
+    }>("/surveys/my");
   },
 };
 

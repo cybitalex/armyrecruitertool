@@ -1,6 +1,83 @@
 import type { InsertLocation } from "@shared/schema";
 import { generateMockLocations, generateMockEvents } from "./mock-data";
 
+/**
+ * Geocode a zip code to latitude and longitude coordinates
+ * Uses OpenStreetMap Nominatim API (free, no API key required)
+ */
+export async function geocodeZipCode(zipCode: string): Promise<{ latitude: number; longitude: number } | null> {
+  try {
+    // Clean zip code (remove any non-numeric characters)
+    const cleanZip = zipCode.replace(/\D/g, '');
+    
+    if (cleanZip.length !== 5) {
+      console.error(`Invalid zip code format: ${zipCode}`);
+      return null;
+    }
+
+    // Use Nominatim API to geocode zip code with retry logic for rate limiting
+    const url = `https://nominatim.openstreetmap.org/search?postalcode=${cleanZip}&country=US&format=json&limit=1`;
+    
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'ArmyRecruiterTool/1.0' // Required by Nominatim
+          }
+        });
+
+        if (response.status === 429) {
+          // Rate limited - get retry-after header or use exponential backoff
+          const retryAfter = response.headers.get('Retry-After');
+          const delay = retryAfter ? parseInt(retryAfter) * 1000 : Math.pow(2, attempt) * 1000;
+          
+          if (attempt < maxRetries - 1) {
+            console.log(`⏳ Rate limited. Retrying in ${delay / 1000} seconds... (attempt ${attempt + 1}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          } else {
+            throw new Error(`Rate limited after ${maxRetries} attempts`);
+          }
+        }
+
+        if (!response.ok) {
+          console.error(`Geocoding failed: ${response.status} ${response.statusText}`);
+          return null;
+        }
+
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+          const result = data[0];
+          return {
+            latitude: parseFloat(result.lat),
+            longitude: parseFloat(result.lon)
+          };
+        }
+
+        console.warn(`No results found for zip code: ${zipCode}`);
+        return null;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        if (attempt < maxRetries - 1) {
+          const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+          console.log(`⏳ Retrying geocoding in ${delay / 1000} seconds... (attempt ${attempt + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    console.error('Error geocoding zip code after retries:', lastError);
+    return null;
+  } catch (error) {
+    console.error('Error geocoding zip code:', error);
+    return null;
+  }
+}
+
 interface OverpassElement {
   type: string;
   id: number;

@@ -208,10 +208,10 @@ export async function sendApplicantConfirmationEmail(
   }
 }
 
-// Generate QR code image
+// Generate QR code image for main application form
 export async function generateQRCodeImage(qrCode: string): Promise<string> {
   const url = `${process.env.APP_URL || 'https://armyrecruitertool.duckdns.org'}/apply?r=${qrCode}`;
-  
+
   try {
     // Generate QR code as data URL
     const qrCodeDataUrl = await QRCode.toDataURL(url, {
@@ -220,15 +220,38 @@ export async function generateQRCodeImage(qrCode: string): Promise<string> {
       width: 300,
       margin: 2,
       color: {
-        dark: '#006400',  // Army green
-        light: '#FFFFFF'
-      }
+        dark: '#006400', // Army green
+        light: '#FFFFFF',
+      },
     });
-    
+
     return qrCodeDataUrl;
   } catch (error) {
     console.error('❌ Failed to generate QR code:', error);
     throw new Error('Failed to generate QR code');
+  }
+}
+
+// Generate QR code image for quick survey / presentation feedback
+export async function generateSurveyQRCodeImage(qrCode: string): Promise<string> {
+  const url = `${process.env.APP_URL || 'https://armyrecruitertool.duckdns.org'}/survey?r=${qrCode}`;
+
+  try {
+    const qrCodeDataUrl = await QRCode.toDataURL(url, {
+      errorCorrectionLevel: 'H',
+      type: 'image/png',
+      width: 300,
+      margin: 2,
+      color: {
+        dark: '#006400',
+        light: '#FFFFFF',
+      },
+    });
+
+    return qrCodeDataUrl;
+  } catch (error) {
+    console.error('❌ Failed to generate survey QR code:', error);
+    throw new Error('Failed to generate survey QR code');
   }
 }
 
