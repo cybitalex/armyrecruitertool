@@ -18,8 +18,7 @@ import type { User } from "@shared/schema";
 
 export default function SurveyPage() {
   const [location] = useLocation();
-  const searchParams = new URLSearchParams(location.split("?")[1]);
-  const recruiterCode = searchParams.get("r") || "";
+  const [recruiterCode, setRecruiterCode] = useState("");
 
   const [recruiterInfo, setRecruiterInfo] = useState<Partial<User> | null>(null);
 
@@ -34,6 +33,19 @@ export default function SurveyPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  // Read recruiter code from the real browser query string so it works with URLs like
+  // https://armyrecruitertool.duckdns.org/survey?r=...
+  useEffect(() => {
+    try {
+      const search =
+        typeof window !== "undefined" ? window.location.search : "";
+      const params = new URLSearchParams(search);
+      setRecruiterCode(params.get("r") || "");
+    } catch {
+      setRecruiterCode("");
+    }
+  }, [location]);
 
   // Fetch recruiter info if QR code is present
   useEffect(() => {

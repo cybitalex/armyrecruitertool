@@ -20,6 +20,9 @@ export function Header() {
   // Only show logout if user is logged in
   const isLoggedIn = !!user;
 
+  // Hide main app navigation when viewing the public survey page
+  const isSurveyRoute = location.startsWith("/survey");
+
   const navigationItems = [
     {
       path: "/",
@@ -85,105 +88,109 @@ export function Header() {
           </div>
         </div>
 
-        {/* Mobile Menu Button */}
-        <div className="md:hidden">
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="border-army-gold text-army-gold hover:bg-army-gold hover:text-army-black"
+        {/* Mobile Menu Button (hidden on public survey route) */}
+        {!isSurveyRoute && (
+          <div className="md:hidden">
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="border-army-gold text-army-gold hover:bg-army-gold hover:text-army-black"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent
+                side="right"
+                className="bg-army-black border-army-field01 w-72"
               >
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent
-              side="right"
-              className="bg-army-black border-army-field01 w-72"
-            >
-              <SheetHeader>
-                <SheetTitle className="text-army-gold">Navigation</SheetTitle>
-                <SheetDescription className="text-army-tan">
-                  Army Recruiting Operations
-                </SheetDescription>
-              </SheetHeader>
-              <nav className="mt-6 space-y-2">
-                {navigationItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
+                <SheetHeader>
+                  <SheetTitle className="text-army-gold">Navigation</SheetTitle>
+                  <SheetDescription className="text-army-tan">
+                    Army Recruiting Operations
+                  </SheetDescription>
+                </SheetHeader>
+                <nav className="mt-6 space-y-2">
+                  {navigationItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Button
+                        key={item.path}
+                        variant={location === item.path ? "default" : "ghost"}
+                        onClick={() => {
+                          navigate(item.path);
+                          setMobileMenuOpen(false);
+                        }}
+                        data-testid={item.testId}
+                        className={`w-full justify-start ${
+                          location === item.path
+                            ? "bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold"
+                            : "text-army-tan hover:text-army-gold hover:bg-army-green"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4 mr-3" />
+                        {item.label}
+                      </Button>
+                    );
+                  })}
+                  {isLoggedIn && (
                     <Button
-                      key={item.path}
-                      variant={location === item.path ? "default" : "ghost"}
-                      onClick={() => {
-                        navigate(item.path);
+                      variant="ghost"
+                      onClick={async () => {
+                        await logout();
+                        navigate("/login");
                         setMobileMenuOpen(false);
                       }}
-                      data-testid={item.testId}
-                      className={`w-full justify-start ${
-                        location === item.path
-                          ? "bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold"
-                          : "text-army-tan hover:text-army-gold hover:bg-army-green"
-                      }`}
+                      className="w-full justify-start text-army-tan hover:text-red-400 hover:bg-red-900/20 border-t border-army-field01 mt-4 pt-4"
                     >
-                      <Icon className="w-4 h-4 mr-3" />
-                      {item.label}
+                      <LogOut className="w-4 h-4 mr-3" />
+                      Logout
                     </Button>
-                  );
-                })}
-                {isLoggedIn && (
-                  <Button
-                    variant="ghost"
-                    onClick={async () => {
-                      await logout();
-                      navigate("/login");
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full justify-start text-army-tan hover:text-red-400 hover:bg-red-900/20 border-t border-army-field01 mt-4 pt-4"
-                  >
-                    <LogOut className="w-4 h-4 mr-3" />
-                    Logout
-                  </Button>
-                )}
-              </nav>
-            </SheetContent>
-          </Sheet>
-        </div>
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
+        )}
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-2">
-          {navigationItems.map((item) => {
-            const Icon = item.icon;
-            return (
+        {/* Desktop Navigation (hidden on public survey route) */}
+        {!isSurveyRoute && (
+          <nav className="hidden md:flex items-center gap-2">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Button
+                  key={item.path}
+                  variant={location === item.path ? "default" : "ghost"}
+                  onClick={() => navigate(item.path)}
+                  data-testid={item.testId}
+                  className={
+                    location === item.path
+                      ? "bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold"
+                      : "text-army-tan hover:text-army-gold hover:bg-army-green"
+                  }
+                >
+                  <Icon className="w-4 h-4 mr-2" />
+                  {item.label}
+                </Button>
+              );
+            })}
+            {isLoggedIn && (
               <Button
-                key={item.path}
-                variant={location === item.path ? "default" : "ghost"}
-                onClick={() => navigate(item.path)}
-                data-testid={item.testId}
-                className={
-                  location === item.path
-                    ? "bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold"
-                    : "text-army-tan hover:text-army-gold hover:bg-army-green"
-                }
+                variant="ghost"
+                onClick={async () => {
+                  await logout();
+                  navigate("/login");
+                }}
+                className="text-army-tan hover:text-red-400 hover:bg-red-900/20 ml-2 border-l border-army-field01 pl-3"
               >
-                <Icon className="w-4 h-4 mr-2" />
-                {item.label}
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
               </Button>
-            );
-          })}
-          {isLoggedIn && (
-            <Button
-              variant="ghost"
-              onClick={async () => {
-                await logout();
-                navigate("/login");
-              }}
-              className="text-army-tan hover:text-red-400 hover:bg-red-900/20 ml-2 border-l border-army-field01 pl-3"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-          )}
-        </nav>
+            )}
+          </nav>
+        )}
       </div>
     </header>
   );
