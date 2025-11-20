@@ -1,3 +1,17 @@
+/**
+ * Army Recruiter Tool - Server Entry Point
+ * 
+ * Copyright © 2025 Alex Moran. All Rights Reserved.
+ * 
+ * PROPRIETARY AND CONFIDENTIAL
+ * This software is the exclusive property of Alex Moran and is protected by
+ * copyright law. Unauthorized copying, distribution, modification, or use of
+ * this software, via any medium, is strictly prohibited without express
+ * written permission from the copyright holder.
+ * 
+ * For licensing inquiries: moran.alex@icloud.com
+ */
+
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
@@ -69,12 +83,13 @@ app.use("/api/*", (req, res, next) => {
 
 app.use(
   express.json({
+    limit: '10mb', // Increased limit for profile pictures (base64 encoded)
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
   })
 );
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
 // Session management
 // Trust proxy for secure cookies behind reverse proxy

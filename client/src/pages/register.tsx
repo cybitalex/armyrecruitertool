@@ -4,9 +4,17 @@ import { auth } from "../lib/api";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { CheckCircle2, AlertCircle } from "lucide-react";
+import { ARMY_RANKS } from "@shared/constants";
 
 export default function RegisterPage() {
   const [, setLocation] = useLocation();
@@ -117,11 +125,14 @@ export default function RegisterPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="recruiter@army.mil"
+                placeholder="recruiter@army.mil or personal email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
               />
+              <p className="text-xs text-gray-600">
+                You can use your @army.mil email or personal email address (testing phase only)
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -139,13 +150,21 @@ export default function RegisterPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="rank">Rank</Label>
-                <Input
-                  id="rank"
-                  type="text"
-                  placeholder="SGT"
+                <Select
                   value={formData.rank}
-                  onChange={(e) => setFormData({ ...formData, rank: e.target.value })}
-                />
+                  onValueChange={(value) => setFormData({ ...formData, rank: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select rank" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ARMY_RANKS.map((rank) => (
+                      <SelectItem key={rank.value} value={rank.value}>
+                        {rank.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">

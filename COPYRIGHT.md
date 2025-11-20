@@ -1,231 +1,79 @@
 # Copyright Notice
 
-## Intellectual Property Rights
+## Copyright © 2025 Alex Moran. All Rights Reserved.
 
-**Army Recruiting Tool**  
-**Copyright © 2025 CyBit Devs. All Rights Reserved.**
+### Proprietary and Confidential
 
----
+This software application, "Army Recruiter Tool" (the "Software"), including all source code, documentation, design elements, user interfaces, algorithms, and associated materials, is the exclusive property of **Alex Moran**.
 
-## Developer Information
+### Legal Protection
 
-**Developed by:**
-- **SGT Alex Moran**
-- **Chief Executive Officer, CyBit Devs**
-- **United States Army**
+This Software is protected by:
+- United States Copyright Law (Title 17, U.S. Code)
+- International copyright treaties and conventions
+- Trade secret laws
+- Intellectual property rights
 
-**Contact:**
-- Company: CyBit Devs
-- Developer: SGT Alex Moran
-- [Contact through official Army channels]
+### Ownership Declaration
 
----
+**Alex Moran** is the sole creator, author, and owner of this Software, having conceived, designed, and developed the Army Recruiter Tool in its entirety.
 
-## Ownership
+**Date of First Publication**: November 5, 2025  
+**Copyright Registration**: Pending U.S. Copyright Office Registration
 
-This software and all associated documentation, code, design elements, and intellectual property are the exclusive property of **CyBit Devs** and **SGT Alex Moran**.
+### Prohibited Actions
 
----
+Without express written permission from Alex Moran, the following actions are strictly prohibited:
 
-## Protection
+1. **Copying** - Reproducing, duplicating, or copying any portion of the Software
+2. **Distribution** - Distributing, sharing, or transmitting the Software to any third party
+3. **Modification** - Altering, modifying, adapting, or creating derivative works
+4. **Commercial Use** - Using the Software for commercial purposes or financial gain
+5. **Reverse Engineering** - Decompiling, disassembling, or reverse engineering the Software
+6. **Public Display** - Publicly displaying or demonstrating the Software without authorization
+7. **Sublicensing** - Granting rights to use the Software to any other party
+8. **Trademark Use** - Using the name "Army Recruiter Tool" or related marks
 
-This work is protected by:
-- ✅ United States Copyright Law (17 U.S.C. § 101 et seq.)
-- ✅ International copyright treaties
-- ✅ Berne Convention for the Protection of Literary and Artistic Works
-- ✅ World Intellectual Property Organization (WIPO) Copyright Treaty
+### Enforcement
 
----
+Unauthorized use, reproduction, or distribution of this Software constitutes:
+- Copyright infringement under 17 U.S.C. § 501
+- Violation of trade secret laws
+- Breach of intellectual property rights
 
-## Rights Reserved
-
-All rights are expressly reserved. This includes, but is not limited to:
-
-1. **Reproduction Rights**: The right to reproduce the software in any form
-2. **Distribution Rights**: The right to distribute copies
-3. **Modification Rights**: The right to create derivative works
-4. **Public Display Rights**: The right to display the software publicly
-5. **Public Performance Rights**: The right to perform the software publicly
-6. **Digital Transmission Rights**: The right to transmit the software digitally
-
----
-
-## Restrictions
-
-### Unauthorized Use Prohibited
-
-Unless explicitly authorized in writing by CyBit Devs or SGT Alex Moran, the following are strictly prohibited:
-
-❌ **Copying or reproducing** this software, in whole or in part  
-❌ **Distributing** this software to third parties  
-❌ **Modifying or creating derivative works** based on this software  
-❌ **Reverse engineering, decompiling, or disassembling** this software  
-❌ **Removing or altering** any copyright, trademark, or attribution notices  
-❌ **Claiming authorship** or ownership of this work  
-❌ **Selling, renting, leasing, or licensing** this software  
-❌ **Using this software** for commercial purposes without authorization
-
----
-
-## Authorized Use
-
-This software is authorized for use by:
-- ✅ United States Army recruiting personnel (official use only)
-- ✅ Authorized government personnel with proper clearance
-- ✅ Parties explicitly authorized in writing by CyBit Devs
-
-**Authorized users must:**
-- Maintain all copyright and attribution notices
-- Use the software only for its intended purpose
-- Comply with all applicable laws and regulations
-- Not redistribute or share with unauthorized parties
-
----
-
-## US Government Rights
-
-### Government Purpose Rights
-
-This software may be used by the United States Government for official government purposes related to Army recruiting operations.
-
-### Restrictions on Government Use
-
-Even when used by the US Government:
-- Copyright ownership remains with CyBit Devs
-- Developer attribution must be maintained
-- Software may not be redistributed outside official channels
-- Modifications must be documented and reported
-- This software is provided "as-is" without warranty
-
----
-
-## Attribution Requirements
-
-Any use of this software must include clear attribution:
-
-```
-Army Recruiting Tool
-Developed by SGT Alex Moran, CEO of CyBit Devs
-Copyright © 2025 CyBit Devs. All Rights Reserved.
-```
-
-Attribution must be visible in:
-- User interface (header/footer)
-- Documentation
-- Any derivative works (if authorized)
-- Source code comments
-- About/Credits sections
-
----
-
-## Trademark Notice
-
-**CyBit Devs™** is a trademark of CyBit Devs.
-
-The name "Army Recruiting Tool" and all associated branding, logos, and design elements are proprietary to CyBit Devs.
-
----
-
-## No Warranty
-
-This software is provided "AS IS" without warranty of any kind, either express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and non-infringement.
-
----
-
-## Liability
-
-In no event shall CyBit Devs, SGT Alex Moran, or any contributors be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the software or the use or other dealings in the software.
-
----
-
-## Legal Action
-
-Unauthorized use of this software may result in:
-- Civil penalties under copyright law
-- Criminal prosecution under 18 U.S.C. § 2319 (criminal copyright infringement)
-- Statutory damages up to $150,000 per work infringed (17 U.S.C. § 504)
-- Attorney's fees and court costs
+Violators will be subject to:
+- Civil liability for damages
 - Injunctive relief
-- Military disciplinary action (if applicable)
+- Statutory damages up to $150,000 per work infringed
+- Attorney's fees and court costs
+- Criminal prosecution where applicable
+
+### Contact Information
+
+For licensing inquiries, permissions, or legal matters:
+
+**Copyright Holder**: Alex Moran  
+**Email**: moran.alex@icloud.com  
+**Phone**: (347) 279-6190
+
+### Notice to Users
+
+By accessing or using this Software, you acknowledge that:
+1. You have read and understand this copyright notice
+2. You agree to respect all intellectual property rights
+3. You will not engage in any prohibited activities
+4. You understand the legal consequences of infringement
+
+### Trademark Notice
+
+"Army Recruiter Tool" and associated logos, designs, and branding elements are trademarks of Alex Moran and may not be used without permission.
+
+### Confidentiality
+
+This Software contains proprietary trade secrets and confidential information. Any unauthorized disclosure or use is strictly prohibited.
 
 ---
 
-## Reporting Violations
+**© 2025 Alex Moran. All Rights Reserved.**
 
-To report unauthorized use or copyright infringement:
-
-1. **Contact Developer:**
-   - SGT Alex Moran, CyBit Devs
-   - [Through official Army channels]
-
-2. **Provide Information:**
-   - Nature of the violation
-   - Location/URL where violation occurred
-   - Evidence of unauthorized use
-   - Your contact information
-
----
-
-## DMCA Compliance
-
-CyBit Devs complies with the Digital Millennium Copyright Act (DMCA).
-
-**DMCA Agent:**
-- CyBit Devs
-- Attn: SGT Alex Moran
-- [Contact through official channels]
-
----
-
-## Version Control
-
-This copyright notice is effective as of January 2025 and applies to all versions of the Army Recruiting Tool software, including:
-
-- Source code
-- Compiled binaries
-- Documentation
-- Design assets
-- Database schemas
-- Configuration files
-- All derivative works
-
----
-
-## Amendments
-
-CyBit Devs reserves the right to modify this copyright notice at any time. Continued use of the software constitutes acceptance of any modifications.
-
----
-
-## Acknowledgments
-
-This software was developed for the United States Army recruiting mission while respecting intellectual property rights of the developer.
-
-**US Army Official Seal Usage:**
-The United States Army seal/logo is used with authorization for official government recruiting purposes only and remains the property of the US Department of the Army.
-
----
-
-## Questions or Licensing Inquiries
-
-For questions about licensing, authorized use, or to request permission for specific uses:
-
-**Contact:**
-- SGT Alex Moran
-- CEO, CyBit Devs
-- [Official Army contact channels]
-
----
-
-**© 2025 CyBit Devs. All Rights Reserved.**
-
-**Developed by SGT Alex Moran**
-
----
-
-*This copyright notice is an integral part of the software and must not be removed or modified.*
-
----
-
-**UNCLASSIFIED**
-
+*This copyright notice must remain intact and be included with any authorized copies or distributions of the Software.*

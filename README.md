@@ -1,399 +1,162 @@
-# Army Recruiting Tool
+# Army Recruiter Tool
 
-A comprehensive web application for Army recruiters to manage recruit applications, track prospecting locations, and identify recruiting opportunities.
+**Copyright © 2025 Alex Moran. All Rights Reserved.**
 
-## ⚡ New Features
+## 🔒 Proprietary Software
 
-### 🤖 AI Recruiting Assistant (FREE!)
+This is proprietary and confidential software. **Unauthorized use, copying, or distribution is strictly prohibited.**
 
-- **Powered by Hugging Face 🤗** - Easiest free LLM, no credit card required
-- Ask questions about prospecting strategies
-- Get location recommendations based on your area
-- Identify target demographics and best times to visit
-- 24/7 recruiting advisor at your fingertips
-- **Setup in 1 minute** - See [HUGGINGFACE_SETUP.md](./HUGGINGFACE_SETUP.md)
+---
 
-### 📍 Geolocation Integration
+## Overview
 
-- Automatically centers map on your current location
-- Real-time GPS positioning
-- Location-aware AI suggestions
+The Army Recruiter Tool is a comprehensive web application designed to streamline and enhance the U.S. Army recruitment process. This proprietary system provides recruiters with powerful tools for prospect management, event discovery, application tracking, and performance analytics.
 
-## Features
+## Key Features
 
-### 📋 Recruit Management
+### 🎖️ Recruiter Management
+- Secure user registration and authentication
+- Profile management with rank and unit information
+- Custom profile pictures
+- QR code generation for easy prospect capture
 
-- **Intake Form** - Comprehensive application form for potential recruits
-- **Dashboard** - View and manage all recruit applications
-- **Status Tracking** - Track application status (pending, reviewing, approved, rejected)
-- **Search & Filter** - Find recruits by name, email, or status
-- **Detailed Views** - View complete recruit profiles
-- **CSV Export** - Export recruit data for reporting
+### 📊 Dashboard & Analytics
+- Real-time recruitment statistics
+- Application tracking and status management
+- Survey response monitoring
+- Performance metrics and reporting
 
-### 🗺️ Prospecting Map
+### 🗺️ Prospecting Tools
+- Interactive map-based prospect management
+- Zip code-based location search
+- Local event discovery (sports, concerts, community events)
+- AI-powered prospecting recommendations
+- Automated email outreach
 
-- **Interactive Map** - Visual representation of recruiting locations and events
-- **Your Location** - Automatically centered on your GPS coordinates
-- **Location Tracking** - Track schools, gyms, malls, and community centers
-- **Event Management** - Manage career fairs, sports events, and community events
-- **Prospecting Scores** - Identify high-value recruiting locations (0-100 scale)
-- **Search & Filter** - Find locations by name, type, or city
-- **Demographics Data** - View target audience information for each location
-- **Event Calendar** - Track upcoming recruiting opportunities
-- **AI Assistant** 🤖 - Get instant help with prospecting strategies
+### 📱 QR Code System
+- Unique QR codes for applications
+- Unique QR codes for surveys/feedback
+- Mobile-friendly application forms
+- Instant prospect attribution
 
-See [PROSPECTING_GUIDE.md](./PROSPECTING_GUIDE.md) for detailed prospecting documentation.  
-See [AI_SETUP.md](./AI_SETUP.md) for AI assistant setup (takes 2 minutes!).
+### 📧 Automated Communications
+- Application confirmation emails
+- Survey confirmation emails
+- Recruiter notification emails
+- Professional Army-themed templates
+
+### 🎯 Survey & Feedback
+- Post-presentation feedback collection
+- 5-star rating system
+- Contact information capture
+- Real-time notifications to recruiters
 
 ## Technology Stack
 
 ### Frontend
-
-- **React 18** - Modern UI library
-- **TypeScript** - Type-safe development
-- **Wouter** - Lightweight routing
-- **TanStack Query** - Data fetching and caching
-- **Radix UI** - Accessible component primitives
-- **Tailwind CSS** - Utility-first styling
-- **Leaflet** - Interactive maps
-- **React-Leaflet** - React components for Leaflet
+- React 18 with TypeScript
+- Wouter (routing)
+- TanStack Query (data fetching)
+- Shadcn UI components
+- Tailwind CSS
+- Leaflet (maps)
 
 ### Backend
+- Node.js with Express
+- TypeScript
+- Drizzle ORM
+- PostgreSQL database
+- bcrypt (password hashing)
+- Nodemailer (email)
 
-- **Express** - Web server framework
-- **TypeScript** - Type-safe backend
-- **Drizzle ORM** - Type-safe database queries
-- **PostgreSQL** - Database (or in-memory storage for development)
-- **Zod** - Runtime validation
-- **Hugging Face** - Free AI integration (no credit card!)
+### Infrastructure
+- Kubernetes deployment
+- Docker containerization
+- Nginx ingress
+- Let's Encrypt SSL certificates
+- DuckDNS domain management
 
-## Getting Started
+### External APIs
+- Ticketmaster Discovery API
+- Eventbrite API
+- OpenStreetMap Nominatim
+- OpenAI GPT-4
 
-### Prerequisites
+## Security Features
 
-- Node.js 18+
-- npm or yarn
-- PostgreSQL (optional - in-memory storage available for development)
+- ✅ bcrypt password hashing (cost factor 10)
+- ✅ HTTPS/SSL encryption
+- ✅ Session-based authentication
+- ✅ Email verification
+- ✅ Password reset functionality
+- ✅ Protected routes
+- ✅ CORS configuration
+- ✅ Input validation and sanitization
 
-### Production Deployment with HTTPS
+## Deployment
 
-For production deployment with SSL (NIPR-compatible):
+**Production URL**: https://armyrecruitertool.duckdns.org
 
-- **🚀 Complete Guide**: [COMPLETE_DEPLOYMENT.md](./COMPLETE_DEPLOYMENT.md) - Full deployment workflow
-- **⚡ Quick Start**: [QUICK_SETUP.md](./QUICK_SETUP.md) - 3-step setup guide
-- **📖 Reverse Proxy**: [REVERSE_PROXY_SETUP.md](./REVERSE_PROXY_SETUP.md) - Nginx & SSL details
-- **⚙️ PM2 Setup**: [PM2_SETUP.md](./PM2_SETUP.md) - Auto-start configuration
-- **✅ Checklist**: [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) - Deployment checklist
-
-**Two-command deployment:**
-
-```bash
-sudo ./setup-reverse-proxy.sh    # Setup HTTPS
-sudo ./setup-pm2.sh               # Setup auto-start
-```
-
-### Installation
-
-1. Clone the repository:
-
-```bash
-git clone <repository-url>
-cd ArmyRecruitTool
-```
-
-2. Install dependencies:
-
-```bash
-npm install
-```
-
-3. Set up environment variables:
-
-```bash
-cp .env.example .env
-# Edit .env with your settings (optional but recommended for AI assistant)
-```
-
-4. (Optional but Recommended) Get a free Hugging Face token for AI assistant:
-
-   - Visit https://huggingface.co/join (takes 1 minute!)
-   - Sign up (just email, no credit card)
-   - Go to Settings → Access Tokens → Create new token
-   - Add it to `.env`: `HUGGINGFACE_API_KEY=hf_your_token_here`
-   - See [HUGGINGFACE_SETUP.md](./HUGGINGFACE_SETUP.md) for details
-
-5. Start the development server:
-
-```bash
-npm run dev
-```
-
-6. Open your browser to `http://localhost:5001`
-
-## Project Structure
-
-```
-ArmyRecruitTool/
-├── client/                 # Frontend React application
-│   ├── src/
-│   │   ├── components/    # Reusable UI components
-│   │   │   ├── ui/       # Radix UI components
-│   │   │   └── header.tsx
-│   │   ├── pages/        # Page components
-│   │   │   ├── dashboard.tsx
-│   │   │   ├── intake-form.tsx
-│   │   │   ├── recruit-detail.tsx
-│   │   │   └── prospecting-map.tsx  # NEW: Prospecting map page
-│   │   ├── hooks/        # Custom React hooks
-│   │   ├── lib/          # Utilities and clients
-│   │   └── App.tsx       # Main app component
-│   └── index.html        # HTML entry point
-├── server/                # Backend Express application
-│   ├── index.ts          # Server entry point
-│   ├── routes.ts         # API routes
-│   ├── storage.ts        # Data storage layer
-│   └── vite.ts           # Vite integration
-├── shared/               # Shared code between client/server
-│   └── schema.ts         # Database schema and types
-├── package.json          # Dependencies and scripts
-├── tsconfig.json         # TypeScript configuration
-├── vite.config.ts        # Vite configuration
-├── tailwind.config.ts    # Tailwind CSS configuration
-├── README.md             # This file
-└── PROSPECTING_GUIDE.md  # Detailed prospecting feature guide
-```
-
-## API Endpoints
-
-### Recruits
-
-- `GET /api/recruits` - Get all recruits
-- `GET /api/recruits/:id` - Get single recruit
-- `POST /api/recruits` - Create new recruit
-- `PATCH /api/recruits/:id/status` - Update recruit status
-- `DELETE /api/recruits/:id` - Delete recruit
-- `GET /api/recruits/export/csv` - Export recruits to CSV
-
-### Locations (Prospecting)
-
-- `GET /api/locations` - Get all locations
-- `GET /api/locations/:id` - Get single location
-- `POST /api/locations` - Create new location
-- `PATCH /api/locations/:id` - Update location
-- `DELETE /api/locations/:id` - Delete location
-
-### Events (Prospecting)
-
-- `GET /api/events` - Get all events
-- `GET /api/events/:id` - Get single event
-- `POST /api/events` - Create new event
-- `PATCH /api/events/:id` - Update event
-- `DELETE /api/events/:id` - Delete event
-
-## Database Schema
-
-### Recruits Table
-
-Stores information about potential recruits including personal information, physical measurements, education, prior service, and application status.
-
-### Locations Table
-
-Stores prospecting locations with:
-
-- Basic info (name, type, address)
-- Coordinates (latitude, longitude)
-- Prospecting score (0-100)
-- Foot traffic level
-- Demographics data
-- Notes and last visited date
-
-### Events Table
-
-Stores recruiting events with:
-
-- Event details (name, type, date, time)
-- Location and coordinates
-- Expected attendance
-- Target audience
-- Contact information
-- Registration and cost details
-- Status tracking
+The application is deployed on Kubernetes with:
+- Automated SSL certificate management
+- Rolling updates with zero downtime
+- PostgreSQL persistent storage
+- Environment-based configuration
+- Production-grade security
 
 ## Development
 
-### Running in Development Mode
+This is proprietary software. Development access is restricted to authorized personnel only.
 
-```bash
-npm run dev
-```
+## Copyright & Legal
 
-This starts both the frontend (Vite) and backend (Express) servers with hot reload.
+### Ownership
+**Alex Moran** is the sole creator, author, and owner of this software, having conceived, designed, and developed the Army Recruiter Tool in its entirety.
 
-### Building for Production
+### Protection
+This software is protected by:
+- United States Copyright Law (Title 17, U.S. Code)
+- International copyright treaties
+- Trade secret laws
+- Intellectual property rights
 
-```bash
-npm run build
-```
+### Prohibited Actions
+Without express written permission, you may NOT:
+- Copy, reproduce, or duplicate the software
+- Distribute or share the software
+- Modify or create derivative works
+- Use for commercial purposes
+- Reverse engineer or decompile
+- Remove copyright notices
 
-This builds the frontend and backend for production deployment.
+### Legal Consequences
+Unauthorized use constitutes copyright infringement and may result in:
+- Civil liability for damages
+- Statutory damages up to $150,000 per work
+- Injunctive relief
+- Attorney's fees and court costs
+- Criminal prosecution
 
-### Starting Production Server
+## Contact
 
-#### Option 1: PM2 (Recommended - Auto-starts on boot)
+**Copyright Holder**: Alex Moran  
+**Email**: moran.alex@icloud.com  
+**Phone**: (347) 279-6190  
+**Company**: CyBit Devs
 
-```bash
-sudo ./setup-pm2.sh
-```
-
-See [PM2_SETUP.md](./PM2_SETUP.md) for complete PM2 documentation.
-
-#### Option 2: Direct Start
-
-```bash
-npm start
-```
-
-### Type Checking
-
-```bash
-npm run check
-```
-
-### Database Migrations
-
-```bash
-npm run db:push
-```
-
-## Usage
-
-### Managing Recruits
-
-1. **Create Application**
-
-   - Click "New Application" in the header
-   - Fill out the comprehensive intake form
-   - Submit to create a new recruit record
-
-2. **View Dashboard**
-
-   - Navigate to the dashboard (home page)
-   - See statistics and all applications
-   - Search and filter as needed
-
-3. **Update Status**
-
-   - Click "View" on any recruit
-   - Update status (pending → reviewing → approved/rejected)
-   - View complete recruit profile
-
-4. **Export Data**
-   - Click "Export CSV" on the dashboard
-   - Download recruit data for reporting
-
-### Using Prospecting Map
-
-1. **Navigate to Prospecting**
-
-   - Click "Prospecting" in the header
-   - View the interactive map with locations and events
-
-2. **Find Locations**
-
-   - Browse the map or list view
-   - Filter by location type (schools, gyms, etc.)
-   - Check prospecting scores and demographics
-
-3. **Plan Events**
-
-   - Switch to "Events" tab
-   - View upcoming recruiting opportunities
-   - Note contact information and requirements
-
-4. **Search & Filter**
-   - Use the search bar to find specific places
-   - Toggle location/event visibility
-   - Click markers or list items for details
-
-For detailed prospecting documentation, see [PROSPECTING_GUIDE.md](./PROSPECTING_GUIDE.md).
-
-## Configuration
-
-### Environment Variables
-
-- `DATABASE_URL` - PostgreSQL connection string (optional)
-- `NODE_ENV` - Environment (development/production)
-- `PORT` - Server port (default: 5000)
-
-### In-Memory Storage
-
-For development without PostgreSQL, the app uses in-memory storage with sample data pre-loaded:
-
-- Sample recruits
-- Sample locations (Portland area)
-- Sample events
-
-## Security Considerations
-
-- Recruit data includes sensitive information (name, DOB, contact details)
-- **SSN is NOT collected** - system designed for prospecting and interest tracking only
-- Implement proper authentication in production
-- Use HTTPS for all connections
-- Encrypt sensitive data at rest
-- Follow Army regulations for data handling
-- Regular security audits recommended
-
-## Future Enhancements
-
-### Planned Features
-
-- User authentication and authorization
-- Role-based access control (recruiters, admins)
-- Real-time notifications
-- Mobile app (iOS/Android)
-- Advanced analytics and reporting
-- Integration with Army systems
-- Automated geocoding for locations
-- Route planning for site visits
-- Heat maps for prospecting density
-- Calendar integration for events
-
-### Prospecting Enhancements
-
-- Geocoding API integration
-- Directions and routing
-- Marker clustering for performance
-- Location analytics and tracking
-- Team collaboration features
-- Mobile-optimized map view
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
-
-## Support
-
-For questions, issues, or feature requests:
-
-- Check the [PROSPECTING_GUIDE.md](./PROSPECTING_GUIDE.md) for prospecting features
-- Review the code documentation
-- Open an issue on the repository
-
-## Acknowledgments
-
-- Built with modern web technologies
-- Designed for Army recruiters
-- Sample data based on Portland, OR area
-- OpenStreetMap for map tiles
+For licensing inquiries, permissions, or legal matters, please contact the copyright holder directly.
 
 ---
 
-**Note:** This is a demonstration application. Ensure compliance with Army regulations and security requirements before deploying to production.
+## License
+
+See [LICENSE](./LICENSE) file for full proprietary license terms.
+
+See [COPYRIGHT.md](./COPYRIGHT.md) for detailed copyright information.
+
+---
+
+**© 2025 Alex Moran. All Rights Reserved.**  
+**PROPRIETARY AND CONFIDENTIAL**
+
+*This software and all associated materials are the exclusive property of Alex Moran. Unauthorized use is strictly prohibited and will be prosecuted to the fullest extent of the law.*

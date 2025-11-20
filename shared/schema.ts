@@ -24,6 +24,7 @@ export const users = pgTable("users", {
   unit: text("unit"),
   phoneNumber: text("phone_number"),
   zipCode: text("zip_code"), // Recruiter's assigned zip code for searches
+  profilePicture: text("profile_picture"), // Base64 encoded image or URL
   isVerified: boolean("is_verified").notNull().default(false),
   verificationToken: text("verification_token"),
   verificationExpires: timestamp("verification_expires"),

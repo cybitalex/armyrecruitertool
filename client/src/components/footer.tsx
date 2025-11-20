@@ -12,10 +12,10 @@ export function Footer() {
           <div className="text-center md:text-left">
             <p className="text-army-tan text-xs md:text-sm">
               Developed by{" "}
-              <span className="font-bold text-army-gold">SGT Alex Moran</span>
+              <span className="font-bold text-army-gold">Alex Moran</span>
             </p>
             <p className="text-army-tan/70 text-xs">
-              CEO, <span className="font-semibold">CyBit Devs</span>
+              <span className="font-semibold">CyBit Devs</span>
             </p>
           </div>
 
@@ -32,10 +32,13 @@ export function Footer() {
 
           {/* Copyright */}
           <div className="text-center md:text-right">
-            <p className="text-army-tan/80 text-xs">
-              © {currentYear} CyBit Devs
+            <p className="text-army-tan/80 text-xs font-semibold">
+              © {currentYear} Alex Moran / CyBit Devs
             </p>
             <p className="text-army-tan/60 text-xs">All Rights Reserved</p>
+            <p className="text-army-tan/50 text-[10px] mt-0.5">
+              Proprietary & Confidential
+            </p>
           </div>
         </div>
       </div>

@@ -361,24 +361,319 @@ function calculateDistance(
 }
 
 /**
- * Search for nearby events using PredictHQ API (FREE TIER: 5,000 events/month)
- * Sign up at https://www.predicthq.com/
- * Set PREDICTHQ_API_KEY in environment variables to enable
+ * Search for nearby events using multiple sources
+ * - Ticketmaster: Sports, concerts, theater (FREE: 5,000/day)
+ * - Eventbrite: Community events, career fairs, meetups (FREE: 1,000/day)
+ * - PredictHQ: Fallback aggregator (trial expired)
  */
 export async function searchNearbyEvents(
   latitude: number,
   longitude: number,
   radiusMiles: number = 25
 ): Promise<any[]> {
-  const apiKey = process.env.PREDICTHQ_API_KEY;
-
-  if (!apiKey) {
-    console.log("PredictHQ API key not found. Returning empty events list.");
-    console.log(
-      "Sign up at https://www.predicthq.com/ for free 5,000 events/month"
-    );
+  const allEvents: any[] = [];
+  
+  // Try Ticketmaster (sports, concerts, theater)
+  const ticketmasterKey = process.env.TICKETMASTER_API_KEY;
+  if (ticketmasterKey) {
+    try {
+      const ticketmasterEvents = await searchTicketmasterEvents(latitude, longitude, radiusMiles, ticketmasterKey);
+      allEvents.push(...ticketmasterEvents);
+      console.log(`✅ Added ${ticketmasterEvents.length} events from Ticketmaster`);
+    } catch (error) {
+      console.error("Ticketmaster API error:", error);
+    }
+  }
+  
+  // Try Eventbrite (community events, career fairs, workshops)
+  const eventbriteKey = process.env.EVENTBRITE_API_KEY;
+  if (eventbriteKey) {
+    try {
+      const eventbriteEvents = await searchEventbriteEvents(latitude, longitude, radiusMiles, eventbriteKey);
+      allEvents.push(...eventbriteEvents);
+      console.log(`✅ Added ${eventbriteEvents.length} events from Eventbrite`);
+    } catch (error) {
+      console.error("Eventbrite API error:", error);
+    }
+  }
+  
+  // If we got events from either source, return them
+  if (allEvents.length > 0) {
+    console.log(`🎉 Total events from all sources: ${allEvents.length}`);
+    return allEvents;
+  }
+  
+  // Fallback to PredictHQ if no other sources available
+  const predictHQKey = process.env.PREDICTHQ_API_KEY;
+  if (!predictHQKey) {
+    console.log("No event API keys found. Add one or more:");
+    console.log("  - TICKETMASTER_API_KEY (sports, concerts) - https://developer.ticketmaster.com/");
+    console.log("  - EVENTBRITE_API_KEY (community events) - https://www.eventbrite.com/platform/api");
+    console.log("  - PREDICTHQ_API_KEY (aggregator) - https://www.predicthq.com/");
     return [];
   }
+  
+  return await searchPredictHQEvents(latitude, longitude, radiusMiles, predictHQKey);
+}
+
+/**
+ * Search Ticketmaster Discovery API for events
+ */
+async function searchTicketmasterEvents(
+  latitude: number,
+  longitude: number,
+  radiusMiles: number,
+  apiKey: string
+): Promise<any[]> {
+  try {
+    console.log(
+      `🔍 Searching Ticketmaster events near ${latitude}, ${longitude} within ${radiusMiles} miles`
+    );
+
+    // Build Ticketmaster API URL
+    const url = new URL("https://app.ticketmaster.com/discovery/v2/events.json");
+    url.searchParams.append("latlong", `${latitude},${longitude}`);
+    url.searchParams.append("radius", radiusMiles.toString());
+    url.searchParams.append("unit", "miles");
+    url.searchParams.append("size", "50");
+    url.searchParams.append("sort", "date,asc");
+    
+    // Categories good for recruiting
+    url.searchParams.append("classificationName", "Sports,Music,Arts & Theatre,Family,Miscellaneous");
+    
+    url.searchParams.append("apikey", apiKey);
+
+    const response = await fetch(url.toString());
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Ticketmaster API error (${response.status}):`, errorText);
+      throw new Error(`Ticketmaster API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const events = data._embedded?.events || [];
+    
+    console.log(`✅ Found ${events.length} events from Ticketmaster`);
+
+    // Transform Ticketmaster data to our event format
+    return events.map((evt: any) => {
+      // Determine event type from classification
+      let type = "community_event";
+      let targetAudience = "general";
+
+      const classification = evt.classifications?.[0];
+      if (classification) {
+        const segment = classification.segment?.name?.toLowerCase() || "";
+        const genre = classification.genre?.name?.toLowerCase() || "";
+        
+        if (segment.includes("sports")) {
+          type = "sports_event";
+          targetAudience = "young_adults";
+        } else if (segment.includes("music") || genre.includes("concert")) {
+          type = "concert";
+          targetAudience = "young_adults";
+        } else if (segment.includes("family")) {
+          type = "festival";
+          targetAudience = "general";
+        } else if (segment.includes("arts")) {
+          type = "community_event";
+          targetAudience = "general";
+        }
+      }
+
+      // Get venue info
+      const venue = evt._embedded?.venues?.[0];
+      const address = venue?.address?.line1 || "Address TBD";
+      const city = venue?.city?.name || "Unknown";
+      const state = venue?.state?.stateCode || "Unknown";
+      const zipCode = venue?.postalCode || "00000";
+      const venueLat = venue?.location?.latitude || latitude;
+      const venueLon = venue?.location?.longitude || longitude;
+
+      // Get date/time
+      const startDate = evt.dates?.start?.localDate || new Date().toISOString().split("T")[0];
+      const startTime = evt.dates?.start?.localTime || null;
+
+      // Estimate attendance from venue capacity or price range
+      let expectedAttendance = null;
+      if (venue?.capacity) {
+        expectedAttendance = venue.capacity;
+      }
+
+      // Get URLs
+      const eventUrl = evt.url || null;
+      const locationUrl = venue?.url || 
+        `https://www.google.com/maps/search/?api=1&query=${venueLat},${venueLon}`;
+
+      return {
+        name: evt.name || "Unnamed Event",
+        type,
+        address,
+        city,
+        state,
+        zipCode,
+        latitude: venueLat.toString(),
+        longitude: venueLon.toString(),
+        eventDate: startDate,
+        eventTime: startTime,
+        endDate: evt.dates?.end?.localDate || null,
+        description: evt.info || evt.pleaseNote || `${type.replace(/_/g, " ")} in ${city}`,
+        expectedAttendance,
+        targetAudience,
+        contactName: null,
+        contactEmail: null,
+        contactPhone: null,
+        registrationRequired: evt.dates?.status?.code === "rescheduled" ? "yes" : "unknown",
+        cost: evt.priceRanges?.[0] 
+          ? `$${evt.priceRanges[0].min}-$${evt.priceRanges[0].max}` 
+          : "Check website",
+        status: "upcoming",
+        notes: `Found via Ticketmaster. ${classification?.segment?.name || ""} ${classification?.genre?.name || ""}. ${venue?.name || ""}`,
+        eventUrl,
+        locationUrl,
+      };
+    });
+  } catch (error) {
+    console.error("Error searching Ticketmaster events:", error);
+    throw error;
+  }
+}
+
+/**
+ * Search Eventbrite API for community events
+ */
+async function searchEventbriteEvents(
+  latitude: number,
+  longitude: number,
+  radiusMiles: number,
+  apiKey: string
+): Promise<any[]> {
+  try {
+    console.log(
+      `🔍 Searching Eventbrite events near ${latitude}, ${longitude} within ${radiusMiles} miles`
+    );
+
+    // Convert miles to kilometers for Eventbrite
+    const radiusKm = Math.round(radiusMiles * 1.60934);
+
+    // Build Eventbrite API URL (v3)
+    const url = new URL("https://www.eventbriteapi.com/v3/events/search");
+    url.searchParams.append("location.latitude", latitude.toString());
+    url.searchParams.append("location.longitude", longitude.toString());
+    url.searchParams.append("location.within", `${radiusKm}km`);
+    url.searchParams.append("expand", "venue,category,organizer");
+    url.searchParams.append("sort_by", "date");
+    url.searchParams.append("page_size", "50");
+
+    console.log(`📍 Eventbrite URL: ${url.toString()}`);
+    
+    const response = await fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Eventbrite API error (${response.status}):`, errorText);
+      throw new Error(`Eventbrite API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const events = data.events || [];
+
+    console.log(`✅ Found ${events.length} events from Eventbrite`);
+
+    // Transform Eventbrite data to our event format
+    return events.map((evt: any) => {
+      // Determine event type from category
+      let type = "community_event";
+      let targetAudience = "general";
+
+      const categoryName = evt.category?.name?.toLowerCase() || "";
+      if (categoryName.includes("business") || categoryName.includes("career")) {
+        type = "career_fair";
+        targetAudience = "high_school";
+      } else if (categoryName.includes("music") || categoryName.includes("performing")) {
+        type = "concert";
+        targetAudience = "young_adults";
+      } else if (categoryName.includes("sports") || categoryName.includes("fitness")) {
+        type = "sports_event";
+        targetAudience = "young_adults";
+      } else if (categoryName.includes("community") || categoryName.includes("festival")) {
+        type = "festival";
+        targetAudience = "general";
+      }
+
+      // Get venue info
+      const venue = evt.venue;
+      const address = venue?.address?.localized_address_display || venue?.address?.address_1 || "Address TBD";
+      const city = venue?.address?.city || "Unknown";
+      const state = venue?.address?.region || "Unknown";
+      const zipCode = venue?.address?.postal_code || "00000";
+      const venueLat = venue?.latitude || latitude;
+      const venueLon = venue?.longitude || longitude;
+
+      // Get date/time
+      const startDate = evt.start?.local?.split("T")[0] || new Date().toISOString().split("T")[0];
+      const startTime = evt.start?.local?.split("T")[1]?.substring(0, 5) || null;
+      const endDate = evt.end?.local?.split("T")[0] || null;
+
+      // Get attendance info
+      const expectedAttendance = evt.capacity || null;
+
+      // Get URLs
+      const eventUrl = evt.url || null;
+      const locationUrl = venue?.resource_uri || 
+        `https://www.google.com/maps/search/?api=1&query=${venueLat},${venueLon}`;
+
+      // Check if free or paid
+      const isFree = evt.is_free || false;
+      const cost = isFree ? "Free" : "Check website for pricing";
+
+      return {
+        name: evt.name?.text || "Unnamed Event",
+        type,
+        address,
+        city,
+        state,
+        zipCode,
+        latitude: venueLat.toString(),
+        longitude: venueLon.toString(),
+        eventDate: startDate,
+        eventTime: startTime,
+        endDate,
+        description: evt.description?.text?.substring(0, 500) || evt.summary || `${type.replace(/_/g, " ")} in ${city}`,
+        expectedAttendance,
+        targetAudience,
+        contactName: evt.organizer?.name || null,
+        contactEmail: null,
+        contactPhone: null,
+        registrationRequired: evt.invite_only ? "yes" : "no",
+        cost,
+        status: "upcoming",
+        notes: `Found via Eventbrite. Category: ${evt.category?.name || "N/A"}. ${isFree ? "FREE event" : "Paid event"}. ${venue?.name || ""}`,
+        eventUrl,
+        locationUrl,
+      };
+    });
+  } catch (error) {
+    console.error("Error searching Eventbrite events:", error);
+    throw error;
+  }
+}
+
+/**
+ * Search PredictHQ API for events (fallback)
+ */
+async function searchPredictHQEvents(
+  latitude: number,
+  longitude: number,
+  radiusMiles: number,
+  apiKey: string
+): Promise<any[]> {
 
   try {
     // Convert miles to meters for PredictHQ (they use metric)
@@ -629,3 +924,4 @@ export function calculateProspectingScore(
 
   return Math.min(100, Math.max(0, score));
 }
+

@@ -76,10 +76,20 @@ The AI assistant can help with:
 export function createProspectingSystemPrompt(userLocation?: {
   latitude: number;
   longitude: number;
-}): string {
-  const locationInfo = userLocation
-    ? `The user is currently located at: ${userLocation.latitude}, ${userLocation.longitude}`
-    : "The user's location is not available.";
+}, zipCode?: string): string {
+  let locationInfo = "";
+  
+  if (zipCode) {
+    locationInfo = `The user is searching in ZIP code: ${zipCode}`;
+    if (userLocation) {
+      locationInfo += ` (coordinates: ${userLocation.latitude}, ${userLocation.longitude})`;
+    }
+    locationInfo += `\n\n**IMPORTANT**: When providing advice, tailor your recommendations specifically to the ${zipCode} area. Consider the demographics, local characteristics, and opportunities unique to this ZIP code.`;
+  } else if (userLocation) {
+    locationInfo = `The user is currently located at: ${userLocation.latitude}, ${userLocation.longitude}`;
+  } else {
+    locationInfo = "The user's location is not available.";
+  }
 
   return `You are an expert AI assistant specialized in helping U.S. Army recruiters with prospecting, lead generation, and strategic recruiting planning.
 
@@ -119,6 +129,8 @@ ${locationInfo}
 - Accessibility (parking, public transit, visibility)
 - Permission requirements (school districts, private businesses)
 - Cultural fit (military family areas vs. first-gen prospects)
+- ZIP code characteristics (urban vs. suburban vs. rural, income levels, education rates)
+- Local area features (military bases nearby, college towns, industrial areas)
 
 **For event recommendations:**
 - Career fairs → High value, prepared audience

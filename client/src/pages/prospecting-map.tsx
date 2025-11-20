@@ -417,7 +417,7 @@ function ProspectingMap() {
 
       // Set search center and radius for map display
       setSearchCenter(center);
-      setSearchRadius(useZipCode ? 16093 : 16093); // ~10 miles (16093m) for both zip and current location
+      setSearchRadius(useZipCode ? 8047 : 8047); // ~5 miles (8047m) for both zip and current location
 
       // Clear old events before adding new ones (only if this is a new search)
       try {
@@ -1872,6 +1872,7 @@ function ProspectingMap() {
             ? { latitude: userLocation[0], longitude: userLocation[1] }
             : undefined
         }
+        zipCode={zipCode || undefined}
       />
     </div>
   );

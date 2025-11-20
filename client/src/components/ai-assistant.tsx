@@ -9,6 +9,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 interface AIAssistantProps {
   userLocation?: { latitude: number; longitude: number };
+  zipCode?: string;
 }
 
 interface Message {
@@ -16,7 +17,7 @@ interface Message {
   content: string;
 }
 
-export function AIAssistant({ userLocation }: AIAssistantProps) {
+export function AIAssistant({ userLocation, zipCode }: AIAssistantProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
@@ -26,6 +27,7 @@ export function AIAssistant({ userLocation }: AIAssistantProps) {
       const response = await apiRequest("POST", "/api/ai/ask", {
         message,
         userLocation,
+        zipCode,
       });
       return response;
     },

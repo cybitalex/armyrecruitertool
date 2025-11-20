@@ -22,6 +22,9 @@ import {
   requestPasswordReset,
   resetPassword as resetPasswordHandler,
   sendApplicantConfirmationEmail,
+  sendSurveyConfirmationEmail,
+  sendRecruiterSurveyNotification,
+  sendRecruiterApplicationNotification,
 } from "./auth";
 import { db } from "./database";
 import { users } from "@shared/schema";
@@ -226,6 +229,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("❌ Failed to generate survey QR code:", error);
       res.status(500).json({ error: "Failed to fetch survey QR code" });
+    }
+  });
+
+  // Update recruiter profile
+  app.put("/api/profile", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { fullName, rank, unit, phoneNumber, profilePicture } = req.body;
+
+      // Update user profile
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          fullName: fullName || undefined,
+          rank: rank || null,
+          unit: unit || null,
+          phoneNumber: phoneNumber || null,
+          profilePicture: profilePicture || null,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId))
+        .returning();
+
+      console.log(`✅ Updated profile for user ${userId}`);
+
+      // Return user data without sensitive fields
+      const { passwordHash, verificationToken, resetPasswordToken, ...userData } = updatedUser;
+      res.json({ user: userData });
+    } catch (error) {
+      console.error('❌ Failed to update profile:', error);
+      res.status(500).json({ error: "Failed to update profile" });
     }
   });
 
@@ -459,6 +498,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't fail the request if email fails
       }
 
+      // Send notification to recruiter if this application is assigned to them
+      if (recruiterId) {
+        try {
+          const [recruiter] = await db.select().from(users).where(eq(users.id, recruiterId));
+          if (recruiter) {
+            await sendRecruiterApplicationNotification(
+              recruiter.email,
+              recruiter.fullName,
+              recruit.firstName,
+              recruit.lastName,
+              recruit.email,
+              recruit.phone,
+              source
+            );
+          }
+        } catch (emailError) {
+          console.error('⚠️ Failed to send recruiter application notification:', emailError);
+          // Don't fail the request if email fails
+        }
+      }
+
       res.status(201).json(recruit);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -513,6 +573,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .insert(qrSurveyResponses)
         .values(validated)
         .returning();
+
+      // Send confirmation email to the person who submitted feedback
+      try {
+        await sendSurveyConfirmationEmail(
+          created.email,
+          created.name,
+          created.rating,
+          recruiter.id
+        );
+      } catch (emailError) {
+        console.error('⚠️ Failed to send survey confirmation email:', emailError);
+        // Don't fail the request if email fails
+      }
+
+      // Send notification to the recruiter about the new survey response
+      try {
+        await sendRecruiterSurveyNotification(
+          recruiter.email,
+          recruiter.fullName,
+          created.name,
+          created.rating
+        );
+      } catch (emailError) {
+        console.error('⚠️ Failed to send recruiter survey notification:', emailError);
+        // Don't fail the request if email fails
+      }
 
       res.status(201).json(created);
     } catch (error) {
@@ -1089,9 +1175,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ message: "Latitude and longitude are required" });
       }
 
-      // Increased radius for both current location and zip code searches
+      // Radius for event searches
       const isCurrentLocation = !userId || useZipCode === false;
-      const radiusMiles = radius || 10; // 10 miles for both current location and zip code
+      const radiusMiles = radius || 5; // 5 miles for both current location and zip code
 
       console.log(`🔍 Searching events: ${latitude}, ${longitude}, radius: ${radiusMiles}mi (${isCurrentLocation ? 'current location' : 'zip code'})`);
 
@@ -1145,13 +1231,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Ask AI for prospecting help
   app.post("/api/ai/ask", async (req, res) => {
     try {
-      const { message, userLocation } = req.body;
+      const { message, userLocation, zipCode } = req.body;
 
       if (!message || typeof message !== "string") {
         return res.status(400).json({ message: "Message is required" });
       }
 
-      const systemPrompt = createProspectingSystemPrompt(userLocation);
+      const systemPrompt = createProspectingSystemPrompt(userLocation, zipCode);
 
       const messages: AIMessage[] = [
         { role: "system", content: systemPrompt },

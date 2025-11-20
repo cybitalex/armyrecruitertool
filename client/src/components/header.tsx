@@ -10,7 +10,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { FileText, Home, Shield, MapPin, Menu, LogOut } from "lucide-react";
+import { FileText, Home, Shield, MapPin, Menu, LogOut, User } from "lucide-react";
 
 export function Header() {
   const [location, navigate] = useLocation();
@@ -41,6 +41,12 @@ export function Header() {
       label: "New Application",
       icon: FileText,
       testId: "nav-intake",
+    },
+    {
+      path: "/profile",
+      label: "Profile",
+      icon: User,
+      testId: "nav-profile",
     },
   ];
 

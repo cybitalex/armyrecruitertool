@@ -13,8 +13,9 @@ import {
   CardTitle,
 } from "../components/ui/card";
 import { Alert, AlertDescription } from "../components/ui/alert";
-import { CheckCircle2, AlertCircle, Star } from "lucide-react";
+import { CheckCircle2, AlertCircle, Star, User as UserIcon } from "lucide-react";
 import type { User } from "@shared/schema";
+import { ARMY_RANKS } from "@shared/constants";
 
 export default function SurveyPage() {
   const [location] = useLocation();
@@ -165,13 +166,36 @@ export default function SurveyPage() {
               )}
 
               {recruiterInfo && (
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200 text-left text-sm text-green-800 space-y-1">
-                  <p className="font-semibold text-green-900">
+                <div className="bg-green-50 p-6 rounded-lg border border-green-200 text-center">
+                  <p className="font-semibold text-green-900 mb-4">
                     Feedback will be sent to your recruiter:
                   </p>
-                  <p>{recruiterInfo.fullName}</p>
-                  {recruiterInfo.rank && <p className="text-xs">{recruiterInfo.rank}</p>}
-                  {recruiterInfo.unit && <p className="text-xs">{recruiterInfo.unit}</p>}
+                  
+                  {/* Recruiter Photo */}
+                  <div className="flex justify-center mb-4">
+                    {recruiterInfo.profilePicture ? (
+                      <img
+                        src={recruiterInfo.profilePicture}
+                        alt={recruiterInfo.fullName}
+                        className="w-32 h-32 rounded-full object-cover border-4 border-green-600 shadow-lg"
+                      />
+                    ) : (
+                      <div className="w-32 h-32 rounded-full bg-green-100 flex items-center justify-center border-4 border-green-600 shadow-lg">
+                        <UserIcon className="w-16 h-16 text-green-600" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Recruiter Info */}
+                  <div className="text-green-800 space-y-1">
+                    <p className="text-lg font-bold">{recruiterInfo.fullName}</p>
+                    {recruiterInfo.rank && (
+                      <p className="text-sm font-medium">
+                        {ARMY_RANKS.find(r => r.value === recruiterInfo.rank)?.label || recruiterInfo.rank}
+                      </p>
+                    )}
+                    {recruiterInfo.unit && <p className="text-sm">{recruiterInfo.unit}</p>}
+                  </div>
                 </div>
               )}
 
