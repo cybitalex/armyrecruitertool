@@ -9,10 +9,11 @@ import {
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./database";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export interface IStorage {
   getAllRecruits(): Promise<Recruit[]>;
+  getRecruitsByRecruiter(recruiterId: string): Promise<Recruit[]>;
   getRecruit(id: string): Promise<Recruit | undefined>;
   createRecruit(recruit: InsertRecruit): Promise<Recruit>;
   updateRecruitStatus(id: string, status: string): Promise<Recruit | undefined>;
@@ -281,13 +282,29 @@ export class MemStorage implements IStorage {
   // Recruit methods - now using PostgreSQL database
   async getAllRecruits(): Promise<Recruit[]> {
     try {
-      const allRecruits = await db.select().from(recruitsTable);
-      return allRecruits.sort(
-        (a, b) =>
-          new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
-      );
+      // Use database-side sorting for better performance
+      const allRecruits = await db
+        .select()
+        .from(recruitsTable)
+        .orderBy(sql`${recruitsTable.submittedAt} DESC`);
+      return allRecruits;
     } catch (error) {
       console.error('❌ Failed to get all recruits from database:', error);
+      return [];
+    }
+  }
+
+  // Optimized method to get recruits by recruiter ID with database filtering
+  async getRecruitsByRecruiter(recruiterId: string): Promise<Recruit[]> {
+    try {
+      const recruits = await db
+        .select()
+        .from(recruitsTable)
+        .where(eq(recruitsTable.recruiterId, recruiterId))
+        .orderBy(sql`${recruitsTable.submittedAt} DESC`);
+      return recruits;
+    } catch (error) {
+      console.error(`❌ Failed to get recruits for recruiter ${recruiterId}:`, error);
       return [];
     }
   }

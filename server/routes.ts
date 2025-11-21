@@ -326,7 +326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get recruiter stats
+  // Get recruiter stats - OPTIMIZED with database queries
   app.get("/api/recruiter/stats", async (req, res) => {
     try {
       const userId = (req as any).session?.userId;
@@ -335,43 +335,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      // Get all recruits
-      const allRecruits = await storage.getAllRecruits();
+      // OPTIMIZED: Query database directly with WHERE clause instead of loading all recruits
+      // This scales much better as data grows
+      const recruiterRecruits = await storage.getRecruitsByRecruiter(userId);
       
-      console.log(`📊 Stats request for userId: ${userId} (type: ${typeof userId})`);
-      console.log(`📊 Total recruits in system: ${allRecruits.length}`);
-      if (allRecruits.length > 0) {
-        allRecruits.forEach((r, idx) => {
-          console.log(`📊 Recruit ${idx + 1}: id=${r.id}, recruiterId=${r.recruiterId || 'NULL'} (type: ${typeof r.recruiterId}), source=${r.source || 'NULL'}`);
-        });
-      }
+      console.log(`📊 Stats request for userId: ${userId}`);
+      console.log(`📊 Recruits matching recruiterId: ${recruiterRecruits.length}`);
       
-      // Filter recruits for this recruiter (if recruiterId is set)
-      // Handle null/undefined recruiterId and convert both to strings for comparison
-      const recruiterRecruits = allRecruits.filter(r => {
-        if (!r.recruiterId) {
-          return false; // Skip recruits without a recruiterId
-        }
-        const match = String(r.recruiterId) === String(userId);
-        if (!match) {
-          console.log(`📊 Mismatch: recruit recruiterId "${r.recruiterId}" !== userId "${userId}"`);
-        }
-        return match;
-      });
-      
-      console.log(`📊 Recruits matching recruiterId ${userId}: ${recruiterRecruits.length}`);
-      
-      // Calculate stats
+      // Calculate stats using database-filtered results (much faster)
       const totalRecruits = recruiterRecruits.length;
       const qrCodeScans = recruiterRecruits.filter(r => r.source === "qr_code").length;
       const directEntries = recruiterRecruits.filter(r => r.source === "direct").length;
       
       console.log(`📊 Stats: total=${totalRecruits}, qrCode=${qrCodeScans}, direct=${directEntries}`);
       
-      // Get recent recruits (last 10)
-      const recentRecruits = recruiterRecruits
-        .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
-        .slice(0, 10);
+      // Get recent recruits (already sorted by database query, just take first 10)
+      const recentRecruits = recruiterRecruits.slice(0, 10);
 
       res.json({
         totalRecruits,

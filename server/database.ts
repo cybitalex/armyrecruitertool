@@ -16,7 +16,11 @@ const pool = new Pool({
   connectionString: DATABASE_URL,
   // SSL is disabled for internal Kubernetes cluster connections
   // The database service is within the same private network
-  ssl: false
+  ssl: false,
+  // Connection pool optimization for better performance under load
+  max: 20, // Maximum number of clients in the pool
+  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
+  connectionTimeoutMillis: 5000, // Return an error after 5 seconds if connection could not be established
 });
 
 // Test connection
