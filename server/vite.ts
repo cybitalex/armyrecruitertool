@@ -80,10 +80,37 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Serve static files with cache control
+  // HTML files: no cache (always fresh)
+  // JS/CSS with hash: cache for 1 year (Vite handles versioning via hash)
+  // Other assets: cache for 1 day
+  app.use(express.static(distPath, {
+    setHeaders: (res, filePath) => {
+      const relativePath = path.relative(distPath, filePath);
+      
+      // Never cache HTML files
+      if (relativePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+      // Cache hashed JS/CSS files (Vite versioning handles updates)
+      else if (relativePath.match(/\.(js|css)$/)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+      // Cache other assets
+      else {
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+      }
+    }
+  }));
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
+    // Never cache the HTML file
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

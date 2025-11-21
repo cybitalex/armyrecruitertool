@@ -13,8 +13,9 @@ import {
   CardTitle,
 } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
-import { Users, QrCode, UserPlus, Star } from "lucide-react";
+import { Users, QrCode, UserPlus, Star, Download } from "lucide-react";
 import { format } from "date-fns";
+import { exportContactsToExcel } from "../lib/exportExcel";
 
 function DashboardContent() {
   const { user, logout } = useAuth();
@@ -33,7 +34,9 @@ function DashboardContent() {
         directEntries: response.directEntries || 0,
       };
     },
-    refetchInterval: 30000, // Auto-refresh every 30 seconds
+    refetchInterval: 10000, // Auto-refresh every 10 seconds for faster updates
+    refetchOnWindowFocus: true, // Refetch when user returns to the tab
+    refetchOnMount: true, // Always refetch when component mounts
     retry: 1,
   });
 
@@ -81,9 +84,29 @@ function DashboardContent() {
     refetchSurveys();
   }, []);
 
+  // Refetch stats whenever recruits list changes (handles QR code scans from other tabs/devices)
+  useEffect(() => {
+    if (recruitsList.length > 0) {
+      // Small delay to ensure backend has processed the new recruit
+      const timer = setTimeout(() => {
+        refetchStats();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [recruitsList.length, refetchStats]);
+
   const handleLogout = async () => {
     await logout();
     setLocation("/login");
+  };
+
+  const handleExportToExcel = () => {
+    try {
+      exportContactsToExcel(recruitsList, surveyResponses);
+    } catch (error) {
+      console.error("Failed to export contacts:", error);
+      alert("Failed to export contacts. Please try again.");
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -105,18 +128,18 @@ function DashboardContent() {
     <div className="min-h-screen bg-gray-50">
       {/* Page Title Section */}
       <div className="bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-bold text-green-800">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <h1 className="text-xl sm:text-2xl font-bold text-green-800">
             Recruiter Dashboard
           </h1>
-          <p className="text-sm text-gray-600">
+          <p className="text-xs sm:text-sm text-gray-600 break-words">
             Welcome back, {user?.fullName || "Recruiter"}
             {user?.rank && ` (${user.rank})`}
           </p>
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
             {error}
@@ -124,67 +147,67 @@ function DashboardContent() {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 truncate pr-1">
                 Total Applicants
               </CardTitle>
-              <Users className="w-4 h-4 text-gray-400" />
+              <Users className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-800">
+            <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+              <div className="text-xl sm:text-2xl font-bold text-green-800">
                 {loading ? "..." : (statsData?.totalRecruits || 0)}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1 truncate">
                 All-time referrals
               </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 truncate pr-1">
                 QR Code Scans
               </CardTitle>
-              <QrCode className="w-4 h-4 text-gray-400" />
+              <QrCode className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
+            <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">
                 {loading ? "..." : (statsData?.qrCodeScans || 0)}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1 truncate">
                 Via QR code scanning
               </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 truncate pr-1">
                 Direct Entries
               </CardTitle>
-              <UserPlus className="w-4 h-4 text-gray-400" />
+              <UserPlus className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
+            <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+              <div className="text-xl sm:text-2xl font-bold text-purple-600">
                 {loading ? "..." : (statsData?.directEntries || 0)}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1 truncate">
                 In-person submissions
               </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 truncate pr-1">
                 Presentation Feedback
               </CardTitle>
-              <Star className="w-4 h-4 text-gray-400" />
+              <Star className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-500 flex items-baseline gap-1">
+            <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+              <div className="text-xl sm:text-2xl font-bold text-yellow-500 flex items-baseline gap-1">
                 {loading
                   ? "..."
                   : surveyData && surveyData.total > 0
@@ -194,7 +217,7 @@ function DashboardContent() {
                   <span className="text-xs text-gray-500">/ 5</span>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1 truncate">
                 {loading
                   ? ""
                   : `${surveyData?.total || 0} response${
@@ -206,27 +229,45 @@ function DashboardContent() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Button
             onClick={() => setLocation("/my-qr")}
-            className="h-auto py-6 bg-green-700 hover:bg-green-800"
+            className="h-auto py-4 sm:py-5 lg:py-6 bg-green-700 hover:bg-green-800 text-left justify-start"
           >
-            <QrCode className="w-6 h-6 mr-3" />
-            <div className="text-left">
-              <div className="font-semibold">View My QR Code</div>
-              <div className="text-xs opacity-90">Download and share</div>
+            <QrCode className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" />
+            <div className="text-left min-w-0">
+              <div className="font-semibold text-sm sm:text-base truncate">View My QR Code</div>
+              <div className="text-xs opacity-90 truncate">Download and share</div>
             </div>
           </Button>
 
           <Button
             onClick={() => setLocation("/intake-form")}
             variant="outline"
-            className="h-auto py-6 border-green-700 text-green-700 hover:bg-green-50"
+            className="h-auto py-4 sm:py-5 lg:py-6 border-green-700 text-green-700 hover:bg-green-50 text-left justify-start"
           >
-            <UserPlus className="w-6 h-6 mr-3" />
-            <div className="text-left">
-              <div className="font-semibold">New Applicant (In-Person)</div>
-              <div className="text-xs opacity-75">Fill form directly</div>
+            <UserPlus className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" />
+            <div className="text-left min-w-0">
+              <div className="font-semibold text-sm sm:text-base truncate">New Applicant</div>
+              <div className="text-xs opacity-75 truncate">Fill form directly</div>
+            </div>
+          </Button>
+
+          <Button
+            onClick={handleExportToExcel}
+            variant="outline"
+            className="h-auto py-4 sm:py-5 lg:py-6 border-blue-700 text-blue-700 hover:bg-blue-50 text-left justify-start sm:col-span-2 lg:col-span-1"
+            disabled={
+              loading ||
+              (recruitsList.length === 0 && surveyResponses.length === 0)
+            }
+          >
+            <Download className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" />
+            <div className="text-left min-w-0">
+              <div className="font-semibold text-sm sm:text-base truncate">Export to Excel</div>
+              <div className="text-xs opacity-75 truncate">
+                Download all contacts
+              </div>
             </div>
           </Button>
         </div>
@@ -258,28 +299,34 @@ function DashboardContent() {
                   <div
                     key={recruit.id}
                     onClick={() => setLocation(`/recruits/${recruit.id}`)}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition cursor-pointer"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition cursor-pointer gap-2 sm:gap-0"
                   >
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 text-sm sm:text-base truncate">
                         {recruit.firstName} {recruit.lastName}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-xs sm:text-sm text-gray-500 truncate">
+                        {recruit.email}
+                      </div>
+                      <div className="text-xs sm:text-sm text-gray-500 truncate sm:hidden">
+                        {recruit.phone}
+                      </div>
+                      <div className="text-xs text-gray-500 hidden sm:block">
                         {recruit.email} • {recruit.phone}
                       </div>
-                      <div className="flex gap-2 mt-2">
+                      <div className="flex flex-wrap gap-2 mt-2">
                         <Badge
                           variant="outline"
-                          className={recruit.source === "qr_code" ? "bg-blue-50" : "bg-purple-50"}
+                          className={`text-xs ${recruit.source === "qr_code" ? "bg-blue-50" : "bg-purple-50"}`}
                         >
                           {recruit.source === "qr_code" ? "🎯 QR Code" : "📝 Direct"}
                         </Badge>
-                        <Badge variant="outline" className={getStatusColor(recruit.status)}>
+                        <Badge variant="outline" className={`text-xs ${getStatusColor(recruit.status)}`}>
                           {recruit.status}
                         </Badge>
                       </div>
                     </div>
-                    <div className="text-right text-sm text-gray-500">
+                    <div className="text-left sm:text-right text-xs sm:text-sm text-gray-500 whitespace-nowrap">
                       {recruit.submittedAt && format(new Date(recruit.submittedAt), "MMM d, yyyy")}
                     </div>
                   </div>
@@ -290,7 +337,7 @@ function DashboardContent() {
         </Card>
 
         {/* Recent Presentation Feedback */}
-        <Card className="mt-8">
+        <Card className="mt-6 sm:mt-8">
           <CardHeader>
             <CardTitle>Recent Presentation Feedback</CardTitle>
             <CardDescription>
@@ -315,23 +362,29 @@ function DashboardContent() {
                 {surveyResponses.slice(0, 5).map((response) => (
                   <div
                     key={response.id}
-                    className="p-4 border rounded-lg bg-white flex items-start justify-between gap-4"
+                    className="p-3 sm:p-4 border rounded-lg bg-white flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4"
                   >
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-gray-900">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-gray-900 text-sm sm:text-base truncate">
                             {response.name}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-500 truncate">
+                            {response.email}
+                          </div>
+                          <div className="text-xs text-gray-500 truncate sm:hidden">
+                            {response.phone}
+                          </div>
+                          <div className="text-xs text-gray-500 hidden sm:block truncate">
                             {response.email} • {response.phone}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <Star
                               key={star}
-                              className={`w-4 h-4 ${
+                              className={`w-3 h-3 sm:w-4 sm:h-4 ${
                                 response.rating >= star
                                   ? "text-yellow-500 fill-yellow-500"
                                   : "text-gray-300"
@@ -341,12 +394,12 @@ function DashboardContent() {
                         </div>
                       </div>
                       {response.feedback && (
-                        <p className="text-sm text-gray-700 mt-2">
+                        <p className="text-xs sm:text-sm text-gray-700 mt-2 break-words">
                           {response.feedback}
                         </p>
                       )}
                     </div>
-                    <div className="text-right text-xs text-gray-500 whitespace-nowrap">
+                    <div className="text-left sm:text-right text-xs text-gray-500 whitespace-nowrap flex-shrink-0">
                       {response.createdAt &&
                         format(new Date(response.createdAt), "MMM d, yyyy")}
                     </div>

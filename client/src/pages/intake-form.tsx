@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -100,8 +100,10 @@ function IntakeForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const isSubmittingRef = useRef(false);
 
   const form = useForm<InsertRecruit>({
+    mode: "onSubmit", // Only validate on submit, not on change
     resolver: zodResolver(
       insertRecruitSchema.extend({
         dateOfBirth: insertRecruitSchema.shape.dateOfBirth.refine(
@@ -150,6 +152,7 @@ function IntakeForm() {
       return await apiRequest("POST", "/api/recruits", submissionData);
     },
     onSuccess: () => {
+      isSubmittingRef.current = false;
       queryClient.invalidateQueries({ queryKey: ["/api/recruits"] });
       queryClient.invalidateQueries({ queryKey: ["/recruiter/stats"] }); // Refresh stats
       toast({
@@ -160,6 +163,7 @@ function IntakeForm() {
       navigate("/");
     },
     onError: (error: Error) => {
+      isSubmittingRef.current = false;
       toast({
         title: "Submission Failed",
         description: error.message,
@@ -169,7 +173,35 @@ function IntakeForm() {
   });
 
   const onSubmit = (data: InsertRecruit) => {
+    // Prevent duplicate submissions
+    if (isSubmittingRef.current) {
+      return;
+    }
+    
+    // Extra safety check: only allow submission when on the final step
+    if (currentStep !== 5) {
+      return;
+    }
+    
+    isSubmittingRef.current = true;
     createMutation.mutate(data);
+  };
+
+  // Prevent all Enter key form submissions - form should only submit via explicit button click
+  const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === "Enter") {
+      const target = e.target as HTMLElement;
+      const targetType = target.getAttribute("type");
+      
+      // Only allow Enter to submit if it's on the actual submit button
+      if (targetType === "submit" || target.getAttribute("data-submit-button") === "true") {
+        return; // Allow submission
+      }
+      
+      // Prevent Enter from submitting the form in all other cases
+      e.preventDefault();
+      e.stopPropagation();
+    }
   };
 
   const nextStep = () => {
@@ -184,18 +216,18 @@ function IntakeForm() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mb-2">
             U.S. Army Recruitment Application
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Complete all sections to submit your application
           </p>
         </div>
 
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        <div className="mb-6 sm:mb-8 overflow-x-auto">
+          <div className="flex items-center justify-between min-w-[500px] sm:min-w-0">
             {steps.map((step, idx) => {
               const Icon = step.icon;
               const isActive = currentStep === step.id;
@@ -205,7 +237,7 @@ function IntakeForm() {
                 <div key={step.id} className="flex items-center flex-1">
                   <div className="flex flex-col items-center flex-1">
                     <div
-                      className={`w-10 h-10 rounded-md flex items-center justify-center border transition-colors ${
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-md flex items-center justify-center border transition-colors ${
                         isActive
                           ? "bg-primary text-primary-foreground border-primary"
                           : isCompleted
@@ -214,19 +246,27 @@ function IntakeForm() {
                       }`}
                       data-testid={`step-indicator-${step.id}`}
                     >
-                      <Icon className="w-5 h-5" />
+                      <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                     <span
-                      className={`text-xs mt-2 font-medium ${
+                      className={`text-[10px] sm:text-xs mt-1 sm:mt-2 font-medium text-center leading-tight hidden sm:block ${
                         isActive ? "text-foreground" : "text-muted-foreground"
                       }`}
                     >
                       {step.name}
                     </span>
+                    <span
+                      className={`text-[9px] mt-1 font-medium text-center leading-tight sm:hidden ${
+                        isActive ? "text-foreground" : "text-muted-foreground"
+                      }`}
+                      title={step.name}
+                    >
+                      {step.name.split(" ")[0]}
+                    </span>
                   </div>
                   {idx < steps.length - 1 && (
                     <div
-                      className={`h-0.5 flex-1 mx-2 mb-6 transition-colors ${
+                      className={`h-0.5 flex-1 mx-1 sm:mx-2 mb-6 transition-colors ${
                         isCompleted ? "bg-primary/30" : "bg-border"
                       }`}
                     />
@@ -238,7 +278,15 @@ function IntakeForm() {
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form 
+            onSubmit={(e) => {
+              // Prevent default form submission behavior
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onKeyDown={handleFormKeyDown}
+            className="space-y-6"
+          >
             {currentStep === 1 && (
               <Card>
                 <CardHeader>
@@ -796,11 +844,19 @@ function IntakeForm() {
                           value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger data-testid="select-availability">
+                            <SelectTrigger 
+                              data-testid="select-availability"
+                              className="w-full"
+                            >
                               <SelectValue placeholder="Select availability" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
+                          <SelectContent 
+                            position="popper"
+                            side="bottom"
+                            align="start"
+                            className="z-[100] w-[var(--radix-select-trigger-width)] max-h-[300px]"
+                          >
                             <SelectItem value="immediate">
                               Immediately
                             </SelectItem>
@@ -843,17 +899,18 @@ function IntakeForm() {
               </Card>
             )}
 
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 pt-4 sm:pt-0">
               <Button
                 type="button"
                 variant="outline"
                 onClick={prevStep}
                 disabled={currentStep === 1}
                 data-testid="button-prev"
+                className="w-full sm:w-auto"
               >
                 Previous
               </Button>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left order-first sm:order-none">
                 Step {currentStep} of {steps.length}
               </div>
               {currentStep < 5 ? (
@@ -861,14 +918,42 @@ function IntakeForm() {
                   type="button"
                   onClick={nextStep}
                   data-testid="button-next"
+                  className="w-full sm:w-auto"
                 >
                   Next
                 </Button>
               ) : (
                 <Button
-                  type="submit"
+                  type="button"
                   disabled={createMutation.isPending}
                   data-testid="button-submit"
+                  className="w-full sm:w-auto"
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    try {
+                      // Manually trigger form validation
+                      const isValid = await form.trigger();
+                      
+                      if (isValid) {
+                        const data = form.getValues();
+                        onSubmit(data as InsertRecruit);
+                      } else {
+                        toast({
+                          title: "Validation Error",
+                          description: "Please fill in all required fields correctly.",
+                          variant: "destructive",
+                        });
+                      }
+                    } catch (error) {
+                      toast({
+                        title: "Error",
+                        description: error instanceof Error ? error.message : "An unexpected error occurred",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
                 >
                   {createMutation.isPending
                     ? "Submitting..."

@@ -15,8 +15,22 @@ import type { User } from "@shared/schema";
 export default function ApplyPage() {
   const [location] = useLocation();
   const queryClient = useQueryClient();
-  const searchParams = new URLSearchParams(location.split('?')[1]);
-  const recruiterCode = searchParams.get('r');
+  
+  // Read recruiter code from the real browser query string so it works with URLs like
+  // https://armyrecruitertool.duckdns.org/apply?r=...
+  const [recruiterCode, setRecruiterCode] = useState<string | null>(null);
+  
+  useEffect(() => {
+    try {
+      const search = typeof window !== "undefined" ? window.location.search : "";
+      const params = new URLSearchParams(search);
+      const code = params.get("r");
+      setRecruiterCode(code);
+      console.log(`🔍 Apply page - Extracted recruiterCode from URL: ${code || 'NULL'}`);
+    } catch {
+      setRecruiterCode(null);
+    }
+  }, [location]);
 
   const [recruiterInfo, setRecruiterInfo] = useState<Partial<User> | null>(null);
 
@@ -68,7 +82,10 @@ export default function ApplyPage() {
     setLoading(true);
 
     try {
-      await recruits.create({
+      // Log what we're sending
+      console.log(`📤 Submitting application - recruiterCode: ${recruiterCode || 'NULL'}`);
+      
+      const payload = {
         ...formData,
         recruiterCode: recruiterCode || undefined, // Send QR code, backend will resolve to recruiterId
         // source will be set by backend based on whether recruiterCode exists or user is logged in
@@ -78,7 +95,11 @@ export default function ApplyPage() {
         heightFeet: parseInt(formData.heightFeet),
         heightInches: parseInt(formData.heightInches),
         weight: parseInt(formData.weight),
-      } as any);
+      };
+      
+      console.log(`📤 Payload being sent:`, { ...payload, recruiterCode: payload.recruiterCode || 'NULL' });
+      
+      await recruits.create(payload as any);
 
       // Invalidate stats and recruits queries so dashboard updates
       queryClient.invalidateQueries({ queryKey: ["/recruiter/stats"] });
@@ -459,14 +480,31 @@ export default function ApplyPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="availability">Availability *</Label>
-                  <Input
-                    id="availability"
-                    required
-                    placeholder="e.g., Immediately, 3 months, 6 months"
+                  <Label htmlFor="availability">When are you available to start? *</Label>
+                  <Select
                     value={formData.availability}
-                    onChange={(e) => setFormData({ ...formData, availability: e.target.value })}
-                  />
+                    onValueChange={(value) => setFormData({ ...formData, availability: value })}
+                    required
+                  >
+                    <SelectTrigger 
+                      id="availability"
+                      className="w-full min-h-[44px] touch-manipulation sm:min-h-[36px]"
+                    >
+                      <SelectValue placeholder="Select availability" />
+                    </SelectTrigger>
+                    <SelectContent 
+                      position="popper"
+                      side="bottom"
+                      align="start"
+                      className="z-[100] w-[var(--radix-select-trigger-width)] max-h-[300px]"
+                    >
+                      <SelectItem value="immediate">Immediately</SelectItem>
+                      <SelectItem value="1_month">Within 1 Month</SelectItem>
+                      <SelectItem value="3_months">Within 3 Months</SelectItem>
+                      <SelectItem value="6_months">Within 6 Months</SelectItem>
+                      <SelectItem value="flexible">Flexible</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">

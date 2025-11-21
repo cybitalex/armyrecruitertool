@@ -97,41 +97,41 @@ function MyQRCodeContent() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-4xl mx-auto px-3 sm:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded mb-4 text-sm">
             {error}
           </div>
         )}
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
           {/* Application QR Code */}
           <Card>
-            <CardHeader className="text-center">
-              <CardTitle>Application QR Code</CardTitle>
-              <CardDescription>
+            <CardHeader className="text-center px-4 sm:px-6 pt-4 sm:pt-6">
+              <CardTitle className="text-lg sm:text-xl">Application QR Code</CardTitle>
+              <CardDescription className="text-xs sm:text-sm mt-1">
                 Applicants scan this to start the full interest/application form
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col items-center">
+            <CardContent className="flex flex-col items-center px-4 sm:px-6 pb-4 sm:pb-6">
               {loading ? (
-                <div className="w-64 h-64 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
-                  <p className="text-gray-500">Loading QR Code...</p>
+                <div className="w-48 h-48 sm:w-64 sm:h-64 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
+                  <p className="text-gray-500 text-sm">Loading QR Code...</p>
                 </div>
               ) : (
-                <div className="bg-white p-4 rounded-lg border-4 border-green-700">
+                <div className="bg-white p-3 sm:p-4 rounded-lg border-2 sm:border-4 border-green-700">
                   <img
                     src={qrCodeImage}
                     alt="Recruiter QR Code"
-                    className="w-64 h-64"
+                    className="w-48 h-48 sm:w-64 sm:h-64"
                   />
                 </div>
               )}
 
-              <div className="mt-6 w-full space-y-3">
+              <div className="mt-4 sm:mt-6 w-full space-y-2 sm:space-y-3">
                 <Button
                   onClick={downloadQRCode}
-                  className="w-full bg-green-700 hover:bg-green-800"
+                  className="w-full bg-green-700 hover:bg-green-800 text-sm sm:text-base"
                   disabled={loading}
                 >
                   <Download className="w-4 h-4 mr-2" />
@@ -141,7 +141,7 @@ function MyQRCodeContent() {
                 <Button
                   onClick={shareQRCode}
                   variant="outline"
-                  className="w-full"
+                  className="w-full text-sm sm:text-base"
                   disabled={loading}
                 >
                   <Share2 className="w-4 h-4 mr-2" />
@@ -153,28 +153,28 @@ function MyQRCodeContent() {
 
           {/* Presentation Survey QR Code */}
           <Card>
-            <CardHeader className="text-center">
-              <CardTitle>Presentation Survey QR</CardTitle>
-              <CardDescription>
+            <CardHeader className="text-center px-4 sm:px-6 pt-4 sm:pt-6">
+              <CardTitle className="text-lg sm:text-xl">Presentation Survey QR</CardTitle>
+              <CardDescription className="text-xs sm:text-sm mt-1">
                 Use this in briefings to capture quick ratings and contact info
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col items-center">
+            <CardContent className="flex flex-col items-center px-4 sm:px-6 pb-4 sm:pb-6">
               {loading ? (
-                <div className="w-64 h-64 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
-                  <p className="text-gray-500">Loading QR Code...</p>
+                <div className="w-48 h-48 sm:w-64 sm:h-64 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
+                  <p className="text-gray-500 text-sm">Loading QR Code...</p>
                 </div>
               ) : (
-                <div className="bg-white p-4 rounded-lg border-4 border-green-700">
+                <div className="bg-white p-3 sm:p-4 rounded-lg border-2 sm:border-4 border-green-700">
                   <img
                     src={surveyQrCodeImage}
                     alt="Presentation Survey QR Code"
-                    className="w-64 h-64"
+                    className="w-48 h-48 sm:w-64 sm:h-64"
                   />
                 </div>
               )}
 
-              <div className="mt-6 w-full space-y-3">
+              <div className="mt-4 sm:mt-6 w-full space-y-2 sm:space-y-3">
                 <Button
                   onClick={() => {
                     const link = document.createElement("a");
@@ -186,7 +186,7 @@ function MyQRCodeContent() {
                     link.click();
                     document.body.removeChild(link);
                   }}
-                  className="w-full bg-green-700 hover:bg-green-800"
+                  className="w-full bg-green-700 hover:bg-green-800 text-sm sm:text-base"
                   disabled={loading}
                 >
                   <Download className="w-4 h-4 mr-2" />
@@ -196,7 +196,7 @@ function MyQRCodeContent() {
                 <Button
                   onClick={() => copyLink(surveyUrl)}
                   variant="outline"
-                  className="w-full"
+                  className="w-full text-sm sm:text-base"
                   disabled={loading}
                 >
                   <Share2 className="w-4 h-4 mr-2" />
@@ -207,43 +207,43 @@ function MyQRCodeContent() {
           </Card>
 
           {/* Instructions */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6 md:col-span-2">
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">How to Use</CardTitle>
+              <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-6">
+                <CardTitle className="text-base sm:text-lg">How to Use</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-green-100 text-green-700 rounded-full flex items-center justify-center font-bold">
+              <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6 pb-4 sm:pb-6">
+                <div className="flex gap-2 sm:gap-3">
+                  <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-green-100 text-green-700 rounded-full flex items-center justify-center font-bold text-sm sm:text-base">
                     1
                   </div>
-                  <div>
-                    <h3 className="font-medium">Download or Share</h3>
-                    <p className="text-sm text-gray-600">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-medium text-sm sm:text-base">Download or Share</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">
                       Download the QR code image or share the link directly
                     </p>
                   </div>
                 </div>
 
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-green-100 text-green-700 rounded-full flex items-center justify-center font-bold">
+                <div className="flex gap-2 sm:gap-3">
+                  <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-green-100 text-green-700 rounded-full flex items-center justify-center font-bold text-sm sm:text-base">
                     2
                   </div>
-                  <div>
-                    <h3 className="font-medium">Display Your QR Code</h3>
-                    <p className="text-sm text-gray-600">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-medium text-sm sm:text-base">Display Your QR Code</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">
                       Add to business cards, flyers, or show on your phone
                     </p>
                   </div>
                 </div>
 
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-green-100 text-green-700 rounded-full flex items-center justify-center font-bold">
+                <div className="flex gap-2 sm:gap-3">
+                  <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-green-100 text-green-700 rounded-full flex items-center justify-center font-bold text-sm sm:text-base">
                     3
                   </div>
-                  <div>
-                    <h3 className="font-medium">Track Applications</h3>
-                    <p className="text-sm text-gray-600">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-medium text-sm sm:text-base">Track Applications</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">
                       All scanned applications appear in your dashboard
                     </p>
                   </div>

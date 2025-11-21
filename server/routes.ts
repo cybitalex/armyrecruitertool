@@ -452,43 +452,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let recruiterId: string | undefined = undefined;
       let source = "direct";
       
+      console.log(`🔍 Source determination - recruiterCode: ${body.recruiterCode || 'NULL'}, userId: ${userId || 'NULL'}`);
+      
       if (body.recruiterCode && !userId) {
         // QR code scan (public form with recruiter code)
+        console.log(`🔍 QR code scan detected (public form) - recruiterCode: ${body.recruiterCode}`);
         const [recruiter] = await db.select().from(users).where(eq(users.qrCode, body.recruiterCode));
         if (recruiter) {
           recruiterId = recruiter.id;
           source = "qr_code";
+          console.log(`✅ QR code recruiter found - recruiterId: ${recruiterId}, source set to: qr_code`);
+        } else {
+          console.log(`⚠️ QR code provided but recruiter not found - recruiterCode: ${body.recruiterCode}`);
         }
       } else if (userId && !body.recruiterCode) {
         // Logged in recruiter filling intake form directly
+        console.log(`🔍 Direct entry detected (logged in recruiter, no QR code)`);
         recruiterId = userId;
         source = "direct";
       } else if (userId && body.recruiterCode) {
         // Logged in recruiter but also has code - use the code's recruiter
+        console.log(`🔍 Both userId and recruiterCode provided - checking QR code`);
         const [recruiter] = await db.select().from(users).where(eq(users.qrCode, body.recruiterCode));
         if (recruiter) {
           recruiterId = recruiter.id;
           source = "qr_code";
+          console.log(`✅ QR code recruiter found - recruiterId: ${recruiterId}, source set to: qr_code`);
         } else {
           recruiterId = userId;
           source = "direct";
+          console.log(`⚠️ QR code not found, using logged-in userId, source: direct`);
         }
+      } else {
+        console.log(`⚠️ No recruiterCode and no userId - public submission without recruiter, source: direct`);
       }
+      
+      console.log(`📊 Final source determination - recruiterId: ${recruiterId || 'NULL'}, source: ${source}`);
       
       // Remove recruiterCode from body and use recruiterId
       const { recruiterCode, ...recruitData } = body;
       
       console.log(`📝 Creating recruit - recruiterId: ${recruiterId || 'NULL'}, source: ${source}, userId from session: ${userId || 'NULL'}`);
       
-      const validatedData = insertRecruitSchema.parse({
+      // Ensure source is explicitly set
+      const recruitToCreate = {
         ...recruitData,
         recruiterId: recruiterId || null, // Use null instead of undefined for database
-        source,
-      });
+        source: source || "direct", // Explicitly ensure source is set
+      };
+      
+      console.log(`📝 Recruit data before validation - source: ${recruitToCreate.source}, recruiterId: ${recruitToCreate.recruiterId}`);
+      
+      const validatedData = insertRecruitSchema.parse(recruitToCreate);
+      
+      // Double-check source is still set after validation
+      if (!validatedData.source) {
+        validatedData.source = source || "direct";
+        console.log(`⚠️ Source was missing after validation, setting to: ${validatedData.source}`);
+      }
+      
+      console.log(`📝 Validated data - source: ${validatedData.source}, recruiterId: ${validatedData.recruiterId}`);
       
       const recruit = await storage.createRecruit(validatedData);
 
-      console.log(`✅ Created recruit: ${recruit.id}, recruiterId: ${recruit.recruiterId || 'NULL'} (type: ${typeof recruit.recruiterId}), source: ${recruit.source}`);
+      console.log(`✅ Created recruit: id=${recruit.id}, recruiterId=${recruit.recruiterId || 'NULL'} (type: ${typeof recruit.recruiterId}), source=${recruit.source || 'MISSING'}`);
 
       // Send confirmation email to applicant
       try {
