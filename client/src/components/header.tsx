@@ -10,7 +10,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { FileText, Home, Shield, MapPin, Menu, LogOut, User } from "lucide-react";
+import { FileText, Home, Shield, MapPin, Menu, LogOut, User, Users, Settings } from "lucide-react";
 
 export function Header() {
   const [location, navigate] = useLocation();
@@ -23,32 +23,59 @@ export function Header() {
   // Hide main app navigation when viewing the public survey page
   const isSurveyRoute = location.startsWith("/survey");
 
-  const navigationItems = [
+  // Base navigation items for all logged in users
+  const baseNavigationItems = [
     {
       path: "/",
       label: "Dashboard",
       icon: Home,
       testId: "nav-dashboard",
+      roles: ["recruiter", "station_commander", "pending_station_commander", "admin"],
     },
     {
       path: "/prospecting",
       label: "Prospecting",
       icon: MapPin,
       testId: "nav-prospecting",
+      roles: ["recruiter", "station_commander", "pending_station_commander", "admin"],
     },
     {
       path: "/intake",
       label: "New Application",
       icon: FileText,
       testId: "nav-intake",
+      roles: ["recruiter", "station_commander", "pending_station_commander", "admin"],
+    },
+    {
+      path: "/station-commander",
+      label: "Station Overview",
+      icon: Users,
+      testId: "nav-station-commander",
+      roles: ["station_commander", "admin"],
+    },
+    {
+      path: "/admin/requests",
+      label: "Admin Requests",
+      icon: Settings,
+      testId: "nav-admin-requests",
+      roles: ["admin"],
     },
     {
       path: "/profile",
       label: "Profile",
       icon: User,
       testId: "nav-profile",
+      roles: ["recruiter", "station_commander", "pending_station_commander", "admin"],
     },
   ];
+
+  // Filter navigation items based on user role
+  // Default to 'recruiter' if role is not set or is null
+  const navigationItems = baseNavigationItems.filter((item) => {
+    if (!user) return false;
+    const userRole = user.role || "recruiter";
+    return item.roles.includes(userRole);
+  });
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-army-field01 bg-army-black shadow-xl">
@@ -73,10 +100,10 @@ export function Header() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-3 md:px-4 h-14 md:h-16 flex items-center justify-between gap-2 md:gap-4">
-        <div className="flex items-center gap-2 md:gap-4 min-w-0">
+      <div className="max-w-7xl mx-auto px-3 md:px-4 h-16 md:h-20 flex items-center justify-between gap-2 md:gap-4">
+        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
           {/* U.S. Army Official Logo */}
-          <div className="relative h-10 w-10 md:h-16 md:w-16 flex items-center justify-center shrink-0">
+          <div className="relative h-12 w-12 md:h-16 md:w-16 flex items-center justify-center flex-shrink-0">
             <img
               src="/logos/Mark_of_the_United_States_Army.svg"
               alt="U.S. Army"
@@ -84,11 +111,11 @@ export function Header() {
             />
           </div>
 
-          <div className="border-l-2 border-army-gold pl-2 md:pl-3 min-w-0">
-            <h1 className="text-sm md:text-xl font-bold text-army-gold tracking-wider">
+          <div className="border-l-2 border-army-gold pl-2 md:pl-3 flex-shrink-0">
+            <h1 className="text-sm md:text-xl font-bold text-army-gold tracking-wider whitespace-nowrap">
               U.S. ARMY
             </h1>
-            <p className="text-[10px] md:text-xs text-army-tan font-medium tracking-wide whitespace-nowrap overflow-hidden text-ellipsis">
+            <p className="text-[10px] md:text-xs text-army-tan font-medium tracking-wide whitespace-nowrap">
               RECRUITING OPERATIONS
             </p>
           </div>

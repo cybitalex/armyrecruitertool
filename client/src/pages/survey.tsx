@@ -48,9 +48,26 @@ export default function SurveyPage() {
     }
   }, [location]);
 
-  // Fetch recruiter info if QR code is present
+  // Fetch recruiter info if QR code is present AND track the scan
   useEffect(() => {
     if (recruiterCode) {
+      // Track the QR scan (for analytics)
+      fetch("/api/qr-scan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          qrCode: recruiterCode,
+          scanType: "survey" 
+        }),
+      }).then(() => {
+        console.log("📱 Survey QR scan tracked");
+      }).catch((err) => {
+        console.error("Failed to track survey QR scan (non-critical):", err);
+      });
+
+      // Fetch recruiter info to display on the form
       recruiterApi
         .getByQRCode(recruiterCode)
         .then((data) => setRecruiterInfo(data.recruiter))

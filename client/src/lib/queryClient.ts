@@ -20,7 +20,19 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
-  return await res.json();
+  // Some endpoints (like DELETE) respond with 204 No Content,
+  // so we need to safely handle empty bodies before parsing JSON.
+  const text = await res.text();
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    // If the response isn't JSON (e.g. plain text), return it as-is.
+    return text;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -38,7 +50,16 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
-    return await res.json();
+    const text = await res.text();
+    if (!text) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      return text as unknown as T;
+    }
   };
 
 export const queryClient = new QueryClient({

@@ -33,6 +33,9 @@ export const auth = {
     rank?: string;
     unit?: string;
     phoneNumber?: string;
+    accountType?: string;
+    justification?: string;
+    stationCode?: string;
   }) => {
     return apiCall<{ message: string; userId: string }>("/auth/register", {
       method: "POST",
@@ -170,6 +173,152 @@ export const surveys = {
       averageRating: number;
       responses: QrSurveyResponse[];
     }>("/surveys/my");
+  },
+};
+
+// Admin API
+export const admin = {
+  getStationCommanderRequests: async () => {
+    return apiCall<{
+      requests: Array<{
+        id: string;
+        userId: string;
+        userName: string;
+        userEmail: string;
+        userRank: string | null;
+        userUnit: string | null;
+        justification: string | null;
+        status: string;
+        createdAt: Date;
+      }>;
+    }>("/admin/station-commander-requests");
+  },
+
+  approveStationCommanderRequest: async (requestId: string, stationId?: string) => {
+    return apiCall<{ message: string }>(`/admin/station-commander-requests/${requestId}/approve`, {
+      method: "POST",
+      body: JSON.stringify({ stationId }),
+    });
+  },
+
+  denyStationCommanderRequest: async (requestId: string, reason?: string) => {
+    return apiCall<{ message: string }>(`/admin/station-commander-requests/${requestId}/deny`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+  },
+};
+
+// Station Commander API
+export const stationCommander = {
+  getRecruitersWithStats: async () => {
+    return apiCall<{
+      recruiters: Array<Partial<User> & {
+        stats: {
+          allTime: {
+            total: number;
+            leads: number;
+            prospects: number;
+            applicants: number;
+            qrCodeScans: number;
+            directEntries: number;
+          };
+          monthly: {
+            total: number;
+            leads: number;
+            prospects: number;
+            applicants: number;
+          };
+        };
+      }>;
+      stationTotals: {
+        allTime: {
+          total: number;
+          leads: number;
+          prospects: number;
+          applicants: number;
+        };
+        monthly: {
+          total: number;
+          leads: number;
+          prospects: number;
+          applicants: number;
+        };
+      };
+    }>("/station-commander/recruiters");
+  },
+
+  getRecruitsForExport: async () => {
+    return apiCall<{
+      recruits: Array<Recruit & {
+        recruiterName: string;
+        recruiterRank: string;
+      }>;
+    }>("/station-commander/recruits/export");
+  },
+};
+
+// Location QR Codes API
+export const locationQRCodes = {
+  create: async (data: { locationLabel: string; qrType: 'application' | 'survey' }) => {
+    return apiCall<{
+      id: string;
+      locationLabel: string;
+      qrCode: string;
+      qrType: string;
+      qrCodeImage: string;
+      createdAt: Date;
+    }>("/qr-codes/location", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  list: async () => {
+    return apiCall<Array<{
+      id: string;
+      recruiterId: string;
+      locationLabel: string;
+      qrCode: string;
+      qrType: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>>("/qr-codes/location");
+  },
+
+  getImage: async (id: string) => {
+    return apiCall<{ qrCode: string }>(`/qr-codes/location/${id}/image`);
+  },
+
+  delete: async (id: string) => {
+    return apiCall<{ success: boolean }>(`/qr-codes/location/${id}`, {
+      method: "DELETE",
+    });
+  },
+};
+
+// QR Scan Analytics API
+export const qrScanAnalytics = {
+  getAnalytics: async () => {
+    return apiCall<{
+      locations: Array<{
+        locationLabel: string;
+        totalScans: number;
+        convertedScans: number;
+        conversionRate: number;
+        scans: Array<{
+          id: string;
+          scanType: string;
+          scannedAt: Date;
+          converted: boolean;
+          conversionType: string | null;
+          ipAddress: string | null;
+        }>;
+      }>;
+      totalScans: number;
+      totalConverted: number;
+      overallConversionRate: number;
+    }>("/qr-scans/analytics");
   },
 };
 

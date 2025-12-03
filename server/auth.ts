@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import QRCode from 'qrcode';
 import nodemailer from 'nodemailer';
 import { db } from './database';
-import { users } from '../shared/schema';
+import { users, stationCommanderRequests, stations } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 import type { Request, Response, NextFunction } from 'express';
 
@@ -43,6 +43,138 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 // Generate verification token
 export function generateVerificationToken(): string {
   return crypto.randomBytes(32).toString('hex');
+}
+
+// Generate approval token
+export function generateApprovalToken(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+// Send station commander request notification to admin with approval link
+export async function sendStationCommanderRequestNotification(
+  userEmail: string,
+  userName: string,
+  justification: string,
+  requestId: string,
+  approvalToken: string
+) {
+  const adminEmail = 'alex.cybitdevs@gmail.com';
+  const appUrl = process.env.APP_URL || 'http://localhost:5001';
+  const approveUrl = `${appUrl}/api/approve-request?token=${approvalToken}&action=approve`;
+  const denyUrl = `${appUrl}/api/approve-request?token=${approvalToken}&action=deny`;
+  
+  const mailOptions = {
+    from: process.env.SMTP_USER,
+    to: adminEmail,
+    subject: '🎖️ New Station Commander Access Request - Action Required',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #1f4e3d;">New Station Commander Access Request</h2>
+        <p>A new user has requested Station Commander access:</p>
+        
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Name:</strong> ${userName}</p>
+          <p><strong>Email:</strong> ${userEmail}</p>
+          <p><strong>Justification:</strong></p>
+          <p style="margin-left: 15px; font-style: italic;">${justification || 'No justification provided'}</p>
+        </div>
+        
+        <div style="margin: 30px 0;">
+          <p style="margin-bottom: 15px;"><strong>Review this request:</strong></p>
+          
+          <a href="${approveUrl}" 
+             style="display: inline-block; padding: 12px 30px; background-color: #10b981; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px;">
+            ✅ Approve Request
+          </a>
+          
+          <a href="${denyUrl}" 
+             style="display: inline-block; padding: 12px 30px; background-color: #ef4444; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            ❌ Deny Request
+          </a>
+        </div>
+        
+        <div style="background-color: #fef3c7; padding: 12px; border-radius: 5px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+          <p style="margin: 0; font-size: 14px; color: #92400e;">
+            <strong>⏰ Note:</strong> This approval link expires in 7 days.
+          </p>
+        </div>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
+          <p>Army Recruiter Tool - Station Commander Request System</p>
+          <p>This is an automated notification. Please do not reply to this email.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+}
+
+// Send approval notification to user
+export async function sendStationCommanderApprovalEmail(email: string, userName: string) {
+  const mailOptions = {
+    from: process.env.SMTP_USER,
+    to: email,
+    subject: '✅ Station Commander Access Approved',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #1f4e3d;">Station Commander Access Approved! 🎖️</h2>
+        <p>Hello ${userName},</p>
+        
+        <p>Great news! Your request for Station Commander access has been approved.</p>
+        
+        <div style="background-color: #d1fae5; padding: 15px; border-radius: 5px; border-left: 4px solid #10b981; margin: 20px 0;">
+          <p style="margin: 0;"><strong>You now have access to:</strong></p>
+          <ul style="margin: 10px 0;">
+            <li>View all recruiters at your station</li>
+            <li>See comprehensive statistics for each recruiter</li>
+            <li>Export detailed reports</li>
+            <li>Monitor monthly performance</li>
+          </ul>
+        </div>
+        
+        <p>Log in to your account to start using your Station Commander dashboard.</p>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
+          <p>Army Recruiter Tool</p>
+        </div>
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+}
+
+// Send denial notification to user
+export async function sendStationCommanderDenialEmail(email: string, userName: string, reason?: string) {
+  const mailOptions = {
+    from: process.env.SMTP_USER,
+    to: email,
+    subject: 'Station Commander Access Request Update',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #1f4e3d;">Station Commander Access Request Update</h2>
+        <p>Hello ${userName},</p>
+        
+        <p>Thank you for your interest in Station Commander access. After review, we're unable to approve your request at this time.</p>
+        
+        ${reason ? `
+        <div style="background-color: #fef3c7; padding: 15px; border-radius: 5px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+          <p style="margin: 0;"><strong>Reason:</strong></p>
+          <p style="margin: 10px 0 0 0;">${reason}</p>
+        </div>
+        ` : ''}
+        
+        <p>You can continue using your account with standard recruiter features. If you believe this decision was made in error, please contact your supervisor or reach out to support.</p>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
+          <p>Army Recruiter Tool</p>
+        </div>
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
 }
 
 // Send verification email
@@ -499,6 +631,9 @@ export async function registerUser(data: {
   rank?: string;
   unit?: string;
   phoneNumber?: string;
+  accountType?: string;
+  justification?: string;
+  stationCode?: string;
 }) {
   try {
     console.log('🔍 Checking for existing user:', data.email);
@@ -520,6 +655,28 @@ export async function registerUser(data: {
     const verificationToken = generateVerificationToken();
     const qrCodeId = generateQRCode(); // This is the unique identifier, not the image
 
+    // Determine user role based on account type
+    let userRole = 'recruiter';
+    if (data.accountType === 'station_commander') {
+      userRole = 'pending_station_commander';
+    }
+
+    // Look up station by code if provided
+    let stationId;
+    if (data.stationCode) {
+      console.log('🏢 Looking up station by code:', data.stationCode);
+      const [station] = await db
+        .select()
+        .from(stations)
+        .where(eq(stations.stationCode, data.stationCode));
+      
+      if (station) {
+        stationId = station.id;
+      } else {
+        console.warn('⚠️ Station not found for code:', data.stationCode);
+      }
+    }
+
     console.log('💾 Creating user in database...');
     // Create user - store only the QR code identifier, not the image
     // The image will be generated on demand when needed
@@ -535,8 +692,42 @@ export async function registerUser(data: {
         verificationToken,
         qrCode: qrCodeId, // Store only the identifier
         isVerified: false,
+        role: userRole,
+        stationId: stationId,
       })
       .returning();
+
+    // If station commander requested, create approval request
+    if (data.accountType === 'station_commander') {
+      console.log('📝 Creating station commander request...');
+      
+      // Generate approval token and expiration (7 days)
+      const approvalToken = generateApprovalToken();
+      const tokenExpires = new Date();
+      tokenExpires.setDate(tokenExpires.getDate() + 7);
+      
+      const [request] = await db.insert(stationCommanderRequests).values({
+        userId: newUser.id,
+        requestedStationId: stationId, // Request is for the station they're registering at
+        justification: data.justification || '',
+        status: 'pending',
+        approvalToken,
+        tokenExpires,
+      }).returning();
+
+      // Send notification email to admin with approval link
+      try {
+        await sendStationCommanderRequestNotification(
+          newUser.email,
+          newUser.fullName,
+          data.justification || '',
+          request.id,
+          approvalToken
+        );
+      } catch (error) {
+        console.error('⚠️ Failed to send admin notification:', error);
+      }
+    }
 
     console.log('📧 Sending verification email...');
     // Send verification email

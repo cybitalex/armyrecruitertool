@@ -39,8 +39,7 @@ const steps = [
   { id: 1, name: "Personal Info", icon: User },
   { id: 2, name: "Contact & Address", icon: FileText },
   { id: 3, name: "Background", icon: Shield },
-  { id: 4, name: "Physical Info", icon: Heart },
-  { id: 5, name: "Preferences", icon: CheckCircle2 },
+  { id: 4, name: "Preferences", icon: CheckCircle2 },
 ];
 
 const states = [
@@ -133,10 +132,6 @@ function IntakeForm() {
       hasPriorService: "no",
       priorServiceBranch: "",
       priorServiceYears: undefined,
-      heightFeet: undefined,
-      heightInches: undefined,
-      weight: undefined,
-      medicalConditions: "",
       criminalHistory: "no",
       preferredMOS: "",
       availability: "",
@@ -179,7 +174,7 @@ function IntakeForm() {
     }
     
     // Extra safety check: only allow submission when on the final step
-    if (currentStep !== 5) {
+    if (currentStep !== 4) {
       return;
     }
     
@@ -205,7 +200,7 @@ function IntakeForm() {
   };
 
   const nextStep = () => {
-    if (currentStep < 5) setCurrentStep(currentStep + 1);
+    if (currentStep < 4) setCurrentStep(currentStep + 1);
   };
 
   const prevStep = () => {
@@ -693,118 +688,6 @@ function IntakeForm() {
             {currentStep === 4 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Physical Information</CardTitle>
-                  <CardDescription>
-                    Physical fitness and health information
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="heightFeet"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Height (Feet) *</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="5"
-                              {...field}
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.value
-                                    ? parseInt(e.target.value)
-                                    : undefined
-                                )
-                              }
-                              value={field.value || ""}
-                              data-testid="input-heightFeet"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="heightInches"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Height (Inches) *</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="10"
-                              {...field}
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.value
-                                    ? parseInt(e.target.value)
-                                    : undefined
-                                )
-                              }
-                              value={field.value || ""}
-                              data-testid="input-heightInches"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="weight"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Weight (lbs) *</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="180"
-                              {...field}
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.value
-                                    ? parseInt(e.target.value)
-                                    : undefined
-                                )
-                              }
-                              value={field.value || ""}
-                              data-testid="input-weight"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name="medicalConditions"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Medical Conditions or Concerns</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="List any medical conditions, injuries, or health concerns (optional)"
-                            className="resize-none"
-                            {...field}
-                            value={field.value || ""}
-                            data-testid="input-medicalConditions"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-            )}
-
-            {currentStep === 5 && (
-              <Card>
-                <CardHeader>
                   <CardTitle>Preferences & Availability</CardTitle>
                   <CardDescription>
                     Let us know your preferences and when you can start
@@ -913,7 +796,7 @@ function IntakeForm() {
               <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left order-first sm:order-none">
                 Step {currentStep} of {steps.length}
               </div>
-              {currentStep < 5 ? (
+              {currentStep < 4 ? (
                 <Button
                   type="button"
                   onClick={nextStep}

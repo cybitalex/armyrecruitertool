@@ -7,6 +7,10 @@ import {
   insertEventSchema,
   insertQrSurveyResponseSchema,
   qrSurveyResponses,
+  stationCommanderRequests,
+  recruits,
+  stations,
+  stationChangeRequests,
 } from "@shared/schema";
 import { z } from "zod";
 import { askAI, createProspectingSystemPrompt, type AIMessage } from "./llm";
@@ -25,10 +29,14 @@ import {
   sendSurveyConfirmationEmail,
   sendRecruiterSurveyNotification,
   sendRecruiterApplicationNotification,
+  sendStationCommanderApprovalEmail,
+  sendStationCommanderDenialEmail,
+  generateApprovalToken,
+  sendStationCommanderRequestNotification,
 } from "./auth";
 import { db } from "./database";
-import { users } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
+import { users, qrScans, qrCodeLocations } from "@shared/schema";
+import { eq, sql, and, desc, inArray } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // AUTHENTICATION ENDPOINTS
@@ -147,6 +155,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // STATION ENDPOINTS
+
+  // Get all stations (public endpoint for registration)
+  app.get("/api/stations", async (req, res) => {
+    try {
+      const allStations = await db.select().from(stations).orderBy(stations.state);
+      res.json(allStations);
+    } catch (error) {
+      console.error('❌ Failed to fetch stations:', error);
+      res.status(500).json({ error: "Failed to fetch stations" });
+    }
+  });
+
+  // Get a single station by ID
+  app.get("/api/stations/:id", async (req, res) => {
+    try {
+      const [station] = await db.select().from(stations).where(eq(stations.id, req.params.id));
+      
+      if (!station) {
+        return res.status(404).json({ error: "Station not found" });
+      }
+      
+      res.json(station);
+    } catch (error) {
+      console.error('❌ Failed to fetch station:', error);
+      res.status(500).json({ error: "Failed to fetch station" });
+    }
+  });
+
   // Forgot password
   app.post("/api/auth/forgot-password", async (req, res) => {
     try {
@@ -182,6 +219,856 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to reset password";
       res.status(400).json({ error: message });
+    }
+  });
+
+  // TOKEN-BASED APPROVAL ENDPOINT (No authentication required - uses token)
+  app.get("/api/approve-request", async (req, res) => {
+    try {
+      const { token, action } = req.query;
+
+      if (!token || !action) {
+        return res.status(400).json({ error: "Missing token or action" });
+      }
+
+      if (action !== 'approve' && action !== 'deny') {
+        return res.status(400).json({ error: "Invalid action" });
+      }
+
+      // Find request by token
+      const [request] = await db
+        .select()
+        .from(stationCommanderRequests)
+        .where(eq(stationCommanderRequests.approvalToken, token as string));
+
+      if (!request) {
+        return res.status(404).json({ error: "Request not found or token invalid" });
+      }
+
+      // Check if already processed
+      if (request.status !== 'pending') {
+        return res.status(400).json({ 
+          error: "Request already processed",
+          status: request.status 
+        });
+      }
+
+      // Check if token expired
+      if (request.tokenExpires && new Date() > new Date(request.tokenExpires)) {
+        return res.status(400).json({ error: "Approval link has expired" });
+      }
+
+      // Process the request
+      if (action === 'approve') {
+        // Update request status
+        await db
+          .update(stationCommanderRequests)
+          .set({
+            status: 'approved',
+            reviewedAt: new Date(),
+          })
+          .where(eq(stationCommanderRequests.id, request.id));
+
+        // Update user role
+        await db
+          .update(users)
+          .set({ role: 'station_commander' })
+          .where(eq(users.id, request.userId));
+
+        // Get user info for email
+        const [user] = await db.select().from(users).where(eq(users.id, request.userId));
+        
+        if (user) {
+          try {
+            await sendStationCommanderApprovalEmail(user.email, user.fullName);
+          } catch (emailError) {
+            console.error('Failed to send approval email:', emailError);
+          }
+        }
+
+        // Redirect to frontend approval success page
+        const appUrl = process.env.APP_URL || 'http://localhost:5001';
+        res.redirect(`${appUrl}/approval-success?status=approved`);
+      } else {
+        // Deny request
+        await db
+          .update(stationCommanderRequests)
+          .set({
+            status: 'denied',
+            reviewedAt: new Date(),
+          })
+          .where(eq(stationCommanderRequests.id, request.id));
+
+        // Update user role to regular recruiter
+        await db
+          .update(users)
+          .set({ role: 'recruiter' })
+          .where(eq(users.id, request.userId));
+
+        // Get user info for email
+        const [user] = await db.select().from(users).where(eq(users.id, request.userId));
+        
+        if (user) {
+          try {
+            await sendStationCommanderDenialEmail(user.email, user.fullName);
+          } catch (emailError) {
+            console.error('Failed to send denial email:', emailError);
+          }
+        }
+
+        // Redirect to frontend approval success page
+        const appUrl = process.env.APP_URL || 'http://localhost:5001';
+        res.redirect(`${appUrl}/approval-success?status=denied`);
+      }
+    } catch (error) {
+      console.error('Error processing approval:', error);
+      res.status(500).json({ error: "Failed to process request" });
+    }
+  });
+
+  // ADMIN ENDPOINTS - Station Commander Requests Management
+
+  // Middleware to check if user is admin
+  const requireAdmin = async (req: any, res: any, next: any) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      req.user = user;
+      next();
+    } catch (error) {
+      res.status(500).json({ error: "Authorization check failed" });
+    }
+  };
+
+  // Get all pending station commander requests (admin only)
+  app.get("/api/admin/station-commander-requests", requireAdmin, async (req, res) => {
+    try {
+      const requests = await db
+        .select({
+          id: stationCommanderRequests.id,
+          userId: stationCommanderRequests.userId,
+          requestedStationId: stationCommanderRequests.requestedStationId,
+          justification: stationCommanderRequests.justification,
+          status: stationCommanderRequests.status,
+          createdAt: stationCommanderRequests.createdAt,
+          userName: users.fullName,
+          userEmail: users.email,
+          userRank: users.rank,
+          userUnit: users.unit,
+        })
+        .from(stationCommanderRequests)
+        .leftJoin(users, eq(stationCommanderRequests.userId, users.id))
+        .where(eq(stationCommanderRequests.status, 'pending'))
+        .orderBy(sql`${stationCommanderRequests.createdAt} DESC`);
+
+      // Fetch station details for each request
+      const requestsWithStations = await Promise.all(
+        requests.map(async (request) => {
+          if (request.requestedStationId) {
+            const [station] = await db
+              .select()
+              .from(stations)
+              .where(eq(stations.id, request.requestedStationId));
+            return {
+              ...request,
+              requestedStation: station || null,
+            };
+          }
+          return {
+            ...request,
+            requestedStation: null,
+          };
+        })
+      );
+
+      res.json({ requests: requestsWithStations });
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+      res.status(500).json({ error: "Failed to fetch requests" });
+    }
+  });
+
+  // Approve station commander request (admin only)
+  app.post("/api/admin/station-commander-requests/:requestId/approve", requireAdmin, async (req, res) => {
+    try {
+      const { requestId } = req.params;
+      const { stationId } = req.body;
+
+      // Get the request
+      const [request] = await db
+        .select()
+        .from(stationCommanderRequests)
+        .where(eq(stationCommanderRequests.id, requestId));
+
+      if (!request) {
+        return res.status(404).json({ error: "Request not found" });
+      }
+
+      if (request.status !== 'pending') {
+        return res.status(400).json({ error: "Request already processed" });
+      }
+
+      // Update request status
+      await db
+        .update(stationCommanderRequests)
+        .set({
+          status: 'approved',
+          reviewedBy: req.user.id,
+          reviewedAt: new Date(),
+        })
+        .where(eq(stationCommanderRequests.id, requestId));
+
+      // Update user role
+      await db
+        .update(users)
+        .set({
+          role: 'station_commander',
+          stationId: stationId || null,
+        })
+        .where(eq(users.id, request.userId));
+
+      // Get user info for email
+      const [user] = await db.select().from(users).where(eq(users.id, request.userId));
+      
+      if (user) {
+        try {
+          await sendStationCommanderApprovalEmail(user.email, user.fullName);
+        } catch (emailError) {
+          console.error('Failed to send approval email:', emailError);
+        }
+      }
+
+      res.json({ message: "Request approved successfully" });
+    } catch (error) {
+      console.error('Error approving request:', error);
+      res.status(500).json({ error: "Failed to approve request" });
+    }
+  });
+
+  // Deny station commander request (admin only)
+  app.post("/api/admin/station-commander-requests/:requestId/deny", requireAdmin, async (req, res) => {
+    try {
+      const { requestId } = req.params;
+      const { reason } = req.body;
+
+      // Get the request
+      const [request] = await db
+        .select()
+        .from(stationCommanderRequests)
+        .where(eq(stationCommanderRequests.id, requestId));
+
+      if (!request) {
+        return res.status(404).json({ error: "Request not found" });
+      }
+
+      if (request.status !== 'pending') {
+        return res.status(400).json({ error: "Request already processed" });
+      }
+
+      // Update request status
+      await db
+        .update(stationCommanderRequests)
+        .set({
+          status: 'denied',
+          reviewedBy: req.user.id,
+          reviewedAt: new Date(),
+          reviewNotes: reason,
+        })
+        .where(eq(stationCommanderRequests.id, requestId));
+
+      // Update user role to regular recruiter
+      await db
+        .update(users)
+        .set({ role: 'recruiter' })
+        .where(eq(users.id, request.userId));
+
+      // Get user info for email
+      const [user] = await db.select().from(users).where(eq(users.id, request.userId));
+      
+      if (user) {
+        try {
+          await sendStationCommanderDenialEmail(user.email, user.fullName, reason);
+        } catch (emailError) {
+          console.error('Failed to send denial email:', emailError);
+        }
+      }
+
+      res.json({ message: "Request denied successfully" });
+    } catch (error) {
+      console.error('Error denying request:', error);
+      res.status(500).json({ error: "Failed to deny request" });
+    }
+  });
+
+  // STATION CHANGE REQUEST ENDPOINTS
+
+  // Create station change request
+  app.post("/api/station-change-requests", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { requestedStationId, reason } = req.body;
+
+      if (!requestedStationId || !reason) {
+        return res.status(400).json({ error: "Requested station and reason are required" });
+      }
+
+      // Get current user
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Admins can change their station directly without a request
+      if (user.role === 'admin') {
+        await db
+          .update(users)
+          .set({ stationId: requestedStationId })
+          .where(eq(users.id, userId));
+        
+        return res.json({ message: "Station updated successfully (admin privilege)" });
+      }
+
+      // Check if user already has a pending request
+      const [existingRequest] = await db
+        .select()
+        .from(stationChangeRequests)
+        .where(eq(stationChangeRequests.userId, userId))
+        .where(eq(stationChangeRequests.status, 'pending'));
+
+      if (existingRequest) {
+        return res.status(400).json({ error: "You already have a pending station change request" });
+      }
+
+      // Create the request
+      await db.insert(stationChangeRequests).values({
+        userId,
+        currentStationId: user.stationId,
+        requestedStationId,
+        reason,
+        status: 'pending',
+      });
+
+      res.status(201).json({ message: "Station change request submitted successfully" });
+    } catch (error) {
+      console.error('Error creating station change request:', error);
+      res.status(500).json({ error: "Failed to submit station change request" });
+    }
+  });
+
+  // Get user's pending station change request
+  app.get("/api/station-change-requests/my-request", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const [request] = await db
+        .select()
+        .from(stationChangeRequests)
+        .where(eq(stationChangeRequests.userId, userId))
+        .where(eq(stationChangeRequests.status, 'pending'));
+
+      res.json({ request: request || null });
+    } catch (error) {
+      console.error('Error fetching station change request:', error);
+      res.status(500).json({ error: "Failed to fetch request" });
+    }
+  });
+
+  // Get all pending station change requests (admin only)
+  app.get("/api/admin/station-change-requests", requireAdmin, async (req, res) => {
+    try {
+      const requests = await db
+        .select({
+          id: stationChangeRequests.id,
+          userId: stationChangeRequests.userId,
+          userName: users.fullName,
+          userEmail: users.email,
+          currentStationId: stationChangeRequests.currentStationId,
+          requestedStationId: stationChangeRequests.requestedStationId,
+          reason: stationChangeRequests.reason,
+          status: stationChangeRequests.status,
+          createdAt: stationChangeRequests.createdAt,
+        })
+        .from(stationChangeRequests)
+        .leftJoin(users, eq(stationChangeRequests.userId, users.id))
+        .where(eq(stationChangeRequests.status, 'pending'))
+        .orderBy(stationChangeRequests.createdAt);
+
+      // Get station details for each request
+      const requestsWithStations = await Promise.all(
+        requests.map(async (request) => {
+          const [currentStation] = request.currentStationId
+            ? await db.select().from(stations).where(eq(stations.id, request.currentStationId))
+            : [null];
+          
+          const [requestedStation] = await db
+            .select()
+            .from(stations)
+            .where(eq(stations.id, request.requestedStationId));
+
+          return {
+            ...request,
+            currentStation,
+            requestedStation,
+          };
+        })
+      );
+
+      res.json(requestsWithStations);
+    } catch (error) {
+      console.error('Error fetching station change requests:', error);
+      res.status(500).json({ error: "Failed to fetch requests" });
+    }
+  });
+
+  // Approve station change request (admin only)
+  app.post("/api/admin/station-change-requests/:requestId/approve", requireAdmin, async (req, res) => {
+    try {
+      const { requestId } = req.params;
+
+      // Get the request
+      const [request] = await db
+        .select()
+        .from(stationChangeRequests)
+        .where(eq(stationChangeRequests.id, requestId));
+
+      if (!request) {
+        return res.status(404).json({ error: "Request not found" });
+      }
+
+      if (request.status !== 'pending') {
+        return res.status(400).json({ error: "Request already processed" });
+      }
+
+      // Get the user to check their current role
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, request.userId));
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Update request status
+      await db
+        .update(stationChangeRequests)
+        .set({
+          status: 'approved',
+          reviewedBy: req.user.id,
+          reviewedAt: new Date(),
+        })
+        .where(eq(stationChangeRequests.id, requestId));
+
+      // Update user's station and demote if they're a station commander
+      // Station commanders should not automatically be commanders at their new station
+      const updateData: any = { stationId: request.requestedStationId };
+      
+      if (user.role === 'station_commander') {
+        updateData.role = 'recruiter'; // Demote to regular recruiter
+        console.log(`🔽 Demoting station commander ${user.email} to recruiter due to station transfer`);
+      }
+
+      await db
+        .update(users)
+        .set(updateData)
+        .where(eq(users.id, request.userId));
+
+      const message = user.role === 'station_commander' 
+        ? "Station change approved. User has been transferred and demoted to recruiter (must request station commander access at new station)."
+        : "Station change request approved successfully";
+
+      res.json({ message });
+    } catch (error) {
+      console.error('Error approving station change request:', error);
+      res.status(500).json({ error: "Failed to approve request" });
+    }
+  });
+
+  // Deny station change request (admin only)
+  app.post("/api/admin/station-change-requests/:requestId/deny", requireAdmin, async (req, res) => {
+    try {
+      const { requestId } = req.params;
+      const { reason } = req.body;
+
+      // Get the request
+      const [request] = await db
+        .select()
+        .from(stationChangeRequests)
+        .where(eq(stationChangeRequests.id, requestId));
+
+      if (!request) {
+        return res.status(404).json({ error: "Request not found" });
+      }
+
+      if (request.status !== 'pending') {
+        return res.status(400).json({ error: "Request already processed" });
+      }
+
+      // Update request status
+      await db
+        .update(stationChangeRequests)
+        .set({
+          status: 'denied',
+          reviewedBy: req.user.id,
+          reviewedAt: new Date(),
+          reviewNotes: reason,
+        })
+        .where(eq(stationChangeRequests.id, requestId));
+
+      res.json({ message: "Station change request denied successfully" });
+    } catch (error) {
+      console.error('Error denying station change request:', error);
+      res.status(500).json({ error: "Failed to deny request" });
+    }
+  });
+
+  // STATION COMMANDER ENDPOINTS
+
+  // Submit station commander request (for existing users from profile page)
+  app.post("/api/station-commander/request", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { justification } = req.body;
+
+      if (!justification || justification.trim().length === 0) {
+        return res.status(400).json({ error: "Justification is required" });
+      }
+
+      // Get user info
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Check if user already has station commander access
+      if (user.role === 'station_commander' || user.role === 'admin') {
+        return res.status(400).json({ error: "You already have station commander access" });
+      }
+
+      // Check if there's already a pending request
+      const [existingRequest] = await db
+        .select()
+        .from(stationCommanderRequests)
+        .where(eq(stationCommanderRequests.userId, userId))
+        .where(eq(stationCommanderRequests.status, 'pending'));
+
+      if (existingRequest) {
+        return res.status(400).json({ error: "You already have a pending request" });
+      }
+
+      // Generate approval token and expiration (7 days)
+      const approvalToken = generateApprovalToken();
+      const tokenExpires = new Date();
+      tokenExpires.setDate(tokenExpires.getDate() + 7);
+
+      // Create the request - tie it to their current station
+      const [request] = await db.insert(stationCommanderRequests).values({
+        userId,
+        requestedStationId: user.stationId, // Request is for their current station
+        justification,
+        status: 'pending',
+        approvalToken,
+        tokenExpires,
+      }).returning();
+
+      // Update user role to pending
+      await db
+        .update(users)
+        .set({ role: 'pending_station_commander' })
+        .where(eq(users.id, userId));
+
+      // Send notification email to admin with approval link
+      try {
+        await sendStationCommanderRequestNotification(
+          user.email,
+          user.fullName,
+          justification,
+          request.id,
+          approvalToken
+        );
+      } catch (error) {
+        console.error('⚠️ Failed to send admin notification:', error);
+      }
+
+      res.json({ 
+        message: "Station commander request submitted successfully",
+        requestId: request.id 
+      });
+    } catch (error) {
+      console.error('Error submitting station commander request:', error);
+      res.status(500).json({ error: "Failed to submit request" });
+    }
+  });
+
+  // Get user's own station commander request status
+  app.get("/api/station-commander/my-request", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Get the most recent request for this user
+      const [request] = await db
+        .select()
+        .from(stationCommanderRequests)
+        .where(eq(stationCommanderRequests.userId, userId))
+        .orderBy(sql`${stationCommanderRequests.createdAt} DESC`)
+        .limit(1);
+
+      if (!request) {
+        return res.json({ request: null });
+      }
+
+      res.json({ request });
+    } catch (error) {
+      console.error('Error fetching station commander request:', error);
+      res.status(500).json({ error: "Failed to fetch request" });
+    }
+  });
+
+  // Middleware to check if user is station commander
+  const requireStationCommander = async (req: any, res: any, next: any) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user || (user.role !== 'station_commander' && user.role !== 'admin')) {
+        return res.status(403).json({ error: "Station commander access required" });
+      }
+
+      req.user = user;
+      next();
+    } catch (error) {
+      res.status(500).json({ error: "Authorization check failed" });
+    }
+  };
+
+  // Get all recruiters at station commander's station with their stats
+  app.get("/api/station-commander/recruiters", requireStationCommander, async (req, res) => {
+    try {
+      const stationId = req.user.stationId;
+
+      // Get all recruiters at this station (or all if admin)
+      // IMPORTANT: Include the station commander themselves since they're also a recruiter
+      let recruitersAtStation;
+      if (req.user.role === 'admin') {
+        // Admin can see all recruiters AND station commanders AND admins (they recruit too!)
+        recruitersAtStation = await db.select().from(users)
+          .where(sql`${users.role} IN ('recruiter', 'station_commander', 'admin')`);
+      } else if (stationId) {
+        // Station commander sees their station + themselves
+        recruitersAtStation = await db.select().from(users)
+          .where(sql`${users.stationId} = ${stationId} OR ${users.id} = ${req.user.id}`);
+      } else {
+        // Station commander without station sees themselves + any recruiters without station
+        recruitersAtStation = await db.select().from(users)
+          .where(sql`${users.role} IN ('recruiter', 'station_commander') AND (${users.stationId} IS NULL OR ${users.id} = ${req.user.id})`);
+      }
+
+      // Get stats for each recruiter
+      const recruitersWithStats = await Promise.all(
+        recruitersAtStation.map(async (recruiter) => {
+          const recruiterRecruits = await storage.getRecruitsByRecruiter(recruiter.id);
+          
+          // Get month-to-date stats (current month)
+          const now = new Date();
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+          const monthlyRecruits = recruiterRecruits.filter(
+            (r) => new Date(r.submittedAt) >= monthStart
+          );
+
+          // Categorize by status (simplified as lead/prospect/applicant)
+          const leads = recruiterRecruits.filter((r) => r.status === 'pending').length;
+          const prospects = recruiterRecruits.filter(
+            (r) => r.status === 'contacted' || r.status === 'qualified'
+          ).length;
+          const applicants = recruiterRecruits.filter((r) => r.status === 'qualified').length;
+
+          const monthlyLeads = monthlyRecruits.filter((r) => r.status === 'pending').length;
+          const monthlyProspects = monthlyRecruits.filter(
+            (r) => r.status === 'contacted' || r.status === 'qualified'
+          ).length;
+          const monthlyApplicants = monthlyRecruits.filter((r) => r.status === 'qualified').length;
+
+          const { passwordHash, verificationToken, resetPasswordToken, ...safeRecruiter } = recruiter;
+
+          // Get QR scan tracking for this recruiter
+          let totalQrScans = 0;
+          let totalSurveyScans = 0;
+          let applicationsFromQR = recruiterRecruits.filter((r) => r.source === 'qr_code').length;
+          let qrConversionRate = 0;
+          let applicationScanConversions = 0;
+          let surveyScanConversions = 0;
+          let totalConvertedScans = 0;
+          
+          try {
+            const recruiterScans = await db.select()
+              .from(qrScans)
+              .where(eq(qrScans.recruiterId, recruiter.id));
+            totalQrScans = recruiterScans.length;
+            const applicationScans = recruiterScans.filter(s => s.scanType === 'application');
+            const surveyScans = recruiterScans.filter(s => s.scanType === 'survey');
+            totalSurveyScans = surveyScans.length;
+            applicationScanConversions = recruiterScans.filter(s => s.scanType === 'application' && s.convertedToApplication).length;
+            surveyScanConversions = recruiterScans.filter(s => s.scanType === 'survey' && s.convertedToSurvey).length;
+            totalConvertedScans = applicationScanConversions + surveyScanConversions;
+            
+            if (totalQrScans > 0) {
+              qrConversionRate = Math.round((totalConvertedScans / totalQrScans) * 100);
+            }
+          } catch (scanError) {
+            console.error(`Failed to get QR scan stats for recruiter ${recruiter.id}:`, scanError);
+          }
+
+          return {
+            ...safeRecruiter,
+            stats: {
+              allTime: {
+                total: recruiterRecruits.length,
+                leads,
+                prospects,
+                applicants,
+                qrCodeScans: applicationsFromQR, // Applications from QR
+                directEntries: recruiterRecruits.filter((r) => r.source === 'direct').length,
+                // NEW: QR scan tracking
+                qrScanTracking: {
+                  totalScans: totalQrScans,
+                  totalSurveyScans: totalSurveyScans,
+                  applicationsFromScans: applicationScanConversions,
+                  surveysFromScans: surveyScanConversions,
+                  totalConverted: totalConvertedScans,
+                  conversionRate: qrConversionRate,
+                },
+              },
+              monthly: {
+                total: monthlyRecruits.length,
+                leads: monthlyLeads,
+                prospects: monthlyProspects,
+                applicants: monthlyApplicants,
+              },
+            },
+          };
+        })
+      );
+
+      // Calculate station totals
+      const stationTotals = {
+        allTime: {
+          total: recruitersWithStats.reduce((sum, r) => sum + r.stats.allTime.total, 0),
+          leads: recruitersWithStats.reduce((sum, r) => sum + r.stats.allTime.leads, 0),
+          prospects: recruitersWithStats.reduce((sum, r) => sum + r.stats.allTime.prospects, 0),
+          applicants: recruitersWithStats.reduce((sum, r) => sum + r.stats.allTime.applicants, 0),
+        },
+        monthly: {
+          total: recruitersWithStats.reduce((sum, r) => sum + r.stats.monthly.total, 0),
+          leads: recruitersWithStats.reduce((sum, r) => sum + r.stats.monthly.leads, 0),
+          prospects: recruitersWithStats.reduce((sum, r) => sum + r.stats.monthly.prospects, 0),
+          applicants: recruitersWithStats.reduce((sum, r) => sum + r.stats.monthly.applicants, 0),
+        },
+      };
+
+      res.json({
+        recruiters: recruitersWithStats,
+        stationTotals,
+      });
+    } catch (error) {
+      console.error('Error fetching station recruiter stats:', error);
+      res.status(500).json({ error: "Failed to fetch recruiter stats" });
+    }
+  });
+
+  // Get detailed recruit data for export (station commander only)
+  app.get("/api/station-commander/recruits/export", requireStationCommander, async (req, res) => {
+    try {
+      const stationId = req.user.stationId;
+
+      // Get all recruiters at this station INCLUDING the station commander themselves
+      let recruitersAtStation;
+      if (req.user.role === 'admin') {
+        // Admin sees all recruiters AND station commanders AND admins (they recruit too!)
+        recruitersAtStation = await db.select().from(users)
+          .where(sql`${users.role} IN ('recruiter', 'station_commander', 'admin')`);
+      } else if (stationId) {
+        // Station commander sees their station + themselves
+        recruitersAtStation = await db.select().from(users)
+          .where(sql`${users.stationId} = ${stationId} OR ${users.id} = ${req.user.id}`);
+      } else {
+        // Station commander without station sees themselves + recruiters without station
+        recruitersAtStation = await db.select().from(users)
+          .where(sql`${users.role} IN ('recruiter', 'station_commander') AND (${users.stationId} IS NULL OR ${users.id} = ${req.user.id})`);
+      }
+
+      const recruiterIds = recruitersAtStation.map((r) => r.id);
+
+      // Get all recruits for these recruiters
+      const allRecruits = await Promise.all(
+        recruiterIds.map((id) => storage.getRecruitsByRecruiter(id))
+      );
+
+      const flatRecruits = allRecruits.flat();
+
+      // Get scan locations for all recruits
+      const recruitIds = flatRecruits.map(r => r.id);
+      const scansWithLocations = recruitIds.length > 0 ? await db.select({
+        applicationId: qrScans.applicationId,
+        locationLabel: qrCodeLocations.locationLabel,
+      })
+        .from(qrScans)
+        .leftJoin(qrCodeLocations, eq(qrScans.locationQrCodeId, qrCodeLocations.id))
+        .where(inArray(qrScans.applicationId, recruitIds)) : [];
+
+      const scanLocationMap = new Map<string, string>();
+      scansWithLocations.forEach(scan => {
+        if (scan.applicationId) {
+          scanLocationMap.set(scan.applicationId, scan.locationLabel || 'Default QR');
+        }
+      });
+
+      // Add recruiter name and scan location to each recruit
+      const recruitsWithRecruiterName = flatRecruits.map((recruit) => {
+        const recruiter = recruitersAtStation.find((r) => r.id === recruit.recruiterId);
+        const scanLocation = scanLocationMap.get(recruit.id) || (recruit.source === 'qr_code' ? 'Default QR' : 'Direct Entry');
+        return {
+          ...recruit,
+          recruiterName: recruiter?.fullName || 'Unknown',
+          recruiterRank: recruiter?.rank || '',
+          scanLocation: scanLocation,
+        };
+      });
+
+      res.json({ recruits: recruitsWithRecruiterName });
+    } catch (error) {
+      console.error('Error fetching recruits for export:', error);
+      res.status(500).json({ error: "Failed to fetch recruits" });
     }
   });
 
@@ -232,6 +1119,263 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create a location-based QR code
+  app.post("/api/qr-codes/location", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { locationLabel, qrType = 'application' } = req.body;
+
+      if (!locationLabel || locationLabel.trim().length === 0) {
+        return res.status(400).json({ error: "Location label is required" });
+      }
+
+      if (!['application', 'survey'].includes(qrType)) {
+        return res.status(400).json({ error: "QR type must be 'application' or 'survey'" });
+      }
+
+      // Generate unique QR code identifier
+      const { generateQRCode } = await import('./auth');
+      const qrCodeId = generateQRCode();
+
+      // Create location-based QR code
+      const [locationQR] = await db.insert(qrCodeLocations).values({
+        recruiterId: userId,
+        locationLabel: locationLabel.trim(),
+        qrCode: qrCodeId,
+        qrType: qrType,
+      }).returning();
+
+      // Generate QR code image
+      const qrCodeImage = qrType === 'application' 
+        ? await generateQRCodeImage(qrCodeId)
+        : await generateSurveyQRCodeImage(qrCodeId);
+
+      res.json({
+        id: locationQR.id,
+        locationLabel: locationQR.locationLabel,
+        qrCode: qrCodeId,
+        qrType: locationQR.qrType,
+        qrCodeImage: qrCodeImage,
+        createdAt: locationQR.createdAt,
+      });
+    } catch (error) {
+      console.error('❌ Failed to create location QR code:', error);
+      res.status(500).json({ error: "Failed to create location QR code" });
+    }
+  });
+
+  // Get all location-based QR codes for the current user
+  app.get("/api/qr-codes/location", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const locationQRs = await db.select()
+        .from(qrCodeLocations)
+        .where(eq(qrCodeLocations.recruiterId, userId))
+        .orderBy(sql`${qrCodeLocations.createdAt} DESC`);
+
+      res.json(locationQRs);
+    } catch (error) {
+      console.error('❌ Failed to fetch location QR codes:', error);
+      res.status(500).json({ error: "Failed to fetch location QR codes" });
+    }
+  });
+
+  // Get a specific location-based QR code image
+  app.get("/api/qr-codes/location/:id/image", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      const { id } = req.params;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const [locationQR] = await db.select()
+        .from(qrCodeLocations)
+        .where(eq(qrCodeLocations.id, id));
+
+      if (!locationQR) {
+        return res.status(404).json({ error: "Location QR code not found" });
+      }
+
+      if (locationQR.recruiterId !== userId) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+
+      // Generate QR code image
+      const qrCodeImage = locationQR.qrType === 'application'
+        ? await generateQRCodeImage(locationQR.qrCode)
+        : await generateSurveyQRCodeImage(locationQR.qrCode);
+
+      res.json({ qrCode: qrCodeImage });
+    } catch (error) {
+      console.error('❌ Failed to generate location QR code image:', error);
+      res.status(500).json({ error: "Failed to generate QR code image" });
+    }
+  });
+
+  // Delete a location-based QR code
+  app.delete("/api/qr-codes/location/:id", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      const { id } = req.params;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const [locationQR] = await db.select()
+        .from(qrCodeLocations)
+        .where(eq(qrCodeLocations.id, id));
+
+      if (!locationQR) {
+        return res.status(404).json({ error: "Location QR code not found" });
+      }
+
+      if (locationQR.recruiterId !== userId) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+
+      await db.delete(qrCodeLocations).where(eq(qrCodeLocations.id, id));
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('❌ Failed to delete location QR code:', error);
+      res.status(500).json({ error: "Failed to delete location QR code" });
+    }
+  });
+
+  // Get QR scan analytics with location breakdown
+  app.get("/api/qr-scans/analytics", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Get user to check their role
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Get all scans for this user (or station if station commander/admin)
+      let allScans;
+      if (user.role === 'admin') {
+        allScans = await db.select().from(qrScans);
+      } else if (user.role === 'station_commander' && user.stationId) {
+        const stationRecruiters = await db.select()
+          .from(users)
+          .where(eq(users.stationId, user.stationId));
+        const recruiterIds = stationRecruiters.map(r => r.id);
+        allScans = recruiterIds.length > 0
+          ? await db.select().from(qrScans).where(inArray(qrScans.recruiterId, recruiterIds))
+          : [];
+      } else {
+        allScans = await db.select().from(qrScans).where(eq(qrScans.recruiterId, userId));
+      }
+
+      // Get location QR codes for labeling
+      const locationQRs = await db.select().from(qrCodeLocations);
+      const locationQRMap = new Map(locationQRs.map(qr => [qr.id, qr.locationLabel]));
+
+      // Group scans by location
+      const scansByLocation: Record<string, {
+        locationLabel: string;
+        totalScans: number;
+        convertedScans: number;
+        conversionRate: number;
+        scans: Array<{
+          id: string;
+          scanType: string;
+          scannedAt: Date;
+          converted: boolean;
+          conversionType: string | null;
+          ipAddress: string | null;
+        }>;
+      }> = {};
+
+      // Add default QR category
+      scansByLocation['default'] = {
+        locationLabel: 'Default QR',
+        totalScans: 0,
+        convertedScans: 0,
+        conversionRate: 0,
+        scans: [],
+      };
+
+      allScans.forEach(scan => {
+        const locationKey = scan.locationQrCodeId || 'default';
+        const locationLabel = scan.locationQrCodeId 
+          ? (locationQRMap.get(scan.locationQrCodeId) || 'Unknown Location')
+          : 'Default QR';
+
+        if (!scansByLocation[locationKey]) {
+          scansByLocation[locationKey] = {
+            locationLabel,
+            totalScans: 0,
+            convertedScans: 0,
+            conversionRate: 0,
+            scans: [],
+          };
+        }
+
+        scansByLocation[locationKey].totalScans++;
+        const converted =
+          scan.scanType === 'survey'
+            ? (scan.convertedToSurvey || false)
+            : (scan.convertedToApplication || false);
+
+        if (converted) {
+          scansByLocation[locationKey].convertedScans++;
+        }
+
+        scansByLocation[locationKey].scans.push({
+          id: scan.id,
+          scanType: scan.scanType,
+          scannedAt: scan.scannedAt,
+          converted,
+          conversionType: converted ? (scan.scanType === 'survey' ? 'survey' : 'application') : null,
+          ipAddress: scan.ipAddress,
+        });
+      });
+
+      // Calculate conversion rates
+      Object.values(scansByLocation).forEach(location => {
+        if (location.totalScans > 0) {
+          location.conversionRate = Math.round((location.convertedScans / location.totalScans) * 100);
+        }
+      });
+
+      // Sort by total scans (descending)
+      const locations = Object.values(scansByLocation).sort((a, b) => b.totalScans - a.totalScans);
+
+      res.json({
+        locations,
+        totalScans: allScans.length,
+        totalConverted: allScans.filter(s => (s.scanType === 'survey' ? s.convertedToSurvey : s.convertedToApplication)).length,
+        overallConversionRate: allScans.length > 0 
+          ? Math.round((allScans.filter(s => (s.scanType === 'survey' ? s.convertedToSurvey : s.convertedToApplication)).length / allScans.length) * 100)
+          : 0,
+      });
+    } catch (error) {
+      console.error('❌ Failed to get QR scan analytics:', error);
+      res.status(500).json({ error: "Failed to fetch QR scan analytics" });
+    }
+  });
+
   // Update recruiter profile
   app.put("/api/profile", async (req, res) => {
     try {
@@ -241,27 +1385,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const { fullName, rank, unit, phoneNumber, profilePicture } = req.body;
+      // Get current user to check role
+      const [currentUser] = await db.select().from(users).where(eq(users.id, userId));
+      if (!currentUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const { fullName, rank, unit, phoneNumber, profilePicture, stationId } = req.body;
+
+      // Build update object
+      const updateData: any = {
+        fullName: fullName || undefined,
+        rank: rank || null,
+        unit: unit || null,
+        phoneNumber: phoneNumber || null,
+        profilePicture: profilePicture || null,
+        updatedAt: new Date(),
+      };
+
+      // Only admins can directly change their station
+      if (stationId !== undefined) {
+        if (currentUser.role === 'admin') {
+          updateData.stationId = stationId;
+          console.log(`👑 Admin ${currentUser.email} changing station to ${stationId}`);
+        } else {
+          return res.status(403).json({ 
+            error: "Only administrators can directly change their station. Please submit a station change request." 
+          });
+        }
+      }
 
       // Update user profile
       const [updatedUser] = await db
         .update(users)
-        .set({
-          fullName: fullName || undefined,
-          rank: rank || null,
-          unit: unit || null,
-          phoneNumber: phoneNumber || null,
-          profilePicture: profilePicture || null,
-          updatedAt: new Date(),
-        })
+        .set(updateData)
         .where(eq(users.id, userId))
         .returning();
 
       console.log(`✅ Updated profile for user ${userId}`);
 
+      // Get station info if stationId exists
+      let stationInfo = null;
+      if (updatedUser.stationId) {
+        const [station] = await db.select().from(stations).where(eq(stations.id, updatedUser.stationId));
+        if (station) {
+          stationInfo = {
+            stationId: station.id,
+            stationCode: station.stationCode,
+            stationName: station.name,
+            stationCity: station.city,
+            stationState: station.state,
+          };
+        }
+      }
+
       // Return user data without sensitive fields
       const { passwordHash, verificationToken, resetPasswordToken, ...userData } = updatedUser;
-      res.json({ user: userData });
+      res.json({ user: { ...userData, ...stationInfo } });
     } catch (error) {
       console.error('❌ Failed to update profile:', error);
       res.status(500).json({ error: "Failed to update profile" });
@@ -335,28 +1515,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      // OPTIMIZED: Query database directly with WHERE clause instead of loading all recruits
-      // This scales much better as data grows
-      const recruiterRecruits = await storage.getRecruitsByRecruiter(userId);
+      // Get user to check their role
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
       
-      console.log(`📊 Stats request for userId: ${userId}`);
-      console.log(`📊 Recruits matching recruiterId: ${recruiterRecruits.length}`);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Get recruits based on user role and station
+      let recruiterRecruits;
       
-      // Calculate stats using database-filtered results (much faster)
+      if (user.role === 'admin') {
+        // Admin sees all recruits
+        recruiterRecruits = await storage.getAllRecruits();
+      } else if (user.role === 'station_commander' && user.stationId) {
+        // Station commander sees recruits from all recruiters at their station
+        const stationRecruiters = await db.select()
+          .from(users)
+          .where(eq(users.stationId, user.stationId));
+        
+        const recruiterIds = stationRecruiters.map(r => r.id);
+        const allRecruits = await Promise.all(
+          recruiterIds.map(id => storage.getRecruitsByRecruiter(id))
+        );
+        recruiterRecruits = allRecruits.flat();
+      } else {
+        // Regular recruiter or pending station commander - see only their own recruits
+        recruiterRecruits = await storage.getRecruitsByRecruiter(userId);
+      }
+      
+      console.log(`📊 Stats request for userId: ${userId} (role: ${user.role})`);
+      console.log(`📊 Recruits accessible: ${recruiterRecruits.length}`);
+      
+      // Calculate stats using database-filtered results
       const totalRecruits = recruiterRecruits.length;
-      const qrCodeScans = recruiterRecruits.filter(r => r.source === "qr_code").length;
+      const applicationsFromQR = recruiterRecruits.filter(r => r.source === "qr_code").length;
       const directEntries = recruiterRecruits.filter(r => r.source === "direct").length;
       
-      console.log(`📊 Stats: total=${totalRecruits}, qrCode=${qrCodeScans}, direct=${directEntries}`);
+      // Get QR scan tracking data (NEW)
+      let totalQrScans = 0;
+      let totalSurveyScans = 0;
+      let qrConversionRate = 0;
+      let applicationScanConversions = 0;
+      let surveyScanConversions = 0;
+      let totalConvertedScans = 0;
+      
+      try {
+        let allScans;
+        if (user.role === 'admin') {
+          allScans = await db.select().from(qrScans);
+        } else if (user.role === 'station_commander' && user.stationId) {
+          const stationRecruiters = await db.select()
+            .from(users)
+            .where(eq(users.stationId, user.stationId));
+          const recruiterIds = stationRecruiters.map(r => r.id);
+          allScans = recruiterIds.length > 0
+            ? await db.select().from(qrScans).where(inArray(qrScans.recruiterId, recruiterIds))
+            : [];
+        } else {
+          allScans = await db.select().from(qrScans).where(eq(qrScans.recruiterId, userId));
+        }
+        
+        const surveyScans = allScans.filter(s => s.scanType === 'survey');
+        
+        totalQrScans = allScans.length;
+        totalSurveyScans = surveyScans.length;
+        applicationScanConversions = allScans.filter(s => s.scanType === 'application' && s.convertedToApplication).length;
+        surveyScanConversions = allScans.filter(s => s.scanType === 'survey' && s.convertedToSurvey).length;
+        totalConvertedScans = applicationScanConversions + surveyScanConversions;
+        
+        if (totalQrScans > 0) {
+          qrConversionRate = Math.round((totalConvertedScans / totalQrScans) * 100);
+        }
+      } catch (scanError) {
+        console.error('❌ Failed to get QR scan stats:', scanError);
+        // Continue without scan stats if there's an error
+      }
+      
+      console.log(`📊 Stats: total=${totalRecruits}, applications from QR=${applicationsFromQR}, direct=${directEntries}`);
+      console.log(`📊 QR Scans: total=${totalQrScans}, converted=${totalConvertedScans}, rate=${qrConversionRate}%`);
       
       // Get recent recruits (already sorted by database query, just take first 10)
       const recentRecruits = recruiterRecruits.slice(0, 10);
 
       res.json({
         totalRecruits,
-        qrCodeScans,
+        qrCodeScans: applicationsFromQR, // Renamed for clarity: applications that came from QR
         directEntries,
         recentRecruits,
+        // NEW fields for scan tracking
+        qrScanTracking: {
+          totalScans: totalQrScans, // Total times QR was scanned (page loaded)
+          totalSurveyScans: totalSurveyScans, // Total survey QR scans
+          applicationsFromScans: applicationScanConversions, // Applications that resulted from scans
+          surveysFromScans: surveyScanConversions, // Surveys that resulted from scans
+          totalConverted: totalConvertedScans,
+          conversionRate: qrConversionRate, // Percentage of scans that converted
+        },
       });
     } catch (error) {
       console.error('❌ Failed to get recruiter stats:', error);
@@ -365,11 +1620,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // RECRUITS ENDPOINTS (with recruiter filtering)
-  // Get all recruits
-  app.get("/api/recruits", async (_req, res) => {
+  // Get all recruits for the logged-in user only
+  app.get("/api/recruits", async (req, res) => {
     try {
-      const recruits = await storage.getAllRecruits();
-      res.json(recruits);
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Get user to check their role
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Regular recruiters and pending station commanders see only their own recruits
+      // Station commanders and admins see all recruits at their station
+      let userRecruits;
+      
+      if (user.role === 'admin') {
+        // Admin sees all recruits
+        userRecruits = await storage.getAllRecruits();
+      } else if (user.role === 'station_commander' && user.stationId) {
+        // Station commander sees recruits from all recruiters at their station
+        const stationRecruiters = await db.select()
+          .from(users)
+          .where(eq(users.stationId, user.stationId));
+        
+        const recruiterIds = stationRecruiters.map(r => r.id);
+        const allRecruits = await Promise.all(
+          recruiterIds.map(id => storage.getRecruitsByRecruiter(id))
+        );
+        userRecruits = allRecruits.flat();
+      } else {
+        // Regular recruiter or pending station commander - see only their own recruits
+        userRecruits = await storage.getRecruitsByRecruiter(userId);
+      }
+
+      res.json(userRecruits);
     } catch (error) {
       res.status(500).json({
         message:
@@ -378,16 +1668,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get single recruit by ID
+  // Get single recruit by ID (with authorization check)
   app.get("/api/recruits/:id", async (req, res) => {
     try {
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
       const recruit = await storage.getRecruit(req.params.id);
 
       if (!recruit) {
         return res.status(404).json({ message: "Recruit not found" });
       }
 
-      res.json(recruit);
+      // Get user to check their role
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Verify user has permission to view this recruit
+      if (user.role === 'admin') {
+        // Admin can see all recruits
+        res.json(recruit);
+      } else if (user.role === 'station_commander' && user.stationId) {
+        // Station commander can see recruits from their station
+        const recruiter = await db.select().from(users).where(eq(users.id, recruit.recruiterId || ''));
+        if (recruiter.length > 0 && recruiter[0].stationId === user.stationId) {
+          res.json(recruit);
+        } else {
+          res.status(403).json({ error: "You don't have permission to view this recruit" });
+        }
+      } else if (recruit.recruiterId === userId) {
+        // Regular recruiter can only see their own recruits
+        res.json(recruit);
+      } else {
+        res.status(403).json({ error: "You don't have permission to view this recruit" });
+      }
     } catch (error) {
       res.status(500).json({
         message:
@@ -396,12 +1716,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get recruiter by QR code
+  // Get recruiter by QR code (handles both default and location-based QR codes)
   app.get("/api/recruiter/by-qr/:qrCode", async (req, res) => {
     try {
       const { qrCode } = req.params;
       
-      const [recruiter] = await db.select().from(users).where(eq(users.qrCode, qrCode));
+      // First check if this is a location-based QR code
+      const [locationQR] = await db.select()
+        .from(qrCodeLocations)
+        .where(eq(qrCodeLocations.qrCode, qrCode));
+
+      let recruiter;
+      if (locationQR) {
+        // This is a location-based QR code
+        recruiter = await db.query.users.findFirst({
+          where: eq(users.id, locationQR.recruiterId),
+        });
+      } else {
+        // This is the default user QR code
+        [recruiter] = await db.select().from(users).where(eq(users.qrCode, qrCode));
+      }
       
       if (!recruiter) {
         return res.status(404).json({ error: "Recruiter not found" });
@@ -409,9 +1743,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Return public recruiter info (no sensitive data)
       const { passwordHash, verificationToken, resetPasswordToken, qrCode: _qrCode, ...recruiterInfo } = recruiter;
-      res.json({ recruiter: recruiterInfo });
+      res.json({ 
+        recruiter: recruiterInfo,
+        locationLabel: locationQR?.locationLabel || null,
+      });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch recruiter information" });
+    }
+  });
+
+  // Track QR code scan (when page is loaded, not when application is submitted)
+  app.post("/api/qr-scan", async (req, res) => {
+    try {
+      const { qrCode, scanType = 'application' } = req.body;
+      
+      if (!qrCode) {
+        return res.status(400).json({ error: "QR code is required" });
+      }
+
+      // First check if this is a location-based QR code
+      const [locationQR] = await db.select()
+        .from(qrCodeLocations)
+        .where(eq(qrCodeLocations.qrCode, qrCode));
+
+      let recruiter;
+      let locationQrCodeId = null;
+
+      if (locationQR) {
+        // This is a location-based QR code
+        recruiter = await db.query.users.findFirst({
+          where: eq(users.id, locationQR.recruiterId),
+        });
+        locationQrCodeId = locationQR.id;
+        console.log(`📍 Location QR scan detected - Label: ${locationQR.locationLabel}, Type: ${locationQR.qrType}`);
+      } else {
+        // This is the default user QR code
+        [recruiter] = await db.select().from(users).where(eq(users.qrCode, qrCode));
+      }
+      
+      if (!recruiter) {
+        // QR code not found - might be invalid or from a deleted account
+        console.warn(`⚠️ QR scan attempted with unknown QR code: ${qrCode}`);
+        return res.status(200).json({ success: false, error: "QR code not found" });
+      }
+
+      // Capture request metadata
+      const ipAddress = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || 
+                       req.ip || 
+                       req.socket.remoteAddress || 
+                       null;
+      const userAgent = req.headers["user-agent"] || null;
+      const referrer = req.headers["referer"] || req.headers["referrer"] || null;
+
+      // Record the scan
+      const [scan] = await db.insert(qrScans).values({
+        recruiterId: recruiter.id,
+        qrCode: qrCode,
+        locationQrCodeId: locationQrCodeId,
+        scanType: scanType,
+        ipAddress: ipAddress,
+        userAgent: userAgent,
+        referrer: referrer,
+        convertedToApplication: false, // Will be updated if they submit
+      }).returning();
+
+      const scanLocation = locationQR ? ` at "${locationQR.locationLabel}"` : ' (default QR)';
+      console.log(`📱 QR Scan tracked - Recruiter: ${recruiter.fullName}, Type: ${scanType}${scanLocation}, Scan ID: ${scan.id}`);
+
+      res.json({ 
+        success: true, 
+        scanId: scan.id,
+        locationLabel: locationQR?.locationLabel || null,
+        message: "Scan tracked successfully" 
+      });
+    } catch (error) {
+      console.error('❌ Failed to track QR scan:', error);
+      // Don't fail the page load if tracking fails
+      res.status(200).json({ success: false, error: "Failed to track scan" });
     }
   });
 
@@ -421,7 +1829,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const body = req.body;
       const userId = (req as any).session?.userId; // Logged in recruiter ID
       
-      console.log(`📝 POST /api/recruits - Session userId: ${userId || 'NULL'}, recruiterCode: ${body.recruiterCode || 'NULL'}`);
+      console.log(`📝 POST /api/recruits - Session userId: ${userId || 'NULL'}, recruiterCode: ${recruiterCode || 'NULL'}`);
       console.log(`📝 Session data:`, JSON.stringify((req as any).session || {}));
       
       // Determine source and recruiterId:
@@ -431,28 +1839,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let recruiterId: string | undefined = undefined;
       let source = "direct";
       
-      console.log(`🔍 Source determination - recruiterCode: ${body.recruiterCode || 'NULL'}, userId: ${userId || 'NULL'}`);
+      console.log(`🔍 Source determination - recruiterCode: ${recruiterCode || 'NULL'}, userId: ${userId || 'NULL'}`);
       
-      if (body.recruiterCode && !userId) {
+      if (recruiterCode && !userId) {
         // QR code scan (public form with recruiter code)
-        console.log(`🔍 QR code scan detected (public form) - recruiterCode: ${body.recruiterCode}`);
-        const [recruiter] = await db.select().from(users).where(eq(users.qrCode, body.recruiterCode));
+        console.log(`🔍 QR code scan detected (public form) - recruiterCode: ${recruiterCode}`);
+        
+        // Check if this is a location-based QR code
+        const [locationQR] = await db.select()
+          .from(qrCodeLocations)
+          .where(eq(qrCodeLocations.qrCode, recruiterCode));
+
+        let recruiter;
+        if (locationQR) {
+          // This is a location-based QR code
+          recruiter = await db.query.users.findFirst({
+            where: eq(users.id, locationQR.recruiterId),
+          });
+          console.log(`📍 Location QR code detected - Label: ${locationQR.locationLabel}`);
+        } else {
+          // This is the default user QR code
+          [recruiter] = await db.select().from(users).where(eq(users.qrCode, recruiterCode));
+        }
+        
         if (recruiter) {
           recruiterId = recruiter.id;
           source = "qr_code";
           console.log(`✅ QR code recruiter found - recruiterId: ${recruiterId}, source set to: qr_code`);
         } else {
-          console.log(`⚠️ QR code provided but recruiter not found - recruiterCode: ${body.recruiterCode}`);
+          console.log(`⚠️ QR code provided but recruiter not found - recruiterCode: ${recruiterCode}`);
         }
-      } else if (userId && !body.recruiterCode) {
+      } else if (userId && !recruiterCode) {
         // Logged in recruiter filling intake form directly
         console.log(`🔍 Direct entry detected (logged in recruiter, no QR code)`);
         recruiterId = userId;
         source = "direct";
-      } else if (userId && body.recruiterCode) {
+      } else if (userId && recruiterCode) {
         // Logged in recruiter but also has code - use the code's recruiter
         console.log(`🔍 Both userId and recruiterCode provided - checking QR code`);
-        const [recruiter] = await db.select().from(users).where(eq(users.qrCode, body.recruiterCode));
+        const [recruiter] = await db.select().from(users).where(eq(users.qrCode, recruiterCode));
         if (recruiter) {
           recruiterId = recruiter.id;
           source = "qr_code";
@@ -495,6 +1920,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const recruit = await storage.createRecruit(validatedData);
 
       console.log(`✅ Created recruit: id=${recruit.id}, recruiterId=${recruit.recruiterId || 'NULL'} (type: ${typeof recruit.recruiterId}), source=${recruit.source || 'MISSING'}`);
+
+      // If this recruit came from a QR code scan, update the scan record to mark it as converted
+      if (source === "qr_code" && recruiterCode) {
+        try {
+          const [latestScan] = await db.select()
+            .from(qrScans)
+            .where(and(
+              eq(qrScans.qrCode, recruiterCode),
+              eq(qrScans.scanType, 'application'),
+              eq(qrScans.convertedToApplication, false)
+            ))
+            .orderBy(desc(qrScans.scannedAt))
+            .limit(1);
+
+          if (latestScan) {
+            await db.update(qrScans)
+              .set({
+                convertedToApplication: true,
+                applicationId: recruit.id,
+              })
+              .where(eq(qrScans.id, latestScan.id));
+            console.log(`✅ Updated QR scan record for QR code: ${recruiterCode} (scan ID: ${latestScan.id})`);
+          } else {
+            console.warn(`⚠️ No matching QR scan found to update for code: ${recruiterCode}`);
+          }
+        } catch (scanUpdateError) {
+          console.error('⚠️ Failed to update QR scan record (non-critical):', scanUpdateError);
+          // Don't fail the recruit creation if scan update fails
+        }
+      }
 
       // Send confirmation email to applicant
       try {
@@ -552,11 +2007,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Recruiter QR code is required" });
       }
 
-      // Find recruiter by QR code identifier
-      const [recruiter] = await db
-        .select()
-        .from(users)
-        .where(eq(users.qrCode, recruiterCode));
+      // Check if this is a location-based QR code
+      const [locationQR] = await db.select()
+        .from(qrCodeLocations)
+        .where(eq(qrCodeLocations.qrCode, recruiterCode));
+
+      let recruiter;
+      if (locationQR) {
+        // This is a location-based QR code
+        recruiter = await db.query.users.findFirst({
+          where: eq(users.id, locationQR.recruiterId),
+        });
+        console.log(`📍 Location QR code detected for survey - Label: ${locationQR.locationLabel}`);
+      } else {
+        // This is the default user QR code
+        [recruiter] = await db
+          .select()
+          .from(users)
+          .where(eq(users.qrCode, recruiterCode));
+      }
 
       if (!recruiter) {
         return res.status(404).json({ error: "Recruiter not found" });
@@ -579,6 +2048,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .insert(qrSurveyResponses)
         .values(validated)
         .returning();
+
+      // Update the QR scan record to mark as converted for surveys
+      try {
+        const [latestSurveyScan] = await db.select()
+          .from(qrScans)
+          .where(and(
+            eq(qrScans.qrCode, recruiterCode),
+            eq(qrScans.scanType, 'survey'),
+            eq(qrScans.convertedToSurvey, false)
+          ))
+          .orderBy(desc(qrScans.scannedAt))
+          .limit(1);
+
+        if (latestSurveyScan) {
+          await db.update(qrScans)
+            .set({
+              convertedToSurvey: true,
+              surveyResponseId: created.id,
+            })
+            .where(eq(qrScans.id, latestSurveyScan.id));
+          console.log(`✅ Updated survey scan record for QR code: ${recruiterCode} (scan ID: ${latestSurveyScan.id})`);
+        } else {
+          console.warn(`⚠️ No matching survey QR scan found to update for code: ${recruiterCode}`);
+        }
+      } catch (scanUpdateError) {
+        console.error('⚠️ Failed to update survey QR scan record (non-critical):', scanUpdateError);
+      }
 
       // Send confirmation email to the person who submitted feedback
       try {
@@ -629,11 +2125,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const responses = await db
-        .select()
-        .from(qrSurveyResponses)
-        .where(eq(qrSurveyResponses.recruiterId, userId))
-        .orderBy(sql`${qrSurveyResponses.createdAt} DESC`);
+      // Get user to check their role and station
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      let responses;
+      
+      if (user.role === 'admin') {
+        // Admin sees all survey responses
+        responses = await db
+          .select()
+          .from(qrSurveyResponses)
+          .orderBy(sql`${qrSurveyResponses.createdAt} DESC`);
+      } else if (user.role === 'station_commander' && user.stationId) {
+        // Station commander sees responses from all recruiters at their station
+        const stationRecruiters = await db.select()
+          .from(users)
+          .where(eq(users.stationId, user.stationId));
+        
+        const recruiterIds = stationRecruiters.map(r => r.id);
+        responses = await db
+          .select()
+          .from(qrSurveyResponses)
+          .where(sql`${qrSurveyResponses.recruiterId} IN (${sql.join(recruiterIds.map(id => sql`${id}`), sql`, `)})`)
+          .orderBy(sql`${qrSurveyResponses.createdAt} DESC`);
+      } else {
+        // Regular recruiter sees only their own responses
+        responses = await db
+          .select()
+          .from(qrSurveyResponses)
+          .where(eq(qrSurveyResponses.recruiterId, userId))
+          .orderBy(sql`${qrSurveyResponses.createdAt} DESC`);
+      }
 
       const total = responses.length;
       const averageRating =
@@ -655,25 +2181,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update recruit status
   app.patch("/api/recruits/:id/status", async (req, res) => {
     try {
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
       const { status } = req.body;
 
       if (!status || typeof status !== "string") {
         return res.status(400).json({ message: "Status is required" });
       }
 
-      const validStatuses = ["pending", "reviewing", "approved", "rejected"];
+      const validStatuses = ["pending", "contacted", "qualified", "disqualified"];
       if (!validStatuses.includes(status)) {
         return res.status(400).json({
           message:
-            "Invalid status. Must be one of: pending, reviewing, approved, rejected",
+            "Invalid status. Must be one of: pending, contacted, qualified, disqualified",
         });
       }
 
-      const recruit = await storage.updateRecruitStatus(req.params.id, status);
+      // Get the recruit first to check ownership
+      const existingRecruit = await storage.getRecruit(req.params.id);
 
-      if (!recruit) {
+      if (!existingRecruit) {
         return res.status(404).json({ message: "Recruit not found" });
       }
+
+      // Get user to check their role
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Verify user has permission to update this recruit
+      let hasPermission = false;
+
+      if (user.role === 'admin') {
+        hasPermission = true;
+      } else if (user.role === 'station_commander' && user.stationId) {
+        // Station commander can update recruits from their station
+        const recruiter = await db.select().from(users).where(eq(users.id, existingRecruit.recruiterId || ''));
+        if (recruiter.length > 0 && recruiter[0].stationId === user.stationId) {
+          hasPermission = true;
+        }
+      } else if (existingRecruit.recruiterId === userId) {
+        // Regular recruiter can only update their own recruits
+        hasPermission = true;
+      }
+
+      if (!hasPermission) {
+        return res.status(403).json({ error: "You don't have permission to update this recruit" });
+      }
+
+      const recruit = await storage.updateRecruitStatus(req.params.id, status);
 
       res.json(recruit);
     } catch (error) {
@@ -705,9 +2267,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Export recruits as CSV
-  app.get("/api/recruits/export/csv", async (_req, res) => {
+  app.get("/api/recruits/export/csv", async (req, res) => {
     try {
-      const recruits = await storage.getAllRecruits();
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Get user to check their role
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Get recruits based on user role (same logic as /api/recruits)
+      let recruits;
+      
+      if (user.role === 'admin') {
+        recruits = await storage.getAllRecruits();
+      } else if (user.role === 'station_commander' && user.stationId) {
+        const stationRecruiters = await db.select()
+          .from(users)
+          .where(eq(users.stationId, user.stationId));
+        
+        const recruiterIds = stationRecruiters.map(r => r.id);
+        const allRecruits = await Promise.all(
+          recruiterIds.map(id => storage.getRecruitsByRecruiter(id))
+        );
+        recruits = allRecruits.flat();
+      } else {
+        recruits = await storage.getRecruitsByRecruiter(userId);
+      }
+
+      // Get scan locations for all recruits
+      const recruitIds = recruits.map(r => r.id);
+      const scansWithLocations = recruitIds.length > 0 ? await db.select({
+        applicationId: qrScans.applicationId,
+        locationLabel: qrCodeLocations.locationLabel,
+      })
+        .from(qrScans)
+        .leftJoin(qrCodeLocations, eq(qrScans.locationQrCodeId, qrCodeLocations.id))
+        .where(inArray(qrScans.applicationId, recruitIds)) : [];
+
+      const scanLocationMap = new Map<string, string>();
+      scansWithLocations.forEach(scan => {
+        if (scan.applicationId) {
+          scanLocationMap.set(scan.applicationId, scan.locationLabel || 'Default QR');
+        }
+      });
 
       const headers = [
         "ID",
@@ -720,22 +2329,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "Education",
         "Prior Service",
         "Status",
+        "Source",
+        "Scan Location",
         "Submitted Date",
       ];
 
-      const rows = recruits.map((recruit) => [
-        recruit.id,
-        recruit.firstName,
-        recruit.lastName,
-        recruit.email,
-        recruit.phone,
-        recruit.city,
-        recruit.state,
-        recruit.educationLevel,
-        recruit.hasPriorService,
-        recruit.status,
-        new Date(recruit.submittedAt).toLocaleDateString(),
-      ]);
+      const rows = recruits.map((recruit) => {
+        const scanLocation = scanLocationMap.get(recruit.id) || (recruit.source === 'qr_code' ? 'Default QR' : 'Direct Entry');
+        return [
+          recruit.id,
+          recruit.firstName,
+          recruit.lastName,
+          recruit.email,
+          recruit.phone,
+          recruit.city,
+          recruit.state,
+          recruit.educationLevel,
+          recruit.hasPriorService,
+          recruit.status,
+          recruit.source === 'qr_code' ? 'QR Code' : 'Direct',
+          scanLocation,
+          new Date(recruit.submittedAt).toLocaleDateString(),
+        ];
+      });
 
       const csvContent = [
         headers.join(","),
@@ -1147,7 +2763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Search for nearby events using PredictHQ API
+  // Search for nearby events using Ticketmaster API
   app.post("/api/places/search-events", async (req, res) => {
     try {
       const userId = (req as any).session?.userId;
@@ -1214,13 +2830,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Check if API key exists to provide better error message
+      const hasApiKey = !!process.env.TICKETMASTER_API_KEY;
+      
       res.json({
         count: events.length,
         events,
         message:
           events.length > 0
             ? `Found ${events.length} events within ${radiusMiles} miles`
-            : "No PredictHQ API key configured. Add PREDICTHQ_API_KEY to .env to discover events.",
+            : hasApiKey
+            ? `No events found within ${radiusMiles} miles. Try expanding your search radius or searching in a different location.`
+            : "No Ticketmaster API key configured. Add TICKETMASTER_API_KEY to .env to discover events.",
       });
     } catch (error) {
       res.status(500).json({

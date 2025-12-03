@@ -11,3 +11,19 @@ export const ARMY_RANKS = [
 
 export type ArmyRank = typeof ARMY_RANKS[number]["value"];
 
+// User Roles
+export const USER_ROLES = {
+  RECRUITER: 'recruiter',
+  STATION_COMMANDER: 'station_commander',
+  PENDING_STATION_COMMANDER: 'pending_station_commander',
+  ADMIN: 'admin',
+} as const;
+
+export type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES];
+
+// Account types for registration
+export const ACCOUNT_TYPES = [
+  { value: "recruiter", label: "Recruiter", description: "Individual recruiter account" },
+  { value: "station_commander", label: "Station Commander", description: "Oversee multiple recruiters (requires approval)" },
+] as const;
+

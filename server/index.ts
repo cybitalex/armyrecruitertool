@@ -43,7 +43,7 @@ app.use((req, res, next) => {
   // Content Security Policy
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.predicthq.com https://maps.googleapis.com https://overpass-api.de https://api.groq.com;"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://www.eventbriteapi.com https://maps.googleapis.com https://overpass-api.de https://api.groq.com;"
   );
 
   // Add security attribution

@@ -37,6 +37,7 @@ export function exportContactsToExcel(
       "Additional Notes",
       "Status",
       "Source",
+      "Scan Location",
       "Submitted Date",
     ];
 
@@ -67,6 +68,7 @@ export function exportContactsToExcel(
       recruit.additionalNotes || "",
       recruit.status || "",
       recruit.source === "qr_code" ? "QR Code" : "Direct",
+      (recruit as any).scanLocation || (recruit.source === "qr_code" ? "Default QR" : "Direct Entry"),
       recruit.submittedAt ? new Date(recruit.submittedAt).toLocaleString() : "",
     ]);
 
@@ -103,6 +105,7 @@ export function exportContactsToExcel(
       { wch: 30 }, // Additional Notes
       { wch: 12 }, // Status
       { wch: 10 }, // Source
+      { wch: 20 }, // Scan Location
       { wch: 20 }, // Submitted Date
     ];
 

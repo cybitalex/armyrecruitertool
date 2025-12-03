@@ -472,10 +472,11 @@ function ProspectingMap() {
           description: `Found and added ${data.addedEvents.length} upcoming recruiting events.`,
         });
       } else {
+        // Use the message from the API response, which tells us if API key is configured
+        const message = data.searchResult?.message || "No events found. Try expanding your search radius or searching in a different location.";
         toast({
           title: "No Events Found",
-          description:
-            "Add PREDICTHQ_API_KEY to .env to discover real events nearby.",
+          description: message,
           variant: "default",
         });
       }
@@ -654,28 +655,32 @@ function ProspectingMap() {
     <div className="bg-army-green w-full">
       {/* Content container */}
       <div className="flex flex-col w-full">
-        {/* Page Header */}
-        <div className="bg-army-black border-b border-army-field01 px-3 md:px-6 py-2 md:py-3 shadow-lg">
+        {/* Page Header - Compact on Desktop */}
+        <div className="bg-army-black border-b border-army-field01 px-3 md:px-4 py-1.5 md:py-2 shadow-lg">
           <div className="max-w-full">
-            <div className="flex flex-col gap-2 md:gap-3 mb-2 md:mb-3">
-              <div className="flex-1 min-w-0">
-                <h1 className="text-xl md:text-2xl font-bold text-army-gold flex items-center gap-2 tracking-wide">
-                  <Navigation className="w-5 h-5 md:w-6 md:h-6 drop-shadow-lg" />
-                  🗺️ PROSPECTING MAP
-                </h1>
-                <p className="text-army-tan mt-1 font-medium text-xs md:text-sm">
-                  Discover prime locations and events for Army recruiting
+            {/* Desktop: Single row layout, Mobile: Stacked */}
+            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 mb-2 md:mb-1.5">
+              {/* Title Section - Compact on Desktop */}
+              <div className="flex-1 min-w-0 md:flex-none md:min-w-[200px]">
+                <div className="flex items-center gap-2">
+                  <Navigation className="w-4 h-4 md:w-5 md:h-5 drop-shadow-lg flex-shrink-0" />
+                  <h1 className="text-lg md:text-xl font-bold text-army-gold tracking-wide">
+                    🗺️ PROSPECTING MAP
+                  </h1>
+                </div>
+                <p className="text-army-tan/80 mt-0.5 font-medium text-[10px] md:text-xs hidden md:block">
+                  Discover prime locations and events
                 </p>
               </div>
 
-              {/* Zip Code Input */}
-              <div className="w-full sm:w-auto sm:min-w-[140px] md:min-w-[160px] flex-shrink-0">
-                <Label htmlFor="zipCode" className="text-xs text-army-tan mb-1 block">
-                  ZIP Code
-                </Label>
-                <div className="flex gap-1">
+              {/* Zip Code Input - Compact */}
+              <div className="w-full sm:w-auto sm:min-w-[120px] md:min-w-[130px] flex-shrink-0">
+                <div className="flex items-center gap-1">
+                  <Label htmlFor="zipCode" className="text-[10px] md:text-xs text-army-tan whitespace-nowrap md:hidden">
+                    ZIP:
+                  </Label>
                   <div className="relative flex-1">
-                    <Hash className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 md:w-4 md:h-4 text-army-tan" />
+                    <Hash className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-army-tan" />
                     <Input
                       id="zipCode"
                       type="text"
@@ -686,7 +691,7 @@ function ProspectingMap() {
                         const value = e.target.value.replace(/\D/g, '').slice(0, 5);
                         setZipCode(value);
                       }}
-                      className="pl-7 md:pl-8 h-8 md:h-9 text-xs md:text-sm bg-army-field01/50 border-army-field01 text-army-gold placeholder:text-army-tan/50"
+                      className="pl-7 h-7 md:h-8 text-xs bg-army-field01/50 border-army-field01 text-army-gold placeholder:text-army-tan/50"
                     />
                   </div>
                   {zipCode.length === 5 && zipCode !== recruiterZipCode && (
@@ -694,7 +699,7 @@ function ProspectingMap() {
                       onClick={() => updateZipCodeMutation.mutate(zipCode)}
                       disabled={updateZipCodeMutation.isPending}
                       size="sm"
-                      className="h-8 md:h-9 px-2 text-xs bg-army-field01 hover:bg-army-field01/80 text-army-gold"
+                      className="h-7 md:h-8 px-2 text-xs bg-army-field01 hover:bg-army-field01/80 text-army-gold"
                       title="Save zip code"
                     >
                       {updateZipCodeMutation.isPending ? (
@@ -707,8 +712,8 @@ function ProspectingMap() {
                 </div>
               </div>
 
-              {/* Search Buttons - Four Clear Options */}
-              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              {/* Search Buttons - Compact on Desktop */}
+              <div className="flex flex-wrap gap-1.5 md:gap-1.5 w-full md:w-auto">
                 <Button
                   onClick={() => {
                     setSearchMode("current");
@@ -716,7 +721,7 @@ function ProspectingMap() {
                   }}
                   variant="outline"
                   size="sm"
-                  className="h-8 md:h-9 border-army-gold text-army-gold hover:bg-army-gold hover:text-army-black text-xs flex-1 sm:flex-none min-w-[140px]"
+                  className="h-7 md:h-8 border-army-gold text-army-gold hover:bg-army-gold hover:text-army-black text-[11px] md:text-xs flex-1 sm:flex-none min-w-[120px] md:min-w-[110px]"
                 >
                   <MapPin className="w-3 h-3 mr-1" />
                   Use My Location
@@ -736,7 +741,7 @@ function ProspectingMap() {
                     searchNearbyMutation.mutate(false);
                   }}
                   disabled={!userLocation || (activeSearchType !== null && activeSearchType !== "locations-current")}
-                  className="bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold h-8 md:h-9 text-xs flex-1 sm:flex-none min-w-[140px]"
+                  className="bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold h-7 md:h-8 text-[11px] md:text-xs flex-1 sm:flex-none min-w-[120px] md:min-w-[110px]"
                 >
                   {searchNearbyMutation.isPending && activeSearchType === "locations-current" ? (
                     <>
@@ -765,7 +770,7 @@ function ProspectingMap() {
                     searchNearbyEventsMutation.mutate(false);
                   }}
                   disabled={!userLocation || (activeSearchType !== null && activeSearchType !== "events-current")}
-                  className="bg-army-green text-army-gold hover:bg-army-green/80 border-2 border-army-gold font-semibold h-8 md:h-9 text-xs flex-1 sm:flex-none min-w-[140px]"
+                  className="bg-army-green text-army-gold hover:bg-army-green/80 border-2 border-army-gold font-semibold h-7 md:h-8 text-[11px] md:text-xs flex-1 sm:flex-none min-w-[120px] md:min-w-[110px]"
                 >
                   {searchNearbyEventsMutation.isPending && activeSearchType === "events-current" ? (
                     <>
@@ -794,7 +799,7 @@ function ProspectingMap() {
                     searchNearbyMutation.mutate(true);
                   }}
                   disabled={zipCode.length !== 5 || (activeSearchType !== null && activeSearchType !== "locations-zip")}
-                  className="bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold h-8 md:h-9 text-xs flex-1 sm:flex-none min-w-[140px]"
+                  className="bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold h-7 md:h-8 text-[11px] md:text-xs flex-1 sm:flex-none min-w-[120px] md:min-w-[110px]"
                 >
                   {searchNearbyMutation.isPending && activeSearchType === "locations-zip" ? (
                     <>
@@ -823,7 +828,7 @@ function ProspectingMap() {
                     searchNearbyEventsMutation.mutate(true);
                   }}
                   disabled={zipCode.length !== 5 || (activeSearchType !== null && activeSearchType !== "events-zip")}
-                  className="bg-army-green text-army-gold hover:bg-army-green/80 border-2 border-army-gold font-semibold h-8 md:h-9 text-xs flex-1 sm:flex-none min-w-[140px]"
+                  className="bg-army-green text-army-gold hover:bg-army-green/80 border-2 border-army-gold font-semibold h-7 md:h-8 text-[11px] md:text-xs flex-1 sm:flex-none min-w-[120px] md:min-w-[110px]"
                 >
                   {searchNearbyEventsMutation.isPending && activeSearchType === "events-zip" ? (
                     <>
@@ -840,20 +845,20 @@ function ProspectingMap() {
               </div>
             </div>
 
-            {/* Search and Filters */}
-            <div className="flex flex-col sm:flex-row gap-2">
+            {/* Search and Filters - Compact */}
+            <div className="flex flex-col sm:flex-row gap-1.5 md:gap-2">
               <div className="flex-1 relative">
-                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 md:w-4 md:h-4 text-muted-foreground" />
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-muted-foreground" />
                 <Input
                   placeholder="Search locations or events..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-7 md:pl-9 text-xs md:text-sm h-8 md:h-9"
+                  className="pl-7 text-xs h-7 md:h-8"
                 />
               </div>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-full sm:w-[140px] md:w-[160px] h-8 md:h-9 text-xs">
-                  <Filter className="w-3 h-3 md:w-4 md:h-4 mr-1" />
+                <SelectTrigger className="w-full sm:w-[120px] md:w-[130px] h-7 md:h-8 text-xs">
+                  <Filter className="w-3 h-3 mr-1" />
                   <SelectValue placeholder="Filter by type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -867,12 +872,12 @@ function ProspectingMap() {
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <div className="flex gap-2">
+              <div className="flex gap-1.5">
                 <Button
                   variant={showLocations ? "default" : "outline"}
                   onClick={() => setShowLocations(!showLocations)}
                   size="sm"
-                  className={`h-8 md:h-9 text-xs ${
+                  className={`h-7 md:h-8 text-[11px] md:text-xs ${
                     showLocations
                       ? "bg-army-field01 text-army-gold hover:bg-army-field01/90"
                       : "border-army-field01 text-army-tan hover:bg-army-field01/20 hover:text-army-gold"
@@ -885,7 +890,7 @@ function ProspectingMap() {
                   variant={showEvents ? "default" : "outline"}
                   onClick={() => setShowEvents(!showEvents)}
                   size="sm"
-                  className={`h-8 md:h-9 text-xs ${
+                  className={`h-7 md:h-8 text-[11px] md:text-xs ${
                     showEvents
                       ? "bg-army-field01 text-army-gold hover:bg-army-field01/90"
                       : "border-army-field01 text-army-tan hover:bg-army-field01/20 hover:text-army-gold"
@@ -900,7 +905,8 @@ function ProspectingMap() {
         </div>
 
         {/* Map and List Layout - Mobile: Stack vertically and scroll, Desktop: Side-by-side with fixed height */}
-        <div className="flex flex-col md:flex-row md:h-[calc(100vh-420px)]">
+        {/* Account for header (~180px), footer (~140px), and some padding */}
+        <div className="flex flex-col md:flex-row md:h-[calc(100vh-320px)]">
           {/* Map Container - Mobile: Fixed height, Desktop: Fill available space */}
           <div className="relative h-[60vh] md:h-full md:flex-1 md:min-w-0">
             <MapContainer
@@ -1130,7 +1136,7 @@ function ProspectingMap() {
             <Tabs
               value={activeTab}
               onValueChange={(v) => setActiveTab(v as "locations" | "events")}
-              className="flex flex-col h-full"
+              className="flex flex-col flex-1 min-h-0"
             >
               <div className="bg-card border-b shrink-0 sticky top-0 z-10">
                 <TabsList className="w-full grid grid-cols-2">
@@ -1143,9 +1149,11 @@ function ProspectingMap() {
                 </TabsList>
               </div>
 
+              {/* TabsContent wrapper to ensure proper flex expansion */}
+              <div className="flex-1 min-h-0 flex flex-col overflow-hidden relative">
               <TabsContent
                 value="locations"
-                className="mt-0 flex-1 min-h-0 flex flex-col overflow-hidden"
+                className="mt-0 flex-1 min-h-0 flex flex-col overflow-hidden data-[state=active]:flex data-[state=inactive]:hidden absolute inset-0"
               >
                 <div className="flex-1 overflow-y-auto min-h-0 p-2 md:p-4 space-y-2 md:space-y-3">
                 {locationsLoading ? (
@@ -1271,7 +1279,7 @@ function ProspectingMap() {
 
               <TabsContent
                 value="events"
-                className="mt-0 flex-1 min-h-0 flex flex-col overflow-hidden"
+                className="mt-0 flex-1 min-h-0 flex flex-col overflow-hidden data-[state=active]:flex data-[state=inactive]:hidden absolute inset-0"
               >
                 <div className="flex-1 overflow-y-auto min-h-0 p-2 md:p-4 space-y-2 md:space-y-3">
                 {paginatedEvents.map((event) => (
@@ -1457,6 +1465,7 @@ function ProspectingMap() {
                   </div>
                 )}
               </TabsContent>
+              </div>
             </Tabs>
           </div>
         </div>

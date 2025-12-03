@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth, ProtectedRoute } from "../lib/auth-context";
-import { auth } from "../lib/api";
+import { auth, locationQRCodes } from "../lib/api";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -10,22 +10,60 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
-import { ArrowLeft, Download, Share2, Copy, CheckCircle2 } from "lucide-react";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../components/ui/dialog";
+import { ArrowLeft, Download, Share2, Copy, CheckCircle2, Plus, MapPin, Trash2, Loader2 } from "lucide-react";
+import { useToast } from "../hooks/use-toast";
+
+type LocationQRCode = {
+  id: string;
+  locationLabel: string;
+  qrCode: string;
+  qrType: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 function MyQRCodeContent() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [qrCodeImage, setQrCodeImage] = useState("");
   const [surveyQrCodeImage, setSurveyQrCodeImage] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  
+  // Location QR codes state
+  const [locationQRCodesList, setLocationQRCodesList] = useState<LocationQRCode[]>([]);
+  const [locationQRImages, setLocationQRImages] = useState<Record<string, string>>({});
+  const [loadingLocationQRs, setLoadingLocationQRs] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [newLocationLabel, setNewLocationLabel] = useState("");
+  const [newQRType, setNewQRType] = useState<"application" | "survey">("application");
+  const [creating, setCreating] = useState(false);
 
   const qrUrl = `${window.location.origin}/apply?r=${user?.qrCode}`;
   const surveyUrl = `${window.location.origin}/survey?r=${user?.qrCode}`;
 
   useEffect(() => {
     loadQRCodes();
+    loadLocationQRCodes();
   }, []);
 
   const loadQRCodes = async () => {
@@ -40,6 +78,98 @@ function MyQRCodeContent() {
       setError("Failed to load QR codes");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadLocationQRCodes = async () => {
+    try {
+      setLoadingLocationQRs(true);
+      const locationQRs = await locationQRCodes.list();
+      setLocationQRCodesList(locationQRs);
+      
+      // Load images for each location QR code
+      const imagePromises = locationQRs.map(async (qr) => {
+        try {
+          const { qrCode: image } = await locationQRCodes.getImage(qr.id);
+          return { id: qr.id, image };
+        } catch {
+          return { id: qr.id, image: null };
+        }
+      });
+      
+      const images = await Promise.all(imagePromises);
+      const imageMap: Record<string, string> = {};
+      images.forEach(({ id, image }) => {
+        if (image) imageMap[id] = image;
+      });
+      setLocationQRImages(imageMap);
+    } catch (err) {
+      console.error("Failed to load location QR codes:", err);
+    } finally {
+      setLoadingLocationQRs(false);
+    }
+  };
+
+  const createLocationQRCode = async () => {
+    if (!newLocationLabel.trim()) {
+      toast({
+        title: "Location label required",
+        description: "Please enter a location label for this QR code",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setCreating(true);
+      const newQR = await locationQRCodes.create({
+        locationLabel: newLocationLabel.trim(),
+        qrType: newQRType,
+      });
+      
+      setLocationQRCodesList([newQR, ...locationQRCodesList]);
+      setLocationQRImages({ ...locationQRImages, [newQR.id]: newQR.qrCodeImage });
+      setNewLocationLabel("");
+      setNewQRType("application");
+      setShowCreateDialog(false);
+      
+      toast({
+        title: "Location QR code created",
+        description: `QR code for "${newQR.locationLabel}" has been generated`,
+      });
+    } catch (err) {
+      toast({
+        title: "Failed to create QR code",
+        description: err instanceof Error ? err.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const deleteLocationQRCode = async (id: string, label: string) => {
+    if (!confirm(`Are you sure you want to delete the QR code for "${label}"?`)) {
+      return;
+    }
+
+    try {
+      await locationQRCodes.delete(id);
+      setLocationQRCodesList(locationQRCodesList.filter((qr) => qr.id !== id));
+      const newImages = { ...locationQRImages };
+      delete newImages[id];
+      setLocationQRImages(newImages);
+      
+      toast({
+        title: "QR code deleted",
+        description: `QR code for "${label}" has been removed`,
+      });
+    } catch (err) {
+      toast({
+        title: "Failed to delete QR code",
+        description: err instanceof Error ? err.message : "Unknown error",
+        variant: "destructive",
+      });
     }
   };
 
@@ -334,6 +464,186 @@ function MyQRCodeContent() {
               applications scanned with this code will be automatically linked to 
               your recruiter account.
             </div>
+          </div>
+
+          {/* Location-Based QR Codes Section */}
+          <div className="md:col-span-2">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Location-Based QR Codes</CardTitle>
+                    <CardDescription>
+                      Generate QR codes with custom location labels to track where scans occur
+                    </CardDescription>
+                  </div>
+                  <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Location QR
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create Location QR Code</DialogTitle>
+                        <DialogDescription>
+                          Generate a new QR code with a location label. This helps track where your QR codes are being scanned.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="locationLabel">Location Label *</Label>
+                          <Input
+                            id="locationLabel"
+                            placeholder="e.g., High School Career Fair, Mall Kiosk, Community Event"
+                            value={newLocationLabel}
+                            onChange={(e) => setNewLocationLabel(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && newLocationLabel.trim()) {
+                                createLocationQRCode();
+                              }
+                            }}
+                          />
+                          <p className="text-xs text-gray-500">
+                            Enter a descriptive label for where this QR code will be used
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="qrType">QR Code Type *</Label>
+                          <Select value={newQRType} onValueChange={(v) => setNewQRType(v as "application" | "survey")}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="application">Application Form</SelectItem>
+                              <SelectItem value="survey">Survey Form</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setShowCreateDialog(false);
+                              setNewLocationLabel("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button onClick={createLocationQRCode} disabled={creating || !newLocationLabel.trim()}>
+                            {creating ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Creating...
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="w-4 h-4 mr-2" />
+                                Create QR Code
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loadingLocationQRs ? (
+                  <div className="text-center py-8 text-gray-500">Loading location QR codes...</div>
+                ) : locationQRCodesList.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <MapPin className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                    <p className="font-medium mb-2">No location QR codes yet</p>
+                    <p className="text-sm">Create your first location QR code to track where scans occur</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {locationQRCodesList.map((locationQR) => {
+                      const qrImage = locationQRImages[locationQR.id];
+                      const qrUrl = `${window.location.origin}/${locationQR.qrType === 'application' ? 'apply' : 'survey'}?r=${locationQR.qrCode}`;
+                      
+                      return (
+                        <Card key={locationQR.id} className="relative">
+                          <CardHeader className="pb-3">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 min-w-0">
+                                <CardTitle className="text-sm font-semibold truncate">
+                                  {locationQR.locationLabel}
+                                </CardTitle>
+                                <CardDescription className="text-xs mt-1">
+                                  {locationQR.qrType === 'application' ? 'Application' : 'Survey'} QR Code
+                                </CardDescription>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => deleteLocationQRCode(locationQR.id, locationQR.locationLabel)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pt-0">
+                            {qrImage ? (
+                              <div className="bg-white p-2 rounded-lg border-2 border-green-700 mb-3 flex justify-center">
+                                <img
+                                  src={qrImage}
+                                  alt={`QR Code for ${locationQR.locationLabel}`}
+                                  className="w-32 h-32"
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-32 h-32 bg-gray-100 rounded-lg mb-3 mx-auto flex items-center justify-center">
+                                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                              </div>
+                            )}
+                            <div className="space-y-2">
+                              <Button
+                                size="sm"
+                                className="w-full"
+                                onClick={() => {
+                                  if (qrImage) {
+                                    const link = document.createElement("a");
+                                    link.href = qrImage;
+                                    link.download = `location-qr-${locationQR.locationLabel.replace(/\s+/g, "-")}.png`;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                  }
+                                }}
+                                disabled={!qrImage}
+                              >
+                                <Download className="w-3 h-3 mr-2" />
+                                Download
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(qrUrl);
+                                  toast({
+                                    title: "Link copied",
+                                    description: "QR code link copied to clipboard",
+                                  });
+                                }}
+                              >
+                                <Copy className="w-3 h-3 mr-2" />
+                                Copy Link
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </main>

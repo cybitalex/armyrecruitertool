@@ -50,11 +50,6 @@ export default function ApplyPage() {
     hasPriorService: "no",
     priorServiceBranch: "",
     priorServiceYears: "",
-    heightFeet: "",
-    heightInches: "",
-    weight: "",
-    medicalConditions: "",
-    criminalHistory: "no",
     preferredMOS: "",
     availability: "",
     additionalNotes: "",
@@ -64,9 +59,26 @@ export default function ApplyPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  // Fetch recruiter info if QR code is present
+  // Fetch recruiter info if QR code is present AND track the scan
   useEffect(() => {
     if (recruiterCode) {
+      // Track the QR scan (for analytics)
+      fetch("/api/qr-scan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          qrCode: recruiterCode,
+          scanType: "application" 
+        }),
+      }).then(() => {
+        console.log("📱 QR scan tracked");
+      }).catch((err) => {
+        console.error("Failed to track QR scan (non-critical):", err);
+      });
+
+      // Fetch recruiter info to display on the form
       recruiterApi.getByQRCode(recruiterCode)
         .then((data) => setRecruiterInfo(data.recruiter))
         .catch(() => {
@@ -92,9 +104,6 @@ export default function ApplyPage() {
         priorServiceYears: formData.priorServiceYears
           ? parseInt(formData.priorServiceYears)
           : undefined,
-        heightFeet: parseInt(formData.heightFeet),
-        heightInches: parseInt(formData.heightInches),
-        weight: parseInt(formData.weight),
       };
       
       console.log(`📤 Payload being sent:`, { ...payload, recruiterCode: payload.recruiterCode || 'NULL' });
@@ -394,80 +403,9 @@ export default function ApplyPage() {
                 )}
               </div>
 
-              {/* Physical Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">Physical Information</h3>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="heightFeet">Height (ft) *</Label>
-                    <Input
-                      id="heightFeet"
-                      type="number"
-                      min="4"
-                      max="7"
-                      required
-                      value={formData.heightFeet}
-                      onChange={(e) => setFormData({ ...formData, heightFeet: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="heightInches">Height (in) *</Label>
-                    <Input
-                      id="heightInches"
-                      type="number"
-                      min="0"
-                      max="11"
-                      required
-                      value={formData.heightInches}
-                      onChange={(e) => setFormData({ ...formData, heightInches: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="weight">Weight (lbs) *</Label>
-                    <Input
-                      id="weight"
-                      type="number"
-                      min="80"
-                      max="500"
-                      required
-                      value={formData.weight}
-                      onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="medicalConditions">Medical Conditions</Label>
-                  <Textarea
-                    id="medicalConditions"
-                    placeholder="List any known medical conditions (optional)"
-                    value={formData.medicalConditions}
-                    onChange={(e) => setFormData({ ...formData, medicalConditions: e.target.value })}
-                  />
-                </div>
-              </div>
-
               {/* Additional Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900">Additional Information</h3>
-
-                <div className="space-y-2">
-                  <Label htmlFor="criminalHistory">Criminal History *</Label>
-                  <Select
-                    value={formData.criminalHistory}
-                    onValueChange={(value) => setFormData({ ...formData, criminalHistory: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no">None</SelectItem>
-                      <SelectItem value="minor">Minor Offenses</SelectItem>
-                      <SelectItem value="major">Major Offenses</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="preferredMOS">Preferred MOS (Military Occupational Specialty)</Label>

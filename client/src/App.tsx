@@ -29,12 +29,15 @@ import MyQRCode from "@/pages/my-qr";
 import IntakeForm from "@/pages/intake-form";
 import RecruitDetail from "@/pages/recruit-detail";
 import ProspectingMap from "@/pages/prospecting-map";
+import AdminRequests from "@/pages/admin-requests";
+import StationCommanderDashboard from "@/pages/station-commander-dashboard";
 
 // Public pages
 import ApplyPage from "@/pages/apply";
 import SurveyPage from "@/pages/survey";
 import NotFound from "@/pages/not-found";
 import ProfilePage from "@/pages/profile";
+import ApprovalSuccess from "@/pages/approval-success";
 
 function Router() {
   return (
@@ -46,7 +49,8 @@ function Router() {
       <Route path="/forgot-password" component={ForgotPasswordPage} />
       <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/apply" component={ApplyPage} />
-       <Route path="/survey" component={SurveyPage} />
+      <Route path="/survey" component={SurveyPage} />
+      <Route path="/approval-success" component={ApprovalSuccess} />
       
       {/* Protected routes */}
       <Route path="/" component={Dashboard} />
@@ -57,6 +61,12 @@ function Router() {
       <Route path="/intake" component={IntakeForm} />
       <Route path="/intake-form" component={IntakeForm} />
       <Route path="/recruits/:id" component={RecruitDetail} />
+      
+      {/* Admin routes */}
+      <Route path="/admin/requests" component={AdminRequests} />
+      
+      {/* Station Commander routes */}
+      <Route path="/station-commander" component={StationCommanderDashboard} />
       
       {/* 404 */}
       <Route component={NotFound} />
@@ -76,6 +86,7 @@ function AppContent() {
     "/forgot-password",
     "/reset-password",
     "/apply",
+    "/approval-success",
   ];
   
   const showLayout = !noLayoutPages.some(page => location.startsWith(page));

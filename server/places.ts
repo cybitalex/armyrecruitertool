@@ -2,6 +2,38 @@ import type { InsertLocation } from "@shared/schema";
 import { generateMockLocations, generateMockEvents } from "./mock-data";
 
 /**
+ * Reverse geocode coordinates to get city and state name
+ * Uses OpenStreetMap Nominatim API (free, no API key required)
+ */
+export async function reverseGeocode(latitude: number, longitude: number): Promise<{ city: string; state: string } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'ArmyRecruiterTool/1.0' // Required by Nominatim
+      }
+    });
+
+    if (!response.ok) {
+      console.error(`Reverse geocoding failed: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const address = data.address || {};
+    
+    const city = address.city || address.town || address.village || address.municipality || "Unknown";
+    const state = address.state || address.region || "Unknown";
+    
+    return { city, state };
+  } catch (error) {
+    console.error('Error reverse geocoding:', error);
+    return null;
+  }
+}
+
+/**
  * Geocode a zip code to latitude and longitude coordinates
  * Uses OpenStreetMap Nominatim API (free, no API key required)
  */
@@ -361,10 +393,12 @@ function calculateDistance(
 }
 
 /**
- * Search for nearby events using multiple sources
+ * Search for nearby events using Ticketmaster and SerpAPI
  * - Ticketmaster: Sports, concerts, theater (FREE: 5,000/day)
- * - Eventbrite: Community events, career fairs, meetups (FREE: 1,000/day)
- * - PredictHQ: Fallback aggregator (trial expired)
+ * - SerpAPI: Google Events (100 free searches/month)
+ * 
+ * NOTE: Eventbrite public event search was shut down in December 2019
+ * NOTE: PredictHQ trial expired
  */
 export async function searchNearbyEvents(
   latitude: number,
@@ -373,7 +407,7 @@ export async function searchNearbyEvents(
 ): Promise<any[]> {
   const allEvents: any[] = [];
   
-  // Try Ticketmaster (sports, concerts, theater)
+  // PRIMARY: Try Ticketmaster (sports, concerts, theater)
   const ticketmasterKey = process.env.TICKETMASTER_API_KEY;
   if (ticketmasterKey) {
     try {
@@ -383,37 +417,48 @@ export async function searchNearbyEvents(
     } catch (error) {
       console.error("Ticketmaster API error:", error);
     }
+  } else {
+    console.log("⚠️ No Ticketmaster API key found. Add TICKETMASTER_API_KEY to .env");
+    console.log("  - Get your key at: https://developer.ticketmaster.com/");
   }
   
-  // Try Eventbrite (community events, career fairs, workshops)
-  const eventbriteKey = process.env.EVENTBRITE_API_KEY;
-  if (eventbriteKey) {
+  // SECONDARY: Try SerpAPI Google Events (broader coverage)
+  const serpapiKey = process.env.SERPAPI_KEY;
+  if (serpapiKey) {
     try {
-      const eventbriteEvents = await searchEventbriteEvents(latitude, longitude, radiusMiles, eventbriteKey);
-      allEvents.push(...eventbriteEvents);
-      console.log(`✅ Added ${eventbriteEvents.length} events from Eventbrite`);
+      const serpapiEvents = await searchSerpAPIEvents(latitude, longitude, radiusMiles, serpapiKey);
+      allEvents.push(...serpapiEvents);
+      console.log(`✅ Added ${serpapiEvents.length} events from SerpAPI`);
     } catch (error) {
-      console.error("Eventbrite API error:", error);
+      console.error("SerpAPI error:", error);
     }
+  } else {
+    console.log("⚠️ No SerpAPI key found. Add SERPAPI_KEY to .env for additional event coverage");
+    console.log("  - Get your key at: https://serpapi.com/");
   }
   
-  // If we got events from either source, return them
-  if (allEvents.length > 0) {
-    console.log(`🎉 Total events from all sources: ${allEvents.length}`);
-    return allEvents;
+  // Remove duplicates based on event name and date
+  const uniqueEvents = allEvents.filter((event, index, self) => {
+    return index === self.findIndex((e) => {
+      // Consider events with same name and date as duplicates
+      return e.name === event.name && e.eventDate === event.eventDate;
+    });
+  });
+  
+  if (uniqueEvents.length > 0) {
+    console.log(`🎉 Total unique events found: ${uniqueEvents.length} (Ticketmaster + SerpAPI)`);
+    return uniqueEvents;
   }
   
-  // Fallback to PredictHQ if no other sources available
-  const predictHQKey = process.env.PREDICTHQ_API_KEY;
-  if (!predictHQKey) {
-    console.log("No event API keys found. Add one or more:");
-    console.log("  - TICKETMASTER_API_KEY (sports, concerts) - https://developer.ticketmaster.com/");
-    console.log("  - EVENTBRITE_API_KEY (community events) - https://www.eventbrite.com/platform/api");
-    console.log("  - PREDICTHQ_API_KEY (aggregator) - https://www.predicthq.com/");
-    return [];
-  }
+  // No events found
+  console.log("No events found from any source");
+  return [];
   
-  return await searchPredictHQEvents(latitude, longitude, radiusMiles, predictHQKey);
+  /* NOTE: Eventbrite public event search was SHUT DOWN on December 12, 2019
+   * The /v3/events/search/ endpoint no longer exists.
+   * Eventbrite API can only list events you own, not search public events.
+   * See: https://www.eventbrite.com/platform/api - "Event Search - deprecated"
+   */
 }
 
 /**
@@ -541,6 +586,171 @@ async function searchTicketmasterEvents(
 }
 
 /**
+ * Search SerpAPI Google Events for nearby events
+ * Uses Google Events search results via SerpAPI
+ */
+async function searchSerpAPIEvents(
+  latitude: number,
+  longitude: number,
+  radiusMiles: number,
+  apiKey: string
+): Promise<any[]> {
+  try {
+    console.log(
+      `🔍 Searching SerpAPI Google Events near ${latitude}, ${longitude} within ${radiusMiles} miles`
+    );
+
+    // Reverse geocode to get city/state for SerpAPI location parameter
+    const location = await reverseGeocode(latitude, longitude);
+    if (!location) {
+      console.warn("⚠️ Could not reverse geocode coordinates, skipping SerpAPI search");
+      return [];
+    }
+
+    // Clean up city name (remove "City of", "Town of", etc.)
+    let cleanCity = location.city
+      .replace(/^City of /i, "")
+      .replace(/^Town of /i, "")
+      .replace(/^Village of /i, "")
+      .trim();
+    
+    // Skip if city is unknown or invalid
+    if (cleanCity === "Unknown" || cleanCity.length < 2) {
+      console.warn(`⚠️ Invalid city name "${cleanCity}", skipping SerpAPI search`);
+      return [];
+    }
+
+    // Build SerpAPI Google Events URL
+    // Use simpler location format: "City, State" without "United States"
+    const locationString = `${cleanCity}, ${location.state}`;
+    const url = new URL("https://serpapi.com/search");
+    url.searchParams.append("engine", "google_events");
+    url.searchParams.append("q", `events in ${locationString}`);
+    url.searchParams.append("location", locationString);
+    url.searchParams.append("hl", "en");
+    url.searchParams.append("gl", "us");
+    url.searchParams.append("api_key", apiKey);
+    
+    console.log(`📍 SerpAPI search location: ${locationString}`);
+
+    const response = await fetch(url.toString());
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`SerpAPI error (${response.status}):`, errorText);
+      
+      if (response.status === 401) {
+        console.error("💡 Invalid SerpAPI key. Check your SERPAPI_KEY in secrets.");
+      }
+      
+      return [];
+    }
+
+    const data = await response.json();
+    const events = data.events_results || [];
+    
+    console.log(`✅ Found ${events.length} events from SerpAPI Google Events`);
+
+    // Transform SerpAPI data to our event format
+    return events.map((evt: any) => {
+      // Determine event type from title/description
+      let type = "community_event";
+      let targetAudience = "general";
+
+      const title = (evt.title || "").toLowerCase();
+      const description = (evt.description || "").toLowerCase();
+      
+      if (title.includes("sport") || title.includes("game") || title.includes("match")) {
+        type = "sports_event";
+        targetAudience = "young_adults";
+      } else if (title.includes("concert") || title.includes("music") || title.includes("festival")) {
+        type = "concert";
+        targetAudience = "young_adults";
+      } else if (title.includes("career") || title.includes("job fair") || title.includes("expo")) {
+        type = "career_fair";
+        targetAudience = "high_school";
+      } else if (title.includes("festival") || title.includes("fair")) {
+        type = "festival";
+        targetAudience = "general";
+      }
+
+      // Get venue info
+      const venue = evt.venue || {};
+      // Handle address - SerpAPI may return it as an array, convert to string
+      let address = "Address TBD";
+      if (venue.address) {
+        address = Array.isArray(venue.address) ? venue.address.join(", ") : String(venue.address);
+      } else if (evt.address) {
+        address = Array.isArray(evt.address) ? evt.address.join(", ") : String(evt.address);
+      }
+      // Use cleaned city name (from outer scope)
+      const city = cleanCity || location.city || "Unknown";
+      const state = location.state || "Unknown";
+      const zipCode = "00000"; // SerpAPI doesn't always provide zip
+      
+      // Try to extract coordinates from venue or use provided location
+      let venueLat = latitude;
+      let venueLon = longitude;
+      
+      if (venue.gps_coordinates) {
+        venueLat = venue.gps_coordinates.latitude || latitude;
+        venueLon = venue.gps_coordinates.longitude || longitude;
+      }
+
+      // Get date/time
+      const startDate = evt.date?.start_date || evt.date?.when || new Date().toISOString().split("T")[0];
+      const startTime = evt.date?.start_time || null;
+      const endDate = evt.date?.end_date || null;
+
+      // Estimate attendance (SerpAPI doesn't always provide this)
+      let expectedAttendance = null;
+      if (evt.attendance) {
+        expectedAttendance = parseInt(evt.attendance) || null;
+      }
+
+      // Get URLs
+      const eventUrl = evt.link || evt.event_location?.gps_coordinates ? 
+        `https://www.google.com/search?q=${encodeURIComponent(evt.title || "event")}` : null;
+      const locationUrl = venue.gps_coordinates ? 
+        `https://www.google.com/maps/search/?api=1&query=${venueLat},${venueLon}` :
+        `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+
+      // Check if free or paid
+      const cost = evt.ticket_info?.extensions?.[0] || "Check website for pricing";
+
+      return {
+        name: evt.title || "Unnamed Event",
+        type,
+        address,
+        city,
+        state,
+        zipCode,
+        latitude: venueLat.toString(),
+        longitude: venueLon.toString(),
+        eventDate: startDate,
+        eventTime: startTime,
+        endDate,
+        description: evt.description || `${type.replace(/_/g, " ")} in ${city}`,
+        expectedAttendance,
+        targetAudience,
+        contactName: null,
+        contactEmail: null,
+        contactPhone: null,
+        registrationRequired: "unknown",
+        cost,
+        status: "upcoming",
+        notes: `Found via SerpAPI Google Events. ${venue.name ? `Venue: ${venue.name}. ` : ""}${evt.date?.when || ""}`,
+        eventUrl,
+        locationUrl,
+      };
+    });
+  } catch (error) {
+    console.error("Error searching SerpAPI events:", error);
+    return [];
+  }
+}
+
+/**
  * Search Eventbrite API for community events
  */
 async function searchEventbriteEvents(
@@ -554,17 +764,26 @@ async function searchEventbriteEvents(
       `🔍 Searching Eventbrite events near ${latitude}, ${longitude} within ${radiusMiles} miles`
     );
 
-    // Convert miles to kilometers for Eventbrite
-    const radiusKm = Math.round(radiusMiles * 1.60934);
+    // Eventbrite API requires location.address (city, state) format
+    // Reverse geocode coordinates to get city name
+    const location = await reverseGeocode(latitude, longitude);
+    if (!location) {
+      console.warn("⚠️ Could not reverse geocode coordinates, skipping Eventbrite search");
+      return [];
+    }
 
-    // Build Eventbrite API URL (v3)
-    const url = new URL("https://www.eventbriteapi.com/v3/events/search");
-    url.searchParams.append("location.latitude", latitude.toString());
-    url.searchParams.append("location.longitude", longitude.toString());
-    url.searchParams.append("location.within", `${radiusKm}km`);
+    // Eventbrite API v3 - Use /v3/events/search/ endpoint with location.address
+    const url = new URL("https://www.eventbriteapi.com/v3/events/search/");
+    
+    // Use location.address format: "City, State" or just "City"
+    const locationAddress = `${location.city}, ${location.state}`;
+    url.searchParams.append("location.address", locationAddress);
+    
+    // Additional search parameters
     url.searchParams.append("expand", "venue,category,organizer");
     url.searchParams.append("sort_by", "date");
     url.searchParams.append("page_size", "50");
+    url.searchParams.append("status", "live"); // Only get live/active events
 
     console.log(`📍 Eventbrite URL: ${url.toString()}`);
     
@@ -578,6 +797,17 @@ async function searchEventbriteEvents(
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Eventbrite API error (${response.status}):`, errorText);
+      
+      // Provide helpful error message
+      if (response.status === 404) {
+        console.error("💡 Eventbrite API endpoint not found. Possible issues:");
+        console.error("   - API endpoint structure may have changed");
+        console.error("   - Check Eventbrite API documentation: https://www.eventbrite.com/platform/api");
+        console.error("   - Verify API key has correct permissions");
+      } else if (response.status === 401) {
+        console.error("💡 Invalid Eventbrite API key. Check your EVENTBRITE_API_KEY in secrets.");
+      }
+      
       throw new Error(`Eventbrite API error: ${response.status}`);
     }
 
