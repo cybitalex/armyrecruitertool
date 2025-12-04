@@ -919,6 +919,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ).length;
           const monthlyApplicants = monthlyRecruits.filter((r) => r.status === 'qualified').length;
 
+          // Get survey responses for this recruiter
+          let surveysCount = 0;
+          let monthlySurveysCount = 0;
+          try {
+            const recruiterSurveys = await db.select()
+              .from(qrSurveyResponses)
+              .where(eq(qrSurveyResponses.recruiterId, recruiter.id));
+            surveysCount = recruiterSurveys.length;
+            monthlySurveysCount = recruiterSurveys.filter(
+              (s) => new Date(s.createdAt) >= monthStart
+            ).length;
+          } catch (surveyError) {
+            console.error(`Failed to get survey stats for recruiter ${recruiter.id}:`, surveyError);
+          }
+
           const { passwordHash, verificationToken, resetPasswordToken, ...safeRecruiter } = recruiter;
 
           // Get QR scan tracking for this recruiter
@@ -954,9 +969,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             stats: {
               allTime: {
                 total: recruiterRecruits.length,
-                leads,
+                surveys: surveysCount,
                 prospects,
-                applicants,
+                leads,
                 qrCodeScans: applicationsFromQR, // Applications from QR
                 directEntries: recruiterRecruits.filter((r) => r.source === 'direct').length,
                 // NEW: QR scan tracking
@@ -971,9 +986,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               },
               monthly: {
                 total: monthlyRecruits.length,
-                leads: monthlyLeads,
+                surveys: monthlySurveysCount,
                 prospects: monthlyProspects,
-                applicants: monthlyApplicants,
+                leads: monthlyLeads,
               },
             },
           };
@@ -984,15 +999,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stationTotals = {
         allTime: {
           total: recruitersWithStats.reduce((sum, r) => sum + r.stats.allTime.total, 0),
-          leads: recruitersWithStats.reduce((sum, r) => sum + r.stats.allTime.leads, 0),
+          surveys: recruitersWithStats.reduce((sum, r) => sum + r.stats.allTime.surveys, 0),
           prospects: recruitersWithStats.reduce((sum, r) => sum + r.stats.allTime.prospects, 0),
-          applicants: recruitersWithStats.reduce((sum, r) => sum + r.stats.allTime.applicants, 0),
+          leads: recruitersWithStats.reduce((sum, r) => sum + r.stats.allTime.leads, 0),
         },
         monthly: {
           total: recruitersWithStats.reduce((sum, r) => sum + r.stats.monthly.total, 0),
-          leads: recruitersWithStats.reduce((sum, r) => sum + r.stats.monthly.leads, 0),
+          surveys: recruitersWithStats.reduce((sum, r) => sum + r.stats.monthly.surveys, 0),
           prospects: recruitersWithStats.reduce((sum, r) => sum + r.stats.monthly.prospects, 0),
-          applicants: recruitersWithStats.reduce((sum, r) => sum + r.stats.monthly.applicants, 0),
+          leads: recruitersWithStats.reduce((sum, r) => sum + r.stats.monthly.leads, 0),
         },
       };
 
@@ -1003,6 +1018,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching station recruiter stats:', error);
       res.status(500).json({ error: "Failed to fetch recruiter stats" });
+    }
+  });
+
+  // Get leads for a specific recruiter (station commander only)
+  app.get("/api/station-commander/recruiter/:recruiterId/leads", requireStationCommander, async (req, res) => {
+    try {
+      const { recruiterId } = req.params;
+      const stationId = req.user.stationId;
+
+      // Verify the recruiter belongs to the station commander's station
+      const [recruiter] = await db.select().from(users).where(eq(users.id, recruiterId));
+      
+      if (!recruiter) {
+        return res.status(404).json({ error: "Recruiter not found" });
+      }
+
+      // Check if station commander has permission to view this recruiter's data
+      if (req.user.role !== 'admin') {
+        if (stationId && recruiter.stationId !== stationId && recruiter.id !== req.user.id) {
+          return res.status(403).json({ error: "Permission denied" });
+        }
+      }
+
+      const leads = await storage.getRecruitsByRecruiter(recruiterId);
+      
+      res.json({ leads });
+    } catch (error) {
+      console.error('Error fetching recruiter leads:', error);
+      res.status(500).json({ error: "Failed to fetch leads" });
+    }
+  });
+
+  // Get surveys for a specific recruiter (station commander only)
+  app.get("/api/station-commander/recruiter/:recruiterId/surveys", requireStationCommander, async (req, res) => {
+    try {
+      const { recruiterId } = req.params;
+      const stationId = req.user.stationId;
+
+      // Verify the recruiter belongs to the station commander's station
+      const [recruiter] = await db.select().from(users).where(eq(users.id, recruiterId));
+      
+      if (!recruiter) {
+        return res.status(404).json({ error: "Recruiter not found" });
+      }
+
+      // Check if station commander has permission to view this recruiter's data
+      if (req.user.role !== 'admin') {
+        if (stationId && recruiter.stationId !== stationId && recruiter.id !== req.user.id) {
+          return res.status(403).json({ error: "Permission denied" });
+        }
+      }
+
+      const surveys = await db.select()
+        .from(qrSurveyResponses)
+        .where(eq(qrSurveyResponses.recruiterId, recruiterId))
+        .orderBy(desc(qrSurveyResponses.createdAt));
+      
+      res.json({ surveys });
+    } catch (error) {
+      console.error('Error fetching recruiter surveys:', error);
+      res.status(500).json({ error: "Failed to fetch surveys" });
     }
   });
 
@@ -1639,10 +1715,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Regular recruiters and pending station commanders see only their own recruits
       // Station commanders and admins see all recruits at their station
       let userRecruits;
+      let includeRecruiterInfo = false;
       
       if (user.role === 'admin') {
         // Admin sees all recruits
         userRecruits = await storage.getAllRecruits();
+        includeRecruiterInfo = true;
       } else if (user.role === 'station_commander' && user.stationId) {
         // Station commander sees recruits from all recruiters at their station
         const stationRecruiters = await db.select()
@@ -1654,12 +1732,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
           recruiterIds.map(id => storage.getRecruitsByRecruiter(id))
         );
         userRecruits = allRecruits.flat();
+        includeRecruiterInfo = true;
       } else {
         // Regular recruiter or pending station commander - see only their own recruits
         userRecruits = await storage.getRecruitsByRecruiter(userId);
+        includeRecruiterInfo = false;
       }
 
-      res.json(userRecruits);
+      // If station commander or admin, add recruiter information to each recruit
+      if (includeRecruiterInfo && userRecruits.length > 0) {
+        const recruiterIds = [...new Set(userRecruits.map(r => r.recruiterId).filter(Boolean))];
+        const recruitersMap = new Map();
+        
+        if (recruiterIds.length > 0) {
+          const recruitersList = await db.select({
+            id: users.id,
+            fullName: users.fullName,
+            rank: users.rank,
+          }).from(users).where(inArray(users.id, recruiterIds));
+          
+          recruitersList.forEach(recruiter => {
+            recruitersMap.set(recruiter.id, recruiter);
+          });
+        }
+        
+        const recruitsWithRecruiter = userRecruits.map(recruit => ({
+          ...recruit,
+          recruiterName: recruit.recruiterId ? recruitersMap.get(recruit.recruiterId)?.fullName || 'Unknown' : null,
+          recruiterRank: recruit.recruiterId ? recruitersMap.get(recruit.recruiterId)?.rank || null : null,
+        }));
+        
+        res.json(recruitsWithRecruiter);
+      } else {
+        res.json(userRecruits);
+      }
     } catch (error) {
       res.status(500).json({
         message:
@@ -2133,6 +2239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       let responses;
+      let includeRecruiterInfo = false;
       
       if (user.role === 'admin') {
         // Admin sees all survey responses
@@ -2140,6 +2247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .select()
           .from(qrSurveyResponses)
           .orderBy(sql`${qrSurveyResponses.createdAt} DESC`);
+        includeRecruiterInfo = true;
       } else if (user.role === 'station_commander' && user.stationId) {
         // Station commander sees responses from all recruiters at their station
         const stationRecruiters = await db.select()
@@ -2152,6 +2260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .from(qrSurveyResponses)
           .where(sql`${qrSurveyResponses.recruiterId} IN (${sql.join(recruiterIds.map(id => sql`${id}`), sql`, `)})`)
           .orderBy(sql`${qrSurveyResponses.createdAt} DESC`);
+        includeRecruiterInfo = true;
       } else {
         // Regular recruiter sees only their own responses
         responses = await db
@@ -2159,19 +2268,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .from(qrSurveyResponses)
           .where(eq(qrSurveyResponses.recruiterId, userId))
           .orderBy(sql`${qrSurveyResponses.createdAt} DESC`);
+        includeRecruiterInfo = false;
       }
 
-      const total = responses.length;
-      const averageRating =
-        total > 0
-          ? responses.reduce((sum, r) => sum + (r.rating || 0), 0) / total
-          : 0;
+      // If station commander or admin, add recruiter information to each response
+      if (includeRecruiterInfo && responses.length > 0) {
+        const recruiterIds = [...new Set(responses.map(r => r.recruiterId).filter(Boolean))];
+        const recruitersMap = new Map();
+        
+        if (recruiterIds.length > 0) {
+          const recruitersList = await db.select({
+            id: users.id,
+            fullName: users.fullName,
+            rank: users.rank,
+          }).from(users).where(inArray(users.id, recruiterIds));
+          
+          recruitersList.forEach(recruiter => {
+            recruitersMap.set(recruiter.id, recruiter);
+          });
+        }
+        
+        const responsesWithRecruiter = responses.map(response => ({
+          ...response,
+          recruiterName: response.recruiterId ? recruitersMap.get(response.recruiterId)?.fullName || 'Unknown' : null,
+          recruiterRank: response.recruiterId ? recruitersMap.get(response.recruiterId)?.rank || null : null,
+        }));
+        
+        const total = responsesWithRecruiter.length;
+        const averageRating =
+          total > 0
+            ? responsesWithRecruiter.reduce((sum, r) => sum + (r.rating || 0), 0) / total
+            : 0;
 
-      res.json({
-        total,
-        averageRating,
-        responses,
-      });
+        res.json({
+          total,
+          averageRating,
+          responses: responsesWithRecruiter,
+        });
+      } else {
+        const total = responses.length;
+        const averageRating =
+          total > 0
+            ? responses.reduce((sum, r) => sum + (r.rating || 0), 0) / total
+            : 0;
+
+        res.json({
+          total,
+          averageRating,
+          responses,
+        });
+      }
     } catch (error) {
       console.error("❌ Failed to fetch survey responses:", error);
       res.status(500).json({ error: "Failed to fetch survey responses" });

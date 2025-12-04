@@ -32,13 +32,14 @@ export function Header() {
       testId: "nav-dashboard",
       roles: ["recruiter", "station_commander", "pending_station_commander", "admin"],
     },
-    {
-      path: "/prospecting",
-      label: "Prospecting",
-      icon: MapPin,
-      testId: "nav-prospecting",
-      roles: ["recruiter", "station_commander", "pending_station_commander", "admin"],
-    },
+    // TEMPORARILY DISABLED - Prospecting Map Feature
+    // {
+    //   path: "/prospecting",
+    //   label: "Prospecting",
+    //   icon: MapPin,
+    //   testId: "nav-prospecting",
+    //   roles: ["recruiter", "station_commander", "pending_station_commander", "admin"],
+    // },
     {
       path: "/intake",
       label: "New Application",

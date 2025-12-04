@@ -593,7 +593,7 @@ function ProfileContent() {
                       <li>View statistics for all recruiters at their station</li>
                       <li>See monthly and all-time performance metrics</li>
                       <li>Export comprehensive Excel reports</li>
-                      <li>Track leads, prospects, and applicants</li>
+                      <li>Track surveys, prospects, and leads</li>
                     </ul>
                   </div>
 

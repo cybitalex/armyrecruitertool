@@ -241,7 +241,7 @@ function DashboardContent() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
               <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 truncate pr-1">
-                Total Applicants
+                Total Leads
               </CardTitle>
               <Users className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
             </CardHeader>
@@ -358,7 +358,7 @@ function DashboardContent() {
           >
             <UserPlus className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" />
             <div className="text-left min-w-0">
-              <div className="font-semibold text-sm sm:text-base truncate">New Applicant</div>
+              <div className="font-semibold text-sm sm:text-base truncate">New Lead</div>
               <div className="text-xs opacity-75 truncate">Fill form directly</div>
             </div>
           </Button>
@@ -392,8 +392,8 @@ function DashboardContent() {
             </TabsTrigger>
             <TabsTrigger value="applicants" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              <span className="hidden sm:inline">All Applicants</span>
-              <span className="sm:hidden">Apps</span>
+              <span className="hidden sm:inline">All Leads</span>
+              <span className="sm:hidden">Leads</span>
               <span className="ml-1">({recruitsList.length})</span>
             </TabsTrigger>
             <TabsTrigger value="surveys" className="flex items-center gap-2">
@@ -404,25 +404,27 @@ function DashboardContent() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Overview Tab - Recent Applicants and Surveys */}
+          {/* Overview Tab - Recent Leads and Surveys */}
           <TabsContent value="overview">
-            {/* Recent Applicants */}
+            {/* Recent Leads */}
             <Card>
               <CardHeader>
-                <CardTitle>Recent Applicants</CardTitle>
+                <CardTitle>Recent Leads</CardTitle>
                 <CardDescription>
-                  Your latest referrals and their status (showing last 10)
+                  {user?.role === 'station_commander' || user?.role === 'admin' 
+                    ? "Latest leads from your station and their status (showing last 10)"
+                    : "Your latest referrals and their status (showing last 10)"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {loading ? (
                   <div className="text-center py-8 text-gray-500">
-                    Loading applicants...
+                    Loading leads...
                   </div>
                 ) : recruitsList.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                    <p>No applicants yet</p>
+                    <p>No leads yet</p>
                     <p className="text-sm mt-2">
                       Share your QR code to start receiving applications
                     </p>
@@ -448,6 +450,12 @@ function DashboardContent() {
                           <div className="text-xs text-gray-500 hidden sm:block">
                             {recruit.email} • {recruit.phone}
                           </div>
+                          {(user?.role === 'station_commander' || user?.role === 'admin') && (recruit as any).recruiterName && (
+                            <div className="text-xs text-blue-600 mt-1 font-medium">
+                              Recruiter: {(recruit as any).recruiterName}
+                              {(recruit as any).recruiterRank && ` (${(recruit as any).recruiterRank})`}
+                            </div>
+                          )}
                           <div className="flex flex-wrap gap-2 mt-2">
                             <Badge
                               variant="outline"
@@ -475,7 +483,9 @@ function DashboardContent() {
           <CardHeader>
             <CardTitle>Recent Presentation Feedback</CardTitle>
             <CardDescription>
-              Quick survey responses from your QR code briefings
+              {user?.role === 'station_commander' || user?.role === 'admin'
+                ? "Quick survey responses from your station (showing last 5)"
+                : "Quick survey responses from your QR code briefings"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -513,6 +523,12 @@ function DashboardContent() {
                           <div className="text-xs text-gray-500 hidden sm:block truncate">
                             {response.email} • {response.phone}
                           </div>
+                          {(user?.role === 'station_commander' || user?.role === 'admin') && (response as any).recruiterName && (
+                            <div className="text-xs text-blue-600 mt-1 font-medium">
+                              Recruiter: {(response as any).recruiterName}
+                              {(response as any).recruiterRank && ` (${(response as any).recruiterRank})`}
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
                           {[1, 2, 3, 4, 5].map((star) => (
@@ -545,27 +561,29 @@ function DashboardContent() {
         </Card>
           </TabsContent>
 
-          {/* All Applicants Tab */}
+          {/* All Leads Tab */}
           <TabsContent value="applicants">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="w-5 h-5" />
-                  All Applicants
+                  All Leads
                 </CardTitle>
                 <CardDescription>
-                  View all your applicants ({recruitsList.length} total)
+                  {user?.role === 'station_commander' || user?.role === 'admin'
+                    ? `View all leads from your station (${recruitsList.length} total)`
+                    : `View all your leads (${recruitsList.length} total)`}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {loading ? (
                   <div className="text-center py-8 text-gray-500">
-                    Loading applicants...
+                    Loading leads...
                   </div>
                 ) : recruitsList.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                    <p>No applicants yet</p>
+                    <p>No leads yet</p>
                     <p className="text-sm mt-2">
                       Share your QR code to start receiving applications
                     </p>
@@ -628,7 +646,9 @@ function DashboardContent() {
                   All Survey Responses
                 </CardTitle>
                 <CardDescription>
-                  View all your survey feedback ({surveyResponses.length} total)
+                  {user?.role === 'station_commander' || user?.role === 'admin'
+                    ? `View all survey feedback from your station (${surveyResponses.length} total)`
+                    : `View all your survey feedback (${surveyResponses.length} total)`}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -673,6 +693,12 @@ function DashboardContent() {
                             <div className="text-xs text-gray-500">
                               {response.email} • {response.phone}
                             </div>
+                            {(user?.role === 'station_commander' || user?.role === 'admin') && (response as any).recruiterName && (
+                              <div className="text-xs text-blue-600 mt-1 font-medium">
+                                Recruiter: {(response as any).recruiterName}
+                                {(response as any).recruiterRank && ` (${(response as any).recruiterRank})`}
+                              </div>
+                            )}
                             {response.feedback && (
                               <div className="mt-2 text-xs sm:text-sm text-gray-700 bg-gray-50 p-3 rounded break-words">
                                 "{response.feedback}"
@@ -699,13 +725,13 @@ function DashboardContent() {
 
         {/* QR Scan Analytics Dialog */}
         <Dialog open={showQRAnalytics} onOpenChange={setShowQRAnalytics}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full mx-2 sm:mx-auto">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" />
+              <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
                 QR Code Scan Analytics
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-xs sm:text-sm">
                 Detailed breakdown of QR code scans by location
               </DialogDescription>
             </DialogHeader>
@@ -713,40 +739,40 @@ function DashboardContent() {
             {qrAnalyticsLoading ? (
               <div className="text-center py-8 text-gray-500">Loading analytics...</div>
             ) : qrAnalyticsData ? (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Overall Stats */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-2 sm:gap-4">
                   <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-gray-600">Total Scans</CardTitle>
+                    <CardHeader className="pb-2 px-2 sm:px-6">
+                      <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Total Scans</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-blue-600">
+                    <CardContent className="px-2 sm:px-6 pb-2 sm:pb-6">
+                      <div className="text-lg sm:text-2xl font-bold text-blue-600">
                         {qrAnalyticsData.totalScans}
                       </div>
                     </CardContent>
                   </Card>
                   <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-gray-600">Converted</CardTitle>
+                    <CardHeader className="pb-2 px-2 sm:px-6">
+                      <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Converted</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-green-600">
+                    <CardContent className="px-2 sm:px-6 pb-2 sm:pb-6">
+                      <div className="text-lg sm:text-2xl font-bold text-green-600">
                         {qrAnalyticsData.totalConverted}
                       </div>
                       {qrAnalyticsData.totalConverted > 0 && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-[10px] sm:text-xs text-gray-500 mt-1 hidden sm:block">
                           Includes applications and surveys
                         </p>
                       )}
                     </CardContent>
                   </Card>
                   <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-gray-600">Conversion Rate</CardTitle>
+                    <CardHeader className="pb-2 px-2 sm:px-6">
+                      <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Conversion Rate</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-purple-600">
+                    <CardContent className="px-2 sm:px-6 pb-2 sm:pb-6">
+                      <div className="text-lg sm:text-2xl font-bold text-purple-600">
                         {qrAnalyticsData.overallConversionRate}%
                       </div>
                     </CardContent>
@@ -755,75 +781,77 @@ function DashboardContent() {
 
                 {/* Location Breakdown */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Scans by Location</h3>
+                  <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Scans by Location</h3>
                   {qrAnalyticsData.locations.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-gray-500 text-sm">
                       No QR code scans recorded yet
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Location</TableHead>
-                          <TableHead className="text-right">Total Scans</TableHead>
-                          <TableHead className="text-right">Converted</TableHead>
-                          <TableHead className="text-right">Conversion Rate</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {qrAnalyticsData.locations.map((location) => (
-                          <TableRow key={location.locationLabel}>
-                            <TableCell className="font-medium">
-                              <div className="flex items-center gap-2">
-                                {location.locationLabel === 'Default QR' ? (
-                                  <QrCode className="w-4 h-4 text-gray-400" />
-                                ) : (
-                                  <MapPin className="w-4 h-4 text-blue-500" />
-                                )}
-                                {location.locationLabel}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right font-semibold">
-                              {location.totalScans}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <span className="text-green-600 font-semibold">
-                                {location.convertedScans}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Badge variant={location.conversionRate >= 50 ? "default" : location.conversionRate >= 25 ? "secondary" : "outline"}>
-                                {location.conversionRate}%
-                              </Badge>
-                            </TableCell>
+                    <div className="overflow-x-auto -mx-2 sm:mx-0">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-xs sm:text-sm">Location</TableHead>
+                            <TableHead className="text-right text-xs sm:text-sm">Scans</TableHead>
+                            <TableHead className="text-right text-xs sm:text-sm">Converted</TableHead>
+                            <TableHead className="text-right text-xs sm:text-sm">Rate</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {qrAnalyticsData.locations.map((location) => (
+                            <TableRow key={location.locationLabel}>
+                              <TableCell className="font-medium text-xs sm:text-sm">
+                                <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+                                  {location.locationLabel === 'Default QR' ? (
+                                    <QrCode className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
+                                  ) : (
+                                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500 flex-shrink-0" />
+                                  )}
+                                  <span className="truncate">{location.locationLabel}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right font-semibold text-xs sm:text-sm">
+                                {location.totalScans}
+                              </TableCell>
+                              <TableCell className="text-right text-xs sm:text-sm">
+                                <span className="text-green-600 font-semibold">
+                                  {location.convertedScans}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right text-xs sm:text-sm">
+                                <Badge variant={location.conversionRate >= 50 ? "default" : location.conversionRate >= 25 ? "secondary" : "outline"} className="text-[10px] sm:text-xs">
+                                  {location.conversionRate}%
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </div>
 
                 {/* Recent Scans */}
                 {qrAnalyticsData.locations.some(loc => loc.scans.length > 0) && (
                   <div>
-                    <h3 className="text-lg font-semibold mb-4">Recent Scans</h3>
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                    <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Recent Scans</h3>
+                    <div className="space-y-2 max-h-48 sm:max-h-64 overflow-y-auto">
                       {qrAnalyticsData.locations.flatMap(location =>
                         location.scans.slice(0, 10).map(scan => (
                           <div
                             key={scan.id}
-                            className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm"
+                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 bg-gray-50 rounded text-xs sm:text-sm gap-2"
                           >
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-3 h-3 text-gray-400" />
-                              <span className="font-medium">{location.locationLabel}</span>
-                              <Badge variant="outline" className="text-xs">
+                            <div className="flex items-center gap-2 flex-wrap min-w-0">
+                              <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                              <span className="font-medium truncate">{location.locationLabel}</span>
+                              <Badge variant="outline" className="text-[10px] sm:text-xs">
                                 {scan.scanType}
                               </Badge>
                               {scan.conversionType && (
                                 <Badge
                                   variant="default"
-                                  className={`text-xs ${scan.conversionType === "survey" ? "bg-blue-600" : "bg-green-600"}`}
+                                  className={`text-[10px] sm:text-xs ${scan.conversionType === "survey" ? "bg-blue-600" : "bg-green-600"}`}
                                 >
                                   {scan.conversionType === "survey"
                                     ? "Converted (Survey)"
@@ -831,7 +859,7 @@ function DashboardContent() {
                                 </Badge>
                               )}
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap">
                               {format(new Date(scan.scannedAt), "MMM d, h:mm a")}
                             </div>
                           </div>

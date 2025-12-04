@@ -217,32 +217,32 @@ export const stationCommander = {
         stats: {
           allTime: {
             total: number;
-            leads: number;
+            surveys: number;
             prospects: number;
-            applicants: number;
+            leads: number;
             qrCodeScans: number;
             directEntries: number;
           };
           monthly: {
             total: number;
-            leads: number;
+            surveys: number;
             prospects: number;
-            applicants: number;
+            leads: number;
           };
         };
       }>;
       stationTotals: {
         allTime: {
           total: number;
-          leads: number;
+          surveys: number;
           prospects: number;
-          applicants: number;
+          leads: number;
         };
         monthly: {
           total: number;
-          leads: number;
+          surveys: number;
           prospects: number;
-          applicants: number;
+          leads: number;
         };
       };
     }>("/station-commander/recruiters");
@@ -255,6 +255,14 @@ export const stationCommander = {
         recruiterRank: string;
       }>;
     }>("/station-commander/recruits/export");
+  },
+
+  getRecruiterLeads: async (recruiterId: string) => {
+    return apiCall<{ leads: Recruit[] }>(`/station-commander/recruiter/${recruiterId}/leads`);
+  },
+
+  getRecruiterSurveys: async (recruiterId: string) => {
+    return apiCall<{ surveys: QrSurveyResponse[] }>(`/station-commander/recruiter/${recruiterId}/surveys`);
   },
 };
 

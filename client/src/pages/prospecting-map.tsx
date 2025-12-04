@@ -1155,7 +1155,7 @@ function ProspectingMap() {
                 value="locations"
                 className="mt-0 flex-1 min-h-0 flex flex-col overflow-hidden data-[state=active]:flex data-[state=inactive]:hidden absolute inset-0"
               >
-                <div className="flex-1 overflow-y-auto min-h-0 p-2 md:p-4 space-y-2 md:space-y-3">
+                <div className="flex-1 overflow-y-auto min-h-0 p-2 md:p-4 pb-6 md:pb-4 space-y-2 md:space-y-3">
                 {locationsLoading ? (
                   <div className="text-center py-8 text-muted-foreground">
                     Loading locations...
@@ -1231,7 +1231,7 @@ function ProspectingMap() {
                 
                 {/* Pagination for Locations */}
                 {filteredLocations.length > 0 && (
-                  <div className="border-t pt-2 px-2 md:px-4 shrink-0">
+                  <div className="border-t pt-2 px-2 md:px-4 pb-3 md:pb-2 shrink-0 bg-card sticky bottom-0">
                     <Pagination>
                       <PaginationContent className="flex items-center justify-center gap-2">
                         <PaginationItem>
@@ -1281,7 +1281,7 @@ function ProspectingMap() {
                 value="events"
                 className="mt-0 flex-1 min-h-0 flex flex-col overflow-hidden data-[state=active]:flex data-[state=inactive]:hidden absolute inset-0"
               >
-                <div className="flex-1 overflow-y-auto min-h-0 p-2 md:p-4 space-y-2 md:space-y-3">
+                <div className="flex-1 overflow-y-auto min-h-0 p-2 md:p-4 pb-6 md:pb-4 space-y-2 md:space-y-3">
                 {paginatedEvents.map((event) => (
                   <Card
                     key={event.id}
@@ -1420,7 +1420,7 @@ function ProspectingMap() {
                 
                 {/* Pagination for Events */}
                 {filteredEvents.length > 0 && (
-                  <div className="border-t pt-2 px-2 md:px-4 shrink-0">
+                  <div className="border-t pt-2 px-2 md:px-4 pb-3 md:pb-2 shrink-0 bg-card sticky bottom-0">
                     <Pagination>
                       <PaginationContent className="flex items-center justify-center gap-2">
                         <PaginationItem>

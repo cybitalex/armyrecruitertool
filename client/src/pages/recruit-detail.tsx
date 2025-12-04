@@ -121,9 +121,9 @@ export default function RecruitDetail() {
       }
     > = {
       pending: { variant: "secondary", label: "Pending" },
-      reviewing: { variant: "default", label: "In Review" },
-      approved: { variant: "default", label: "Approved" },
-      rejected: { variant: "destructive", label: "Rejected" },
+      contacted: { variant: "default", label: "Contacted" },
+      qualified: { variant: "default", label: "Qualified" },
+      disqualified: { variant: "destructive", label: "Disqualified" },
     };
 
     const config = variants[status] || {
@@ -177,9 +177,9 @@ export default function RecruitDetail() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="reviewing">In Review</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="contacted">Contacted</SelectItem>
+                  <SelectItem value="qualified">Qualified</SelectItem>
+                  <SelectItem value="disqualified">Disqualified</SelectItem>
                 </SelectContent>
               </Select>
               <Button

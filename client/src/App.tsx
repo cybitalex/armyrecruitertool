@@ -28,7 +28,7 @@ import Dashboard from "@/pages/dashboard";
 import MyQRCode from "@/pages/my-qr";
 import IntakeForm from "@/pages/intake-form";
 import RecruitDetail from "@/pages/recruit-detail";
-import ProspectingMap from "@/pages/prospecting-map";
+// import ProspectingMap from "@/pages/prospecting-map"; // TEMPORARILY DISABLED
 import AdminRequests from "@/pages/admin-requests";
 import StationCommanderDashboard from "@/pages/station-commander-dashboard";
 
@@ -57,7 +57,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/my-qr" component={MyQRCode} />
-      <Route path="/prospecting" component={ProspectingMap} />
+      {/* <Route path="/prospecting" component={ProspectingMap} /> */} {/* TEMPORARILY DISABLED */}
       <Route path="/intake" component={IntakeForm} />
       <Route path="/intake-form" component={IntakeForm} />
       <Route path="/recruits/:id" component={RecruitDetail} />
