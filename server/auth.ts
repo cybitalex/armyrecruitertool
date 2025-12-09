@@ -4,7 +4,7 @@ import QRCode from 'qrcode';
 import nodemailer from 'nodemailer';
 import { db } from './database';
 import { users, stationCommanderRequests, stations } from '../shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import type { Request, Response, NextFunction } from 'express';
 
 const SALT_ROUNDS = 10;
@@ -64,7 +64,7 @@ export async function sendStationCommanderRequestNotification(
   const denyUrl = `${appUrl}/api/approve-request?token=${approvalToken}&action=deny`;
   
   const mailOptions = {
-    from: process.env.SMTP_USER,
+    from: `Army Recruiter Tool <${process.env.SMTP_USER || 'alex.cybitdevs@gmail.com'}>`,
     to: adminEmail,
     subject: '🎖️ New Station Commander Access Request - Action Required',
     html: `
@@ -107,7 +107,13 @@ export async function sendStationCommanderRequestNotification(
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Station commander request notification email sent to admin: ${adminEmail}`);
+  } catch (error) {
+    console.error('❌ Failed to send station commander request notification email:', error);
+    throw error; // Re-throw so caller knows it failed
+  }
 }
 
 // Send approval notification to user
@@ -175,6 +181,61 @@ export async function sendStationCommanderDenialEmail(email: string, userName: s
   };
 
   await transporter.sendMail(mailOptions);
+}
+
+// Send station change request notification to admin
+export async function sendStationChangeRequestNotification(
+  userEmail: string,
+  userName: string,
+  userRank: string | null,
+  currentStationName: string | null,
+  requestedStationName: string,
+  reason: string
+) {
+  const adminEmail = 'alex.cybitdevs@gmail.com';
+  const appUrl = process.env.APP_URL || 'https://armyrecruitertool.duckdns.org';
+  const adminDashboardUrl = `${appUrl}/admin/requests`;
+  
+  const mailOptions = {
+    from: `Army Recruiter Tool <${process.env.SMTP_USER || 'alex.cybitdevs@gmail.com'}>`,
+    to: adminEmail,
+    subject: '📍 New Station Change Request - Action Required',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #1f4e3d;">New Station Change Request</h2>
+        <p>A user has requested to change their assigned station:</p>
+        
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Name:</strong> ${userName}${userRank ? ` (${userRank})` : ''}</p>
+          <p><strong>Email:</strong> ${userEmail}</p>
+          <p><strong>Current Station:</strong> ${currentStationName || 'Not assigned'}</p>
+          <p><strong>Requested Station:</strong> ${requestedStationName}</p>
+          <p><strong>Reason:</strong></p>
+          <p style="margin-left: 15px; font-style: italic;">${reason || 'No reason provided'}</p>
+        </div>
+        
+        <div style="margin: 30px 0;">
+          <a href="${adminDashboardUrl}" 
+             style="display: inline-block; padding: 12px 30px; background-color: #006400; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            Review Request in Admin Dashboard
+          </a>
+        </div>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
+          <p>Army Recruiter Tool - Station Change Request System</p>
+          <p>This is an automated notification. Please do not reply to this email.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Station change request notification email sent to admin: ${adminEmail} for user ${userEmail}`);
+  } catch (error) {
+    console.error('❌ Failed to send station change request notification email:', error);
+    throw error; // Re-throw so caller can log it
+  }
 }
 
 // Send verification email
@@ -777,10 +838,14 @@ export async function verifyEmail(token: string) {
 
 // Login user
 export async function loginUser(email: string, password: string) {
-  // Find user by email
-  const user = await db.query.users.findFirst({
-    where: eq(users.email, email),
-  });
+  // Find user by email (case-insensitive)
+  // Convert email to lowercase for comparison
+  const emailLower = email.toLowerCase();
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(sql`LOWER(${users.email}) = ${emailLower}`)
+    .limit(1);
 
   if (!user) {
     throw new Error('Invalid email or password');

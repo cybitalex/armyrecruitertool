@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
+import { admin } from "@/lib/api";
 import {
   Sheet,
   SheetContent,
@@ -19,6 +22,18 @@ export function Header() {
   
   // Only show logout if user is logged in
   const isLoggedIn = !!user;
+  const isAdmin = user?.role === 'admin';
+
+  // Fetch pending request counts for admin (poll every 30 seconds)
+  const { data: pendingCounts } = useQuery({
+    queryKey: ['admin', 'pending-request-counts'],
+    queryFn: () => admin.getPendingRequestCounts(),
+    enabled: isAdmin && isLoggedIn,
+    refetchInterval: 30000, // Poll every 30 seconds
+    staleTime: 10000, // Consider data stale after 10 seconds
+  });
+
+  const pendingRequestCount = pendingCounts?.total || 0;
 
   // Hide main app navigation when viewing the public survey page
   const isSurveyRoute = location.startsWith("/survey");
@@ -32,14 +47,13 @@ export function Header() {
       testId: "nav-dashboard",
       roles: ["recruiter", "station_commander", "pending_station_commander", "admin"],
     },
-    // TEMPORARILY DISABLED - Prospecting Map Feature
-    // {
-    //   path: "/prospecting",
-    //   label: "Prospecting",
-    //   icon: MapPin,
-    //   testId: "nav-prospecting",
-    //   roles: ["recruiter", "station_commander", "pending_station_commander", "admin"],
-    // },
+    {
+      path: "/prospecting",
+      label: "Prospecting",
+      icon: MapPin,
+      testId: "nav-prospecting",
+      roles: ["recruiter", "station_commander", "pending_station_commander", "admin"],
+    },
     {
       path: "/intake",
       label: "New Application",
@@ -148,6 +162,7 @@ export function Header() {
                 <nav className="mt-6 space-y-2">
                   {navigationItems.map((item) => {
                     const Icon = item.icon;
+                    const showBadge = item.path === "/admin/requests" && pendingRequestCount > 0;
                     return (
                       <Button
                         key={item.path}
@@ -157,7 +172,7 @@ export function Header() {
                           setMobileMenuOpen(false);
                         }}
                         data-testid={item.testId}
-                        className={`w-full justify-start ${
+                        className={`w-full justify-start relative ${
                           location === item.path
                             ? "bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold"
                             : "text-army-tan hover:text-army-gold hover:bg-army-green"
@@ -165,6 +180,11 @@ export function Header() {
                       >
                         <Icon className="w-4 h-4 mr-3" />
                         {item.label}
+                        {showBadge && (
+                          <Badge className="ml-auto bg-red-600 text-white text-xs min-w-[20px] h-5 flex items-center justify-center px-1.5">
+                            {pendingRequestCount > 99 ? '99+' : pendingRequestCount}
+                          </Badge>
+                        )}
                       </Button>
                     );
                   })}
@@ -193,20 +213,26 @@ export function Header() {
           <nav className="hidden md:flex items-center gap-2">
             {navigationItems.map((item) => {
               const Icon = item.icon;
+              const showBadge = item.path === "/admin/requests" && pendingRequestCount > 0;
               return (
                 <Button
                   key={item.path}
                   variant={location === item.path ? "default" : "ghost"}
                   onClick={() => navigate(item.path)}
                   data-testid={item.testId}
-                  className={
+                  className={`relative ${
                     location === item.path
                       ? "bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold"
                       : "text-army-tan hover:text-army-gold hover:bg-army-green"
-                  }
+                  }`}
                 >
                   <Icon className="w-4 h-4 mr-2" />
                   {item.label}
+                  {showBadge && (
+                    <Badge className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full border-2 border-army-black">
+                      {pendingRequestCount > 99 ? '99+' : pendingRequestCount}
+                    </Badge>
+                  )}
                 </Button>
               );
             })}

@@ -33,6 +33,7 @@ import {
   sendStationCommanderDenialEmail,
   generateApprovalToken,
   sendStationCommanderRequestNotification,
+  sendStationChangeRequestNotification,
 } from "./auth";
 import { db } from "./database";
 import { users, qrScans, qrCodeLocations } from "@shared/schema";
@@ -348,6 +349,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   };
 
+  // Get pending request counts (admin only)
+  app.get("/api/admin/pending-request-counts", requireAdmin, async (req, res) => {
+    try {
+      // Use subqueries to get counts
+      const commanderCountResult = await db
+        .select({ count: sql<number>`cast(count(*) as integer)` })
+        .from(stationCommanderRequests)
+        .where(eq(stationCommanderRequests.status, 'pending'));
+
+      const stationChangeCountResult = await db
+        .select({ count: sql<number>`cast(count(*) as integer)` })
+        .from(stationChangeRequests)
+        .where(eq(stationChangeRequests.status, 'pending'));
+
+      const commanderCount = Number(commanderCountResult[0]?.count || 0);
+      const stationChangeCount = Number(stationChangeCountResult[0]?.count || 0);
+      const totalCount = commanderCount + stationChangeCount;
+
+      console.log(`📊 Pending request counts - Commander: ${commanderCount}, Station Change: ${stationChangeCount}, Total: ${totalCount}`);
+
+      res.json({
+        stationCommanderRequests: commanderCount,
+        stationChangeRequests: stationChangeCount,
+        total: totalCount,
+      });
+    } catch (error) {
+      console.error('Error fetching pending request counts:', error);
+      res.status(500).json({ error: "Failed to fetch pending request counts" });
+    }
+  });
+
   // Get all pending station commander requests (admin only)
   app.get("/api/admin/station-commander-requests", requireAdmin, async (req, res) => {
     try {
@@ -553,6 +585,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "You already have a pending station change request" });
       }
 
+      // Get station details
+      const [currentStation] = user.stationId 
+        ? await db.select().from(stations).where(eq(stations.id, user.stationId))
+        : [null];
+      const [requestedStation] = await db.select().from(stations).where(eq(stations.id, requestedStationId));
+
       // Create the request
       await db.insert(stationChangeRequests).values({
         userId,
@@ -561,6 +599,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reason,
         status: 'pending',
       });
+
+      // Send email notification to admin
+      try {
+        console.log(`📧 Sending station change request notification to admin for ${user.email}`);
+        await sendStationChangeRequestNotification(
+          user.email,
+          user.fullName,
+          user.rank,
+          currentStation ? `${currentStation.name} (${currentStation.stationCode})` : null,
+          requestedStation ? `${requestedStation.name} (${requestedStation.stationCode})` : 'Unknown Station',
+          reason
+        );
+        console.log(`✅ Station change request notification sent successfully`);
+      } catch (emailError) {
+        console.error('❌ Failed to send station change request notification:', emailError);
+        // Don't fail the request if email fails
+      }
 
       res.status(201).json({ message: "Station change request submitted successfully" });
     } catch (error) {
@@ -803,6 +858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send notification email to admin with approval link
       try {
+        console.log(`📧 Sending station commander request notification to admin for ${user.email}`);
         await sendStationCommanderRequestNotification(
           user.email,
           user.fullName,
@@ -810,8 +866,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           request.id,
           approvalToken
         );
+        console.log(`✅ Station commander request notification sent successfully`);
       } catch (error) {
-        console.error('⚠️ Failed to send admin notification:', error);
+        console.error('❌ Failed to send admin notification:', error);
+        // Don't fail the request if email fails, but log it
       }
 
       res.json({ 

@@ -178,6 +178,14 @@ export const surveys = {
 
 // Admin API
 export const admin = {
+  getPendingRequestCounts: async () => {
+    return apiCall<{
+      stationCommanderRequests: number;
+      stationChangeRequests: number;
+      total: number;
+    }>("/admin/pending-request-counts");
+  },
+
   getStationCommanderRequests: async () => {
     return apiCall<{
       requests: Array<{
