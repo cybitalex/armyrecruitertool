@@ -330,6 +330,11 @@ export class MemStorage implements IStorage {
         .values({
           ...insertRecruit,
           status: insertRecruit.status || "pending",
+          // Ensure deprecated fields are explicitly set to null if not provided
+          // These fields are no longer collected but may still have NOT NULL constraints
+          heightFeet: insertRecruit.heightFeet ?? null,
+          heightInches: insertRecruit.heightInches ?? null,
+          weight: insertRecruit.weight ?? null,
         })
         .returning();
       

@@ -46,7 +46,9 @@ export function exportContactsToExcel(
       recruit.firstName || "",
       recruit.lastName || "",
       recruit.middleName || "",
-      recruit.dateOfBirth ? new Date(recruit.dateOfBirth).toLocaleDateString() : "",
+      recruit.dateOfBirth
+        ? new Date(recruit.dateOfBirth).toLocaleDateString()
+        : "",
       recruit.email || "",
       recruit.phone || "",
       recruit.address || "",
@@ -68,7 +70,8 @@ export function exportContactsToExcel(
       recruit.additionalNotes || "",
       recruit.status || "",
       recruit.source === "qr_code" ? "QR Code" : "Direct",
-      (recruit as any).scanLocation || (recruit.source === "qr_code" ? "Default QR" : "Direct Entry"),
+      (recruit as any).scanLocation ||
+        (recruit.source === "qr_code" ? "Default QR" : "Direct Entry"),
       recruit.submittedAt ? new Date(recruit.submittedAt).toLocaleString() : "",
     ]);
 
@@ -88,7 +91,7 @@ export function exportContactsToExcel(
       { wch: 15 }, // Phone
       { wch: 25 }, // Address
       { wch: 15 }, // City
-      { wch: 8 },  // State
+      { wch: 8 }, // State
       { wch: 10 }, // ZIP Code
       { wch: 18 }, // Education Level
       { wch: 12 }, // Driver's License
@@ -134,9 +137,7 @@ export function exportContactsToExcel(
       response.rating || "",
       response.feedback || "",
       response.source || "presentation",
-      response.createdAt
-        ? new Date(response.createdAt).toLocaleString()
-        : "",
+      response.createdAt ? new Date(response.createdAt).toLocaleString() : "",
     ]);
 
     // Create worksheet for survey responses
@@ -157,19 +158,14 @@ export function exportContactsToExcel(
     ];
 
     // Add worksheet to workbook
-    XLSX.utils.book_append_sheet(
-      workbook,
-      surveyWorksheet,
-      "Survey Responses"
-    );
+    XLSX.utils.book_append_sheet(workbook, surveyWorksheet, "Survey Responses");
   }
 
   // Generate filename with current date
-  const filename = `army-recruiter-contacts-${new Date()
-    .toISOString()
-    .split("T")[0]}.xlsx`;
+  const filename = `army-recruiter-contacts-${
+    new Date().toISOString().split("T")[0]
+  }.xlsx`;
 
   // Write the workbook to a file and trigger download
   XLSX.writeFile(workbook, filename);
 }
-

@@ -27,7 +27,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../components/ui/dialog";
-import { ArrowLeft, Download, Share2, Copy, CheckCircle2, Plus, MapPin, Trash2, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Download,
+  Share2,
+  Copy,
+  CheckCircle2,
+  Plus,
+  MapPin,
+  Trash2,
+  Loader2,
+} from "lucide-react";
 import { useToast } from "../hooks/use-toast";
 
 type LocationQRCode = {
@@ -48,14 +58,20 @@ function MyQRCodeContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
-  
+
   // Location QR codes state
-  const [locationQRCodesList, setLocationQRCodesList] = useState<LocationQRCode[]>([]);
-  const [locationQRImages, setLocationQRImages] = useState<Record<string, string>>({});
+  const [locationQRCodesList, setLocationQRCodesList] = useState<
+    LocationQRCode[]
+  >([]);
+  const [locationQRImages, setLocationQRImages] = useState<
+    Record<string, string>
+  >({});
   const [loadingLocationQRs, setLoadingLocationQRs] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newLocationLabel, setNewLocationLabel] = useState("");
-  const [newQRType, setNewQRType] = useState<"application" | "survey">("application");
+  const [newQRType, setNewQRType] = useState<"application" | "survey">(
+    "application"
+  );
   const [creating, setCreating] = useState(false);
 
   const qrUrl = `${window.location.origin}/apply?r=${user?.qrCode}`;
@@ -86,7 +102,7 @@ function MyQRCodeContent() {
       setLoadingLocationQRs(true);
       const locationQRs = await locationQRCodes.list();
       setLocationQRCodesList(locationQRs);
-      
+
       // Load images for each location QR code
       const imagePromises = locationQRs.map(async (qr) => {
         try {
@@ -96,7 +112,7 @@ function MyQRCodeContent() {
           return { id: qr.id, image: null };
         }
       });
-      
+
       const images = await Promise.all(imagePromises);
       const imageMap: Record<string, string> = {};
       images.forEach(({ id, image }) => {
@@ -126,13 +142,16 @@ function MyQRCodeContent() {
         locationLabel: newLocationLabel.trim(),
         qrType: newQRType,
       });
-      
+
       setLocationQRCodesList([newQR, ...locationQRCodesList]);
-      setLocationQRImages({ ...locationQRImages, [newQR.id]: newQR.qrCodeImage });
+      setLocationQRImages({
+        ...locationQRImages,
+        [newQR.id]: newQR.qrCodeImage,
+      });
       setNewLocationLabel("");
       setNewQRType("application");
       setShowCreateDialog(false);
-      
+
       toast({
         title: "Location QR code created",
         description: `QR code for "${newQR.locationLabel}" has been generated`,
@@ -149,7 +168,9 @@ function MyQRCodeContent() {
   };
 
   const deleteLocationQRCode = async (id: string, label: string) => {
-    if (!confirm(`Are you sure you want to delete the QR code for "${label}"?`)) {
+    if (
+      !confirm(`Are you sure you want to delete the QR code for "${label}"?`)
+    ) {
       return;
     }
 
@@ -159,7 +180,7 @@ function MyQRCodeContent() {
       const newImages = { ...locationQRImages };
       delete newImages[id];
       setLocationQRImages(newImages);
-      
+
       toast({
         title: "QR code deleted",
         description: `QR code for "${label}" has been removed`,
@@ -176,7 +197,10 @@ function MyQRCodeContent() {
   const downloadQRCode = () => {
     const link = document.createElement("a");
     link.href = qrCodeImage;
-    link.download = `army-recruiter-qr-${user?.fullName?.replace(/\s+/g, "-")}.png`;
+    link.download = `army-recruiter-qr-${user?.fullName?.replace(
+      /\s+/g,
+      "-"
+    )}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -238,7 +262,9 @@ function MyQRCodeContent() {
           {/* Application QR Code */}
           <Card>
             <CardHeader className="text-center px-4 sm:px-6 pt-4 sm:pt-6">
-              <CardTitle className="text-lg sm:text-xl">Application QR Code</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">
+                Recruiter QR Code
+              </CardTitle>
               <CardDescription className="text-xs sm:text-sm mt-1">
                 Applicants scan this to start the full interest/application form
               </CardDescription>
@@ -265,7 +291,7 @@ function MyQRCodeContent() {
                   disabled={loading}
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Download Application QR
+                  Download Recruiter QR Code
                 </Button>
 
                 <Button
@@ -275,7 +301,7 @@ function MyQRCodeContent() {
                   disabled={loading}
                 >
                   <Share2 className="w-4 h-4 mr-2" />
-                  Share Application QR
+                  Share Recruiter QR Code
                 </Button>
               </div>
             </CardContent>
@@ -284,7 +310,9 @@ function MyQRCodeContent() {
           {/* Presentation Survey QR Code */}
           <Card>
             <CardHeader className="text-center px-4 sm:px-6 pt-4 sm:pt-6">
-              <CardTitle className="text-lg sm:text-xl">Presentation Survey QR</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">
+                Presentation/Interview QR Code
+              </CardTitle>
               <CardDescription className="text-xs sm:text-sm mt-1">
                 Use this in briefings to capture quick ratings and contact info
               </CardDescription>
@@ -320,7 +348,7 @@ function MyQRCodeContent() {
                   disabled={loading}
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Download Survey QR
+                  Download Presentation QR
                 </Button>
 
                 <Button
@@ -330,7 +358,7 @@ function MyQRCodeContent() {
                   disabled={loading}
                 >
                   <Share2 className="w-4 h-4 mr-2" />
-                  Copy Survey Link
+                  Copy Presentation/Interview Link
                 </Button>
               </div>
             </CardContent>
@@ -340,7 +368,9 @@ function MyQRCodeContent() {
           <div className="space-y-4 sm:space-y-6 md:col-span-2">
             <Card>
               <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-6">
-                <CardTitle className="text-base sm:text-lg">How to Use</CardTitle>
+                <CardTitle className="text-base sm:text-lg">
+                  How to Use
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6 pb-4 sm:pb-6">
                 <div className="flex gap-2 sm:gap-3">
@@ -348,7 +378,9 @@ function MyQRCodeContent() {
                     1
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-medium text-sm sm:text-base">Download or Share</h3>
+                    <h3 className="font-medium text-sm sm:text-base">
+                      Download or Share
+                    </h3>
                     <p className="text-xs sm:text-sm text-gray-600 mt-1">
                       Download the QR code image or share the link directly
                     </p>
@@ -360,7 +392,9 @@ function MyQRCodeContent() {
                     2
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-medium text-sm sm:text-base">Display Your QR Code</h3>
+                    <h3 className="font-medium text-sm sm:text-base">
+                      Display Your QR Code
+                    </h3>
                     <p className="text-xs sm:text-sm text-gray-600 mt-1">
                       Add to business cards, flyers, or show on your phone
                     </p>
@@ -372,7 +406,9 @@ function MyQRCodeContent() {
                     3
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-medium text-sm sm:text-base">Track Applications</h3>
+                    <h3 className="font-medium text-sm sm:text-base">
+                      Track Applications
+                    </h3>
                     <p className="text-xs sm:text-sm text-gray-600 mt-1">
                       All scanned applications appear in your dashboard
                     </p>
@@ -460,9 +496,9 @@ function MyQRCodeContent() {
             </Card>
 
             <div className="text-xs text-gray-500 p-4 bg-white rounded border">
-              <strong>UNCLASSIFIED</strong> - This QR code is unique to you. All 
-              applications scanned with this code will be automatically linked to 
-              your recruiter account.
+              <strong>UNCLASSIFIED</strong> - This QR code is unique to you. All
+              applications scanned with this code will be automatically linked
+              to your recruiter account.
             </div>
           </div>
 
@@ -472,12 +508,18 @@ function MyQRCodeContent() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg">Location-Based QR Codes</CardTitle>
+                    <CardTitle className="text-lg">
+                      Location-Based QR Codes
+                    </CardTitle>
                     <CardDescription>
-                      Generate QR codes with custom location labels to track where scans occur
+                      Generate QR codes with custom location labels to track
+                      where scans occur
                     </CardDescription>
                   </div>
-                  <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+                  <Dialog
+                    open={showCreateDialog}
+                    onOpenChange={setShowCreateDialog}
+                  >
                     <DialogTrigger asChild>
                       <Button>
                         <Plus className="w-4 h-4 mr-2" />
@@ -488,36 +530,54 @@ function MyQRCodeContent() {
                       <DialogHeader>
                         <DialogTitle>Create Location QR Code</DialogTitle>
                         <DialogDescription>
-                          Generate a new QR code with a location label. This helps track where your QR codes are being scanned.
+                          Generate a new QR code with a location label. This
+                          helps track where your QR codes are being scanned.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                          <Label htmlFor="locationLabel">Location Label *</Label>
+                          <Label htmlFor="locationLabel">
+                            Location Label *
+                          </Label>
                           <Input
                             id="locationLabel"
                             placeholder="e.g., High School Career Fair, Mall Kiosk, Community Event"
                             value={newLocationLabel}
-                            onChange={(e) => setNewLocationLabel(e.target.value)}
+                            onChange={(e) =>
+                              setNewLocationLabel(e.target.value)
+                            }
                             onKeyDown={(e) => {
-                              if (e.key === "Enter" && newLocationLabel.trim()) {
+                              if (
+                                e.key === "Enter" &&
+                                newLocationLabel.trim()
+                              ) {
                                 createLocationQRCode();
                               }
                             }}
                           />
                           <p className="text-xs text-gray-500">
-                            Enter a descriptive label for where this QR code will be used
+                            Enter a descriptive label for where this QR code
+                            will be used
                           </p>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="qrType">QR Code Type *</Label>
-                          <Select value={newQRType} onValueChange={(v) => setNewQRType(v as "application" | "survey")}>
+                          <Select
+                            value={newQRType}
+                            onValueChange={(v) =>
+                              setNewQRType(v as "application" | "survey")
+                            }
+                          >
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="application">Application Form</SelectItem>
-                              <SelectItem value="survey">Survey Form</SelectItem>
+                              <SelectItem value="application">
+                                Application Form
+                              </SelectItem>
+                              <SelectItem value="survey">
+                                Survey Form
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -531,7 +591,10 @@ function MyQRCodeContent() {
                           >
                             Cancel
                           </Button>
-                          <Button onClick={createLocationQRCode} disabled={creating || !newLocationLabel.trim()}>
+                          <Button
+                            onClick={createLocationQRCode}
+                            disabled={creating || !newLocationLabel.trim()}
+                          >
                             {creating ? (
                               <>
                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -552,19 +615,26 @@ function MyQRCodeContent() {
               </CardHeader>
               <CardContent>
                 {loadingLocationQRs ? (
-                  <div className="text-center py-8 text-gray-500">Loading location QR codes...</div>
+                  <div className="text-center py-8 text-gray-500">
+                    Loading location QR codes...
+                  </div>
                 ) : locationQRCodesList.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <MapPin className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                     <p className="font-medium mb-2">No location QR codes yet</p>
-                    <p className="text-sm">Create your first location QR code to track where scans occur</p>
+                    <p className="text-sm">
+                      Create your first location QR code to track where scans
+                      occur
+                    </p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {locationQRCodesList.map((locationQR) => {
                       const qrImage = locationQRImages[locationQR.id];
-                      const qrUrl = `${window.location.origin}/${locationQR.qrType === 'application' ? 'apply' : 'survey'}?r=${locationQR.qrCode}`;
-                      
+                      const qrUrl = `${window.location.origin}/${
+                        locationQR.qrType === "application" ? "apply" : "survey"
+                      }?r=${locationQR.qrCode}`;
+
                       return (
                         <Card key={locationQR.id} className="relative">
                           <CardHeader className="pb-3">
@@ -574,14 +644,22 @@ function MyQRCodeContent() {
                                   {locationQR.locationLabel}
                                 </CardTitle>
                                 <CardDescription className="text-xs mt-1">
-                                  {locationQR.qrType === 'application' ? 'Application' : 'Survey'} QR Code
+                                  {locationQR.qrType === "application"
+                                    ? "Application"
+                                    : "Survey"}{" "}
+                                  QR Code
                                 </CardDescription>
                               </div>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => deleteLocationQRCode(locationQR.id, locationQR.locationLabel)}
+                                onClick={() =>
+                                  deleteLocationQRCode(
+                                    locationQR.id,
+                                    locationQR.locationLabel
+                                  )
+                                }
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
@@ -609,7 +687,10 @@ function MyQRCodeContent() {
                                   if (qrImage) {
                                     const link = document.createElement("a");
                                     link.href = qrImage;
-                                    link.download = `location-qr-${locationQR.locationLabel.replace(/\s+/g, "-")}.png`;
+                                    link.download = `location-qr-${locationQR.locationLabel.replace(
+                                      /\s+/g,
+                                      "-"
+                                    )}.png`;
                                     document.body.appendChild(link);
                                     link.click();
                                     document.body.removeChild(link);
@@ -628,7 +709,8 @@ function MyQRCodeContent() {
                                   navigator.clipboard.writeText(qrUrl);
                                   toast({
                                     title: "Link copied",
-                                    description: "QR code link copied to clipboard",
+                                    description:
+                                      "QR code link copied to clipboard",
                                   });
                                 }}
                               >
@@ -658,4 +740,3 @@ export default function MyQRCode() {
     </ProtectedRoute>
   );
 }
-
