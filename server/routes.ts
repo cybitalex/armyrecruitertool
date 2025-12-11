@@ -1105,59 +1105,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
         }
 
-        // Get stats for each recruiter
+        // Get stats for each recruiter using optimized database aggregations
         const recruitersWithStats = await Promise.all(
           recruitersAtStation.map(async (recruiter) => {
-            const recruiterRecruits = await storage.getRecruitsByRecruiter(
-              recruiter.id
-            );
-
-            // Get month-to-date stats (current month)
-            const now = new Date();
-            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-            const monthlyRecruits = recruiterRecruits.filter(
-              (r) => new Date(r.submittedAt) >= monthStart
-            );
-
-            // Categorize by status (simplified as lead/prospect/applicant)
-            const leads = recruiterRecruits.filter(
-              (r) => r.status === "pending"
-            ).length;
-            const prospects = recruiterRecruits.filter(
-              (r) => r.status === "contacted" || r.status === "qualified"
-            ).length;
-            const applicants = recruiterRecruits.filter(
-              (r) => r.status === "qualified"
-            ).length;
-
-            const monthlyLeads = monthlyRecruits.filter(
-              (r) => r.status === "pending"
-            ).length;
-            const monthlyProspects = monthlyRecruits.filter(
-              (r) => r.status === "contacted" || r.status === "qualified"
-            ).length;
-            const monthlyApplicants = monthlyRecruits.filter(
-              (r) => r.status === "qualified"
-            ).length;
-
-            // Get survey responses for this recruiter
-            let surveysCount = 0;
-            let monthlySurveysCount = 0;
-            try {
-              const recruiterSurveys = await db
-                .select()
-                .from(qrSurveyResponses)
-                .where(eq(qrSurveyResponses.recruiterId, recruiter.id));
-              surveysCount = recruiterSurveys.length;
-              monthlySurveysCount = recruiterSurveys.filter(
-                (s) => new Date(s.createdAt) >= monthStart
-              ).length;
-            } catch (surveyError) {
-              console.error(
-                `Failed to get survey stats for recruiter ${recruiter.id}:`,
-                surveyError
-              );
-            }
+            // Use optimized aggregation method instead of loading all data
+            const stats = await storage.getRecruiterStatsAggregated(recruiter.id);
 
             const {
               passwordHash,
@@ -1166,79 +1118,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ...safeRecruiter
             } = recruiter;
 
-            // Get QR scan tracking for this recruiter
-            let totalQrScans = 0;
-            let totalSurveyScans = 0;
-            let applicationsFromQR = recruiterRecruits.filter(
-              (r) => r.source === "qr_code"
-            ).length;
-            let qrConversionRate = 0;
-            let applicationScanConversions = 0;
-            let surveyScanConversions = 0;
-            let totalConvertedScans = 0;
-
-            try {
-              const recruiterScans = await db
-                .select()
-                .from(qrScans)
-                .where(eq(qrScans.recruiterId, recruiter.id));
-              totalQrScans = recruiterScans.length;
-              const applicationScans = recruiterScans.filter(
-                (s) => s.scanType === "application"
-              );
-              const surveyScans = recruiterScans.filter(
-                (s) => s.scanType === "survey"
-              );
-              totalSurveyScans = surveyScans.length;
-              applicationScanConversions = recruiterScans.filter(
-                (s) => s.scanType === "application" && s.convertedToApplication
-              ).length;
-              surveyScanConversions = recruiterScans.filter(
-                (s) => s.scanType === "survey" && s.convertedToSurvey
-              ).length;
-              totalConvertedScans =
-                applicationScanConversions + surveyScanConversions;
-
-              if (totalQrScans > 0) {
-                qrConversionRate = Math.round(
-                  (totalConvertedScans / totalQrScans) * 100
-                );
-              }
-            } catch (scanError) {
-              console.error(
-                `Failed to get QR scan stats for recruiter ${recruiter.id}:`,
-                scanError
-              );
-            }
-
             return {
               ...safeRecruiter,
               stats: {
                 allTime: {
-                  total: recruiterRecruits.length,
-                  surveys: surveysCount,
-                  prospects,
-                  leads,
-                  qrCodeScans: applicationsFromQR, // Applications from QR
-                  directEntries: recruiterRecruits.filter(
-                    (r) => r.source === "direct"
-                  ).length,
-                  // NEW: QR scan tracking
-                  qrScanTracking: {
-                    totalScans: totalQrScans,
-                    totalSurveyScans: totalSurveyScans,
-                    applicationsFromScans: applicationScanConversions,
-                    surveysFromScans: surveyScanConversions,
-                    totalConverted: totalConvertedScans,
-                    conversionRate: qrConversionRate,
-                  },
+                  ...stats.allTime,
+                  qrScanTracking: stats.qrScanTracking,
                 },
-                monthly: {
-                  total: monthlyRecruits.length,
-                  surveys: monthlySurveysCount,
-                  prospects: monthlyProspects,
-                  leads: monthlyLeads,
-                },
+                monthly: stats.monthly,
               },
             };
           })
@@ -1986,26 +1873,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Get recruits based on user role and station
-      let recruiterRecruits;
+      // Use optimized aggregation for stats instead of loading all recruits
+      let stats;
+      let recruiterRecruits: any[] = [];
 
       if (user.role === "admin") {
-        // Admin sees all recruits
+        // For admin, we still need to load recent recruits for display
+        // But use aggregation for stats if possible
         recruiterRecruits = await storage.getAllRecruits();
+        // Calculate stats from loaded data (admin sees all, so aggregation would be complex)
+        const totalRecruits = recruiterRecruits.length;
+        const applicationsFromQR = recruiterRecruits.filter(
+          (r) => r.source === "qr_code"
+        ).length;
+        const directEntries = recruiterRecruits.filter(
+          (r) => r.source === "direct"
+        ).length;
+
+        // Get QR scan tracking data
+        const allQrScans = await db.select().from(qrScans);
+        const totalQrScans = allQrScans.length;
+        const totalSurveyScans = allQrScans.filter(
+          (s) => s.scanType === "survey"
+        ).length;
+        const applicationScanConversions = allQrScans.filter(
+          (s) => s.scanType === "application" && s.convertedToApplication
+        ).length;
+        const surveyScanConversions = allQrScans.filter(
+          (s) => s.scanType === "survey" && s.convertedToSurvey
+        ).length;
+        const totalConvertedScans = applicationScanConversions + surveyScanConversions;
+        const qrConversionRate =
+          totalQrScans > 0
+            ? Math.round((totalConvertedScans / totalQrScans) * 100)
+            : 0;
+
+        stats = {
+          totalRecruits,
+          qrCodeScans: applicationsFromQR,
+          directEntries,
+          qrScanTracking: {
+            totalScans: totalQrScans,
+            totalSurveyScans,
+            applicationsFromScans: applicationScanConversions,
+            surveysFromScans: surveyScanConversions,
+            totalConverted: totalConvertedScans,
+            conversionRate: qrConversionRate,
+          },
+        };
       } else if (user.role === "station_commander" && user.stationId) {
-        // Station commander sees recruits from all recruiters at their station
+        // Station commander: aggregate stats for all recruiters at station
         const stationRecruiters = await db
           .select()
           .from(users)
           .where(eq(users.stationId, user.stationId));
 
         const recruiterIds = stationRecruiters.map((r) => r.id);
+        
+        // Get aggregated stats for all recruiters in parallel
+        const allStats = await Promise.all(
+          recruiterIds.map((id) => storage.getRecruiterStatsAggregated(id))
+        );
+
+        // Sum up all stats
+        const aggregated = allStats.reduce(
+          (acc, s) => ({
+            totalRecruits: acc.totalRecruits + s.allTime.total,
+            qrCodeScans: acc.qrCodeScans + s.allTime.qrCodeScans,
+            directEntries: acc.directEntries + s.allTime.directEntries,
+            totalQrScans: acc.totalQrScans + s.qrScanTracking.totalScans,
+            totalSurveyScans: acc.totalSurveyScans + s.qrScanTracking.totalSurveyScans,
+            applicationsFromScans: acc.applicationsFromScans + s.qrScanTracking.applicationsFromScans,
+            surveysFromScans: acc.surveysFromScans + s.qrScanTracking.surveysFromScans,
+            totalConverted: acc.totalConverted + s.qrScanTracking.totalConverted,
+          }),
+          {
+            totalRecruits: 0,
+            qrCodeScans: 0,
+            directEntries: 0,
+            totalQrScans: 0,
+            totalSurveyScans: 0,
+            applicationsFromScans: 0,
+            surveysFromScans: 0,
+            totalConverted: 0,
+          }
+        );
+
+        const qrConversionRate =
+          aggregated.totalQrScans > 0
+            ? Math.round((aggregated.totalConverted / aggregated.totalQrScans) * 100)
+            : 0;
+
+        stats = {
+          totalRecruits: aggregated.totalRecruits,
+          qrCodeScans: aggregated.qrCodeScans,
+          directEntries: aggregated.directEntries,
+          qrScanTracking: {
+            totalScans: aggregated.totalQrScans,
+            totalSurveyScans: aggregated.totalSurveyScans,
+            applicationsFromScans: aggregated.applicationsFromScans,
+            surveysFromScans: aggregated.surveysFromScans,
+            totalConverted: aggregated.totalConverted,
+            conversionRate: qrConversionRate,
+          },
+        };
+
+        // Still load recent recruits for display
         const allRecruits = await Promise.all(
           recruiterIds.map((id) => storage.getRecruitsByRecruiter(id))
         );
         recruiterRecruits = allRecruits.flat();
       } else {
-        // Regular recruiter or pending station commander - see only their own recruits
+        // Regular recruiter - use optimized aggregation
+        stats = await storage.getRecruiterStatsAggregated(userId);
+        const statsForResponse = {
+          totalRecruits: stats.allTime.total,
+          qrCodeScans: stats.allTime.qrCodeScans,
+          directEntries: stats.allTime.directEntries,
+          qrScanTracking: stats.qrScanTracking,
+        };
+        stats = statsForResponse;
+        
+        // Load recent recruits for display
         recruiterRecruits = await storage.getRecruitsByRecruiter(userId);
       }
 
@@ -2014,94 +2003,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       console.log(`📊 Recruits accessible: ${recruiterRecruits.length}`);
 
-      // Calculate stats using database-filtered results
-      const totalRecruits = recruiterRecruits.length;
-      const applicationsFromQR = recruiterRecruits.filter(
-        (r) => r.source === "qr_code"
-      ).length;
-      const directEntries = recruiterRecruits.filter(
-        (r) => r.source === "direct"
-      ).length;
-
-      // Get QR scan tracking data (NEW)
-      let totalQrScans = 0;
-      let totalSurveyScans = 0;
-      let qrConversionRate = 0;
-      let applicationScanConversions = 0;
-      let surveyScanConversions = 0;
-      let totalConvertedScans = 0;
-
-      try {
-        let allScans;
-        if (user.role === "admin") {
-          allScans = await db.select().from(qrScans);
-        } else if (user.role === "station_commander" && user.stationId) {
-          const stationRecruiters = await db
-            .select()
-            .from(users)
-            .where(eq(users.stationId, user.stationId));
-          const recruiterIds = stationRecruiters.map((r) => r.id);
-          allScans =
-            recruiterIds.length > 0
-              ? await db
-                  .select()
-                  .from(qrScans)
-                  .where(inArray(qrScans.recruiterId, recruiterIds))
-              : [];
-        } else {
-          allScans = await db
-            .select()
-            .from(qrScans)
-            .where(eq(qrScans.recruiterId, userId));
-        }
-
-        const surveyScans = allScans.filter((s) => s.scanType === "survey");
-
-        totalQrScans = allScans.length;
-        totalSurveyScans = surveyScans.length;
-        applicationScanConversions = allScans.filter(
-          (s) => s.scanType === "application" && s.convertedToApplication
-        ).length;
-        surveyScanConversions = allScans.filter(
-          (s) => s.scanType === "survey" && s.convertedToSurvey
-        ).length;
-        totalConvertedScans =
-          applicationScanConversions + surveyScanConversions;
-
-        if (totalQrScans > 0) {
-          qrConversionRate = Math.round(
-            (totalConvertedScans / totalQrScans) * 100
-          );
-        }
-      } catch (scanError) {
-        console.error("❌ Failed to get QR scan stats:", scanError);
-        // Continue without scan stats if there's an error
-      }
-
-      console.log(
-        `📊 Stats: total=${totalRecruits}, applications from QR=${applicationsFromQR}, direct=${directEntries}`
-      );
-      console.log(
-        `📊 QR Scans: total=${totalQrScans}, converted=${totalConvertedScans}, rate=${qrConversionRate}%`
-      );
-
       // Get recent recruits (already sorted by database query, just take first 10)
       const recentRecruits = recruiterRecruits.slice(0, 10);
 
       res.json({
-        totalRecruits,
-        qrCodeScans: applicationsFromQR, // Renamed for clarity: applications that came from QR
-        directEntries,
+        ...stats,
         recentRecruits,
-        // NEW fields for scan tracking
-        qrScanTracking: {
-          totalScans: totalQrScans, // Total times QR was scanned (page loaded)
-          totalSurveyScans: totalSurveyScans, // Total survey QR scans
-          applicationsFromScans: applicationScanConversions, // Applications that resulted from scans
-          surveysFromScans: surveyScanConversions, // Surveys that resulted from scans
-          totalConverted: totalConvertedScans,
-          conversionRate: qrConversionRate, // Percentage of scans that converted
-        },
       });
     } catch (error) {
       console.error("❌ Failed to get recruiter stats:", error);

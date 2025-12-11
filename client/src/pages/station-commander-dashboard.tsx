@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth, ProtectedRoute } from "../lib/auth-context";
 import { stationCommander, recruits as recruitsApi, surveys } from "../lib/api";
 import { Button } from "../components/ui/button";
@@ -96,14 +97,10 @@ interface StationTotals {
 
 function StationCommanderDashboardContent() {
   const { user } = useAuth();
-  const [recruiters, setRecruiters] = useState<RecruiterWithStats[]>([]);
-  const [stationTotals, setStationTotals] = useState<StationTotals | null>(null);
   const [recruitsList, setRecruitsList] = useState<Recruit[]>([]);
   const [surveyResponses, setSurveyResponses] = useState<QrSurveyResponse[]>([]);
-  const [loading, setLoading] = useState(true);
   const [recruitsLoading, setRecruitsLoading] = useState(false);
   const [surveysLoading, setSurveysLoading] = useState(false);
-  const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   
@@ -125,9 +122,28 @@ function StationCommanderDashboardContent() {
   const [totalsDialogType, setTotalsDialogType] = useState<'surveys' | 'leads' | null>(null);
   const [totalsDialogPeriod, setTotalsDialogPeriod] = useState<'monthly' | 'allTime'>('monthly');
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Use React Query for optimized data fetching with caching
+  const { 
+    data: recruitersData, 
+    isLoading: loading, 
+    error: queryError,
+    refetch: refetchRecruiters 
+  } = useQuery({
+    queryKey: ["/station-commander/recruiters"],
+    queryFn: async () => {
+      const data = await stationCommander.getRecruitersWithStats();
+      return data;
+    },
+    staleTime: 15 * 1000, // Data fresh for 15 seconds
+    gcTime: 2 * 60 * 1000, // Cache for 2 minutes
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
+
+  const recruiters = recruitersData?.recruiters || [];
+  const stationTotals = recruitersData?.stationTotals || null;
+  const error = queryError?.message || "";
 
   useEffect(() => {
     if (activeTab === "applicants" && recruitsList.length === 0) {
@@ -166,19 +182,7 @@ function StationCommanderDashboardContent() {
     }
   }, [totalsDialogOpen, totalsDialogType]);
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const data = await stationCommander.getRecruitersWithStats();
-      setRecruiters(data.recruiters);
-      setStationTotals(data.stationTotals);
-      setError("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load data");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Removed loadData - now using React Query
 
   const loadRecruits = async () => {
     try {

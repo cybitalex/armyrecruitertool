@@ -6,10 +6,12 @@ import {
   type Event,
   type InsertEvent,
   recruits as recruitsTable,
+  qrSurveyResponses,
+  qrScans,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./database";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 
 export interface IStorage {
   getAllRecruits(): Promise<Recruit[]>;
@@ -477,6 +479,178 @@ export class MemStorage implements IStorage {
 
   async clearAllEvents(): Promise<void> {
     this.events.clear();
+  }
+
+  // Optimized method to get recruiter stats using database aggregations
+  async getRecruiterStatsAggregated(recruiterId: string): Promise<{
+    allTime: {
+      total: number;
+      surveys: number;
+      prospects: number;
+      leads: number;
+      qrCodeScans: number;
+      directEntries: number;
+    };
+    monthly: {
+      total: number;
+      surveys: number;
+      prospects: number;
+      leads: number;
+    };
+    qrScanTracking: {
+      totalScans: number;
+      totalSurveyScans: number;
+      applicationsFromScans: number;
+      surveysFromScans: number;
+      totalConverted: number;
+      conversionRate: number;
+    };
+  }> {
+    try {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      // Get all-time recruit stats using aggregation
+      const allTimeRecruitStats = await db
+        .select({
+          total: sql<number>`count(*)::int`,
+          leads: sql<number>`count(*) filter (where ${recruitsTable.status} = 'pending')::int`,
+          prospects: sql<number>`count(*) filter (where ${recruitsTable.status} IN ('contacted', 'qualified'))::int`,
+          qrCodeScans: sql<number>`count(*) filter (where ${recruitsTable.source} = 'qr_code')::int`,
+          directEntries: sql<number>`count(*) filter (where ${recruitsTable.source} = 'direct')::int`,
+        })
+        .from(recruitsTable)
+        .where(eq(recruitsTable.recruiterId, recruiterId));
+
+      // Get monthly recruit stats using aggregation
+      const monthlyRecruitStats = await db
+        .select({
+          total: sql<number>`count(*)::int`,
+          leads: sql<number>`count(*) filter (where ${recruitsTable.status} = 'pending')::int`,
+          prospects: sql<number>`count(*) filter (where ${recruitsTable.status} IN ('contacted', 'qualified'))::int`,
+        })
+        .from(recruitsTable)
+        .where(
+          and(
+            eq(recruitsTable.recruiterId, recruiterId),
+            sql`${recruitsTable.submittedAt} >= ${monthStart.toISOString()}`
+          )
+        );
+
+      // Get survey stats using aggregation
+      const allTimeSurveyStats = await db
+        .select({
+          total: sql<number>`count(*)::int`,
+        })
+        .from(qrSurveyResponses)
+        .where(eq(qrSurveyResponses.recruiterId, recruiterId));
+
+      const monthlySurveyStats = await db
+        .select({
+          total: sql<number>`count(*)::int`,
+        })
+        .from(qrSurveyResponses)
+        .where(
+          and(
+            eq(qrSurveyResponses.recruiterId, recruiterId),
+            sql`${qrSurveyResponses.createdAt} >= ${monthStart.toISOString()}`
+          )
+        );
+
+      // Get QR scan tracking stats using aggregation
+      const qrScanStats = await db
+        .select({
+          totalScans: sql<number>`count(*)::int`,
+          totalSurveyScans: sql<number>`count(*) filter (where ${qrScans.scanType} = 'survey')::int`,
+          applicationsFromScans: sql<number>`count(*) filter (where ${qrScans.scanType} = 'application' AND ${qrScans.convertedToApplication} = true)::int`,
+          surveysFromScans: sql<number>`count(*) filter (where ${qrScans.scanType} = 'survey' AND ${qrScans.convertedToSurvey} = true)::int`,
+          totalConverted: sql<number>`count(*) filter (where (${qrScans.convertedToApplication} = true OR ${qrScans.convertedToSurvey} = true))::int`,
+        })
+        .from(qrScans)
+        .where(eq(qrScans.recruiterId, recruiterId));
+
+      const allTimeStats = allTimeRecruitStats[0] || {
+        total: 0,
+        leads: 0,
+        prospects: 0,
+        qrCodeScans: 0,
+        directEntries: 0,
+      };
+      const monthlyStats = monthlyRecruitStats[0] || {
+        total: 0,
+        leads: 0,
+        prospects: 0,
+      };
+      const surveyAllTime = allTimeSurveyStats[0]?.total || 0;
+      const surveyMonthly = monthlySurveyStats[0]?.total || 0;
+      const scanStats = qrScanStats[0] || {
+        totalScans: 0,
+        totalSurveyScans: 0,
+        applicationsFromScans: 0,
+        surveysFromScans: 0,
+        totalConverted: 0,
+      };
+
+      const conversionRate =
+        scanStats.totalScans > 0
+          ? Math.round((scanStats.totalConverted / scanStats.totalScans) * 100)
+          : 0;
+
+      return {
+        allTime: {
+          total: allTimeStats.total,
+          surveys: surveyAllTime,
+          prospects: allTimeStats.prospects,
+          leads: allTimeStats.leads,
+          qrCodeScans: allTimeStats.qrCodeScans,
+          directEntries: allTimeStats.directEntries,
+        },
+        monthly: {
+          total: monthlyStats.total,
+          surveys: surveyMonthly,
+          prospects: monthlyStats.prospects,
+          leads: monthlyStats.leads,
+        },
+        qrScanTracking: {
+          totalScans: scanStats.totalScans,
+          totalSurveyScans: scanStats.totalSurveyScans,
+          applicationsFromScans: scanStats.applicationsFromScans,
+          surveysFromScans: scanStats.surveysFromScans,
+          totalConverted: scanStats.totalConverted,
+          conversionRate,
+        },
+      };
+    } catch (error) {
+      console.error(
+        `❌ Failed to get aggregated stats for recruiter ${recruiterId}:`,
+        error
+      );
+      // Return zero stats on error
+      return {
+        allTime: {
+          total: 0,
+          surveys: 0,
+          prospects: 0,
+          leads: 0,
+          qrCodeScans: 0,
+          directEntries: 0,
+        },
+        monthly: {
+          total: 0,
+          surveys: 0,
+          prospects: 0,
+          leads: 0,
+        },
+        qrScanTracking: {
+          totalScans: 0,
+          totalSurveyScans: 0,
+          applicationsFromScans: 0,
+          surveysFromScans: 0,
+          totalConverted: 0,
+          conversionRate: 0,
+        },
+      };
+    }
   }
 }
 
