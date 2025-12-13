@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -13,12 +13,28 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { FileText, Home, Shield, MapPin, Menu, LogOut, User, Users, Settings } from "lucide-react";
+import { FileText, Home, Shield, MapPin, Menu, LogOut, User, Users, Settings, HelpCircle } from "lucide-react";
+import { Tutorial, getTutorialPage } from "@/components/tutorial";
 
 export function Header() {
   const [location, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
+  const [tutorialPage, setTutorialPage] = useState<string>("general");
   const { user, logout } = useAuth();
+
+  // Listen for custom event to open tutorial from welcome modal
+  useEffect(() => {
+    const handleOpenTutorial = (event: CustomEvent<{ page?: string }>) => {
+      setTutorialPage(event.detail?.page || getTutorialPage(location));
+      setTutorialOpen(true);
+    };
+
+    window.addEventListener("open-tutorial", handleOpenTutorial as EventListener);
+    return () => {
+      window.removeEventListener("open-tutorial", handleOpenTutorial as EventListener);
+    };
+  }, [location]);
   
   // Only show logout if user is logged in
   const isLoggedIn = !!user;
@@ -189,18 +205,31 @@ export function Header() {
                     );
                   })}
                   {isLoggedIn && (
-                    <Button
-                      variant="ghost"
-                      onClick={async () => {
-                        await logout();
-                        navigate("/login");
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full justify-start text-army-tan hover:text-red-400 hover:bg-red-900/20 border-t border-army-field01 mt-4 pt-4"
-                    >
-                      <LogOut className="w-4 h-4 mr-3" />
-                      Logout
-                    </Button>
+                    <>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          setTutorialOpen(true);
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full justify-start text-army-tan hover:text-army-gold hover:bg-army-green border-t border-army-field01 mt-4 pt-4"
+                      >
+                        <HelpCircle className="w-4 h-4 mr-3" />
+                        Help & Tutorial
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={async () => {
+                          await logout();
+                          navigate("/login");
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full justify-start text-army-tan hover:text-red-400 hover:bg-red-900/20"
+                      >
+                        <LogOut className="w-4 h-4 mr-3" />
+                        Logout
+                      </Button>
+                    </>
                   )}
                 </nav>
               </SheetContent>
@@ -237,21 +266,39 @@ export function Header() {
               );
             })}
             {isLoggedIn && (
-              <Button
-                variant="ghost"
-                onClick={async () => {
-                  await logout();
-                  navigate("/login");
-                }}
-                className="text-army-tan hover:text-red-400 hover:bg-red-900/20 ml-2 border-l border-army-field01 pl-3"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  onClick={() => setTutorialOpen(true)}
+                  className="text-army-tan hover:text-army-gold hover:bg-army-green ml-2"
+                  title="Help & Tutorial"
+                >
+                  <HelpCircle className="w-4 h-4 mr-2" />
+                  Help
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={async () => {
+                    await logout();
+                    navigate("/login");
+                  }}
+                  className="text-army-tan hover:text-red-400 hover:bg-red-900/20 ml-2 border-l border-army-field01 pl-3"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
+              </>
             )}
           </nav>
         )}
       </div>
+
+      {/* Tutorial Dialog */}
+      <Tutorial
+        open={tutorialOpen}
+        onOpenChange={setTutorialOpen}
+        page={tutorialPage}
+      />
     </header>
   );
 }

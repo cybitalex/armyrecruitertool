@@ -143,10 +143,16 @@ function MyQRCodeContent() {
         qrType: newQRType,
       });
 
-      setLocationQRCodesList([newQR, ...locationQRCodesList]);
+      // Add updatedAt to match LocationQRCode type (same as createdAt for new items)
+      const newQRWithUpdatedAt = {
+        ...newQR,
+        updatedAt: newQR.createdAt,
+      };
+
+      setLocationQRCodesList([newQRWithUpdatedAt, ...locationQRCodesList]);
       setLocationQRImages({
         ...locationQRImages,
-        [newQR.id]: newQR.qrCodeImage,
+        [newQRWithUpdatedAt.id]: newQRWithUpdatedAt.qrCodeImage,
       });
       setNewLocationLabel("");
       setNewQRType("application");
@@ -154,7 +160,7 @@ function MyQRCodeContent() {
 
       toast({
         title: "Location QR code created",
-        description: `QR code for "${newQR.locationLabel}" has been generated`,
+        description: `QR code for "${newQRWithUpdatedAt.locationLabel}" has been generated`,
       });
     } catch (err) {
       toast({
