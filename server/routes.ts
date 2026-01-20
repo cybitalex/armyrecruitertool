@@ -2809,6 +2809,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update recruit notes
+  app.patch("/api/recruits/:id/notes", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { additionalNotes } = req.body;
+
+      // Get the recruit
+      const [recruit] = await db
+        .select()
+        .from(recruits)
+        .where(eq(recruits.id, req.params.id));
+
+      if (!recruit) {
+        return res.status(404).json({ error: "Recruit not found" });
+      }
+
+      // Get user to check their role and station
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Authorization check:
+      // 1. User owns the recruit, OR
+      // 2. User is station commander/admin at the same station as the recruit's owner
+      // 3. Admin can edit any recruit
+      const isOwner = recruit.recruiterId === userId;
+      let isAuthorized = isOwner;
+
+      console.log('📝 Notes authorization check:', {
+        userId,
+        recruitId: recruit.id,
+        recruiterId: recruit.recruiterId,
+        isOwner,
+        userRole: user.role,
+        userStationId: user.stationId
+      });
+
+      // Admins can edit any recruit
+      if (user.role === 'admin') {
+        isAuthorized = true;
+        console.log('✅ Admin access granted');
+      } else if (!isOwner && user.role === 'station_commander') {
+        // Station commanders can edit recruits from their station
+        if (!recruit.recruiterId) {
+          console.log('⚠️ Recruit has no recruiterId');
+          isAuthorized = false;
+        } else {
+          const [recruitOwner] = await db
+            .select()
+            .from(users)
+            .where(eq(users.id, recruit.recruiterId));
+
+          console.log('👤 Recruit owner:', {
+            ownerId: recruitOwner?.id,
+            ownerStationId: recruitOwner?.stationId,
+            match: recruitOwner?.stationId === user.stationId
+          });
+
+          if (recruitOwner && user.stationId && recruitOwner.stationId === user.stationId) {
+            isAuthorized = true;
+            console.log('✅ Station commander access granted');
+          }
+        }
+      }
+
+      if (!isAuthorized) {
+        console.log('❌ Authorization failed');
+        return res.status(403).json({ error: "Not authorized to update this recruit" });
+      }
+
+      // Get existing notes history
+      let notesHistory: Array<{
+        note: string;
+        author: string;
+        authorName: string;
+        timestamp: string;
+      }> = [];
+
+      try {
+        if (recruit.additionalNotes) {
+          // Try to parse as JSON array (new format)
+          notesHistory = JSON.parse(recruit.additionalNotes);
+        }
+      } catch (e) {
+        // If it's not JSON, it's old format - convert it
+        if (recruit.additionalNotes && recruit.additionalNotes.trim()) {
+          notesHistory = [{
+            note: recruit.additionalNotes,
+            author: recruit.recruiterId,
+            authorName: "Unknown",
+            timestamp: new Date().toISOString()
+          }];
+        }
+      }
+
+      // Add new note to history
+      if (additionalNotes && additionalNotes.trim()) {
+        notesHistory.push({
+          note: additionalNotes.trim(),
+          author: userId,
+          authorName: user.fullName,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Save as JSON
+      const notesJson = JSON.stringify(notesHistory);
+
+      // Update notes
+      await db
+        .update(recruits)
+        .set({
+          additionalNotes: notesJson,
+        })
+        .where(eq(recruits.id, req.params.id));
+
+      console.log('✅ Notes updated successfully');
+      res.json({ success: true, message: "Notes updated successfully" });
+    } catch (error) {
+      console.error("❌ Failed to update recruit notes:", error);
+      res.status(500).json({ error: "Failed to update recruit notes" });
+    }
+  });
+
   // Update recruit status
   app.patch("/api/recruits/:id/status", async (req, res) => {
     try {

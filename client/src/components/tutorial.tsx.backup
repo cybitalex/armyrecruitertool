@@ -464,67 +464,74 @@ export function Tutorial({ open, onOpenChange, page = "general" }: TutorialProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] w-[95vw] sm:w-full overflow-hidden bg-army-black border-army-field01 p-0 flex flex-col [&>button]:text-army-gold [&>button]:bg-army-green/50 [&>button]:hover:bg-army-gold [&>button]:hover:text-army-black [&>button]:border [&>button]:border-army-gold [&>button]:opacity-100">
-        <div className="p-4 sm:p-6 border-b border-army-field01 flex-shrink-0">
-          <DialogHeader>
-            <DialogTitle className="text-army-gold text-xl sm:text-2xl break-words">
-              {shouldShowBothTutorials ? "Complete Training Guide" : content.title}
-            </DialogTitle>
-            <DialogDescription className="text-army-tan mt-2 text-sm sm:text-base">
-              {shouldShowBothTutorials 
-                ? "Choose between Recruiter and Station Commander tutorials using the tabs below"
-                : content.description}
-            </DialogDescription>
-          </DialogHeader>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-army-black border-army-field01">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <DialogTitle className="text-army-gold text-2xl">
+                {shouldShowBothTutorials ? "Complete Training Guide" : content.title}
+              </DialogTitle>
+              <DialogDescription className="text-army-tan mt-2">
+                {shouldShowBothTutorials 
+                  ? "Choose between Recruiter and Station Commander tutorials using the tabs below"
+                  : content.description}
+              </DialogDescription>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleSkip}
+              className="text-army-tan hover:text-army-gold"
+              title="Close"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        </DialogHeader>
 
         {shouldShowBothTutorials ? (
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "recruiter" | "sc")} className="h-full flex flex-col">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "recruiter" | "sc")} className="mt-6">
             <TabsList className="grid w-full grid-cols-2 bg-army-green">
               <TabsTrigger 
                 value="recruiter" 
-                className="data-[state=active]:bg-army-gold data-[state=active]:text-army-black text-xs sm:text-sm px-2 sm:px-3"
+                className="data-[state=active]:bg-army-gold data-[state=active]:text-army-black"
               >
-                <span className="hidden sm:inline">Recruiter Guide</span>
-                <span className="sm:hidden">Recruiter</span>
+                Recruiter Guide
               </TabsTrigger>
               <TabsTrigger 
                 value="sc"
-                className="data-[state=active]:bg-army-gold data-[state=active]:text-army-black text-xs sm:text-sm px-2 sm:px-3"
+                className="data-[state=active]:bg-army-gold data-[state=active]:text-army-black"
               >
-                <span className="hidden sm:inline">Station Commander Guide</span>
-                <span className="sm:hidden">Station Cmd</span>
+                Station Commander Guide
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="recruiter" className="mt-4 flex-1 overflow-y-auto">
+            <TabsContent value="recruiter" className="mt-6">
               <div className="mb-4">
-                <h3 className="text-army-gold text-lg sm:text-xl font-semibold break-words">{tutorialContent.general.title}</h3>
-                <p className="text-army-tan text-xs sm:text-sm mt-1">{tutorialContent.general.description}</p>
+                <h3 className="text-army-gold text-xl font-semibold">{tutorialContent.general.title}</h3>
+                <p className="text-army-tan text-sm mt-1">{tutorialContent.general.description}</p>
               </div>
               {renderTutorialContent(tutorialContent.general, currentStepRecruiter, setCurrentStepRecruiter)}
             </TabsContent>
             
-            <TabsContent value="sc" className="mt-4 flex-1 overflow-y-auto">
+            <TabsContent value="sc" className="mt-6">
               <div className="mb-4">
-                <h3 className="text-army-gold text-lg sm:text-xl font-semibold break-words">{tutorialContent["station-commander"].title}</h3>
-                <p className="text-army-tan text-xs sm:text-sm mt-1">{tutorialContent["station-commander"].description}</p>
+                <h3 className="text-army-gold text-xl font-semibold">{tutorialContent["station-commander"].title}</h3>
+                <p className="text-army-tan text-sm mt-1">{tutorialContent["station-commander"].description}</p>
               </div>
               {renderTutorialContent(tutorialContent["station-commander"], currentStepSC, setCurrentStepSC)}
             </TabsContent>
           </Tabs>
         ) : (
-          <div className="h-full overflow-y-auto">
+          <div className="mt-6">
           {/* Progress indicator */}
-          <div className="flex items-center justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
-            <div className="flex-1 min-w-0">
-              <div className="flex gap-1 sm:gap-2">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex-1">
+              <div className="flex gap-2">
                 {content.steps.map((_, index) => (
                   <div
                     key={index}
-                    className={`h-1.5 sm:h-2 flex-1 rounded ${
+                    className={`h-2 flex-1 rounded ${
                       index <= currentStep
                         ? "bg-army-gold"
                         : "bg-army-field01"
@@ -533,161 +540,72 @@ export function Tutorial({ open, onOpenChange, page = "general" }: TutorialProps
                 ))}
               </div>
             </div>
-            <Badge className="bg-army-green text-army-tan text-xs sm:text-sm whitespace-nowrap flex-shrink-0">
-              {currentStep + 1}/{totalSteps}
+            <Badge className="bg-army-green text-army-tan ml-4">
+              {currentStep + 1} of {totalSteps}
             </Badge>
           </div>
 
           {/* Step content */}
           <Card className="bg-army-green border-army-field01">
-            <CardHeader className="p-4 sm:p-6">
-              <div className="flex items-start gap-2 sm:gap-3">
-                <div className="p-2 sm:p-3 rounded-lg bg-army-gold/20 flex-shrink-0">
-                  <StepIcon className="h-4 w-4 sm:h-6 sm:w-6 text-army-gold" />
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-lg bg-army-gold/20">
+                  <StepIcon className="h-6 w-6 text-army-gold" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <CardTitle className="text-army-gold text-base sm:text-lg break-words">
+                <div>
+                  <CardTitle className="text-army-gold">
                     {step.title}
                   </CardTitle>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0">
-              <CardDescription className="text-army-tan text-sm sm:text-base leading-relaxed break-words">
+            <CardContent>
+              <CardDescription className="text-army-tan text-base leading-relaxed">
                 {step.description}
               </CardDescription>
             </CardContent>
           </Card>
 
           {/* Navigation buttons */}
-          <div className="flex items-center justify-between gap-2 mt-4 sm:mt-6">
+          <div className="flex items-center justify-between mt-6">
             <Button
               variant="outline"
               onClick={handlePrevious}
               disabled={currentStep === 0}
-              className="border-army-field01 text-army-tan hover:bg-army-green hover:text-army-gold disabled:opacity-50 text-sm sm:text-base px-3 sm:px-4"
+              className="border-army-field01 text-army-tan hover:bg-army-green hover:text-army-gold disabled:opacity-50"
             >
-              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              <span className="hidden xs:inline">Previous</span>
-              <span className="xs:hidden">Prev</span>
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              Previous
             </Button>
 
             <Button
               onClick={handleNext}
-              className="bg-army-gold text-army-black hover:bg-army-gold/90 text-sm sm:text-base px-3 sm:px-4"
+              className="bg-army-gold text-army-black hover:bg-army-gold/90"
             >
               {currentStep === totalSteps - 1 ? (
-                <>
-                  <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  Finish
-                </>
+                shouldShowBothTutorials && showingRecruiterTutorial ? (
+                  <>
+                    Continue to Station Commander Tutorial
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Finish
+                  </>
+                )
               ) : (
                 <>
                   Next
-                  <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
+                  <ChevronRight className="h-4 w-4 ml-2" />
                 </>
               )}
             </Button>
           </div>
-          </div>
-        )}
         </div>
       </DialogContent>
     </Dialog>
   );
-
-  // Helper function to render tutorial content for tabs
-  function renderTutorialContent(content: TutorialContent, stepIndex: number, setStepIndex: (index: number) => void) {
-    const step = content.steps[stepIndex];
-    const StepIcon = step.icon || FileText;
-    const totalSteps = content.steps.length;
-
-    return (
-      <>
-        {/* Progress indicator */}
-        <div className="flex items-center justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
-          <div className="flex-1 min-w-0">
-            <div className="flex gap-1 sm:gap-2">
-              {content.steps.map((_, index) => (
-                <div
-                  key={index}
-                  className={`h-1.5 sm:h-2 flex-1 rounded ${
-                    index <= stepIndex
-                      ? "bg-army-gold"
-                      : "bg-army-field01"
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-          <Badge className="bg-army-green text-army-tan text-xs sm:text-sm whitespace-nowrap flex-shrink-0">
-            {stepIndex + 1}/{totalSteps}
-          </Badge>
-        </div>
-
-        {/* Step content */}
-        <Card className="bg-army-green border-army-field01">
-          <CardHeader className="p-4 sm:p-6">
-            <div className="flex items-start gap-2 sm:gap-3">
-              <div className="p-2 sm:p-3 rounded-lg bg-army-gold/20 flex-shrink-0">
-                <StepIcon className="h-4 w-4 sm:h-6 sm:w-6 text-army-gold" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <CardTitle className="text-army-gold text-base sm:text-lg break-words">
-                  {step.title}
-                </CardTitle>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0">
-            <CardDescription className="text-army-tan text-sm sm:text-base leading-relaxed break-words">
-              {step.description}
-            </CardDescription>
-          </CardContent>
-        </Card>
-
-        {/* Navigation buttons */}
-        <div className="flex items-center justify-between gap-2 mt-4 sm:mt-6">
-          <Button
-            variant="outline"
-            onClick={() => stepIndex > 0 && setStepIndex(stepIndex - 1)}
-            disabled={stepIndex === 0}
-            className="border-army-field01 text-army-tan hover:bg-army-green hover:text-army-gold disabled:opacity-50 text-sm sm:text-base px-3 sm:px-4"
-          >
-            <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="hidden xs:inline">Previous</span>
-            <span className="xs:hidden">Prev</span>
-          </Button>
-
-          <Button
-            onClick={() => {
-              if (stepIndex < totalSteps - 1) {
-                setStepIndex(stepIndex + 1);
-              } else {
-                localStorage.setItem(TUTORIAL_STORAGE_KEY, "true");
-                onOpenChange(false);
-                setCurrentStepRecruiter(0);
-                setCurrentStepSC(0);
-              }
-            }}
-            className="bg-army-gold text-army-black hover:bg-army-gold/90 text-sm sm:text-base px-3 sm:px-4"
-          >
-            {stepIndex === totalSteps - 1 ? (
-              <>
-                <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                Finish
-              </>
-            ) : (
-              <>
-                Next
-                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
-              </>
-            )}
-          </Button>
-        </div>
-      </>
-    );
-  }
 }
 
 // Welcome modal for first-time users

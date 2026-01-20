@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Calendar, Mail, MapPin, Phone, User } from "lucide-react";
+import { ArrowLeft, Calendar, Mail, MapPin, Phone, User, FileText, Save } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,18 +25,48 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import * as React from "react";
 
 export default function RecruitDetail() {
   const [, params] = useRoute("/recruits/:id");
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [newNote, setNewNote] = useState("");
+  const [isAddingNote, setIsAddingNote] = useState(false);
+
+  interface NoteEntry {
+    note: string;
+    author: string;
+    authorName: string;
+    timestamp: string;
+  }
 
   const { data: recruit, isLoading } = useQuery<Recruit>({
     queryKey: ["/api/recruits", params?.id],
     enabled: !!params?.id,
   });
+
+  // Parse notes history
+  const notesHistory: NoteEntry[] = React.useMemo(() => {
+    if (!recruit?.additionalNotes) return [];
+    try {
+      const parsed = JSON.parse(recruit.additionalNotes);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      // Old format - single note
+      if (recruit.additionalNotes.trim()) {
+        return [{
+          note: recruit.additionalNotes,
+          author: recruit.recruiterId,
+          authorName: "Unknown",
+          timestamp: new Date().toISOString()
+        }];
+      }
+      return [];
+    }
+  }, [recruit]);
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -56,6 +87,33 @@ export default function RecruitDetail() {
     onError: (error: Error) => {
       toast({
         title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addNoteMutation = useMutation({
+    mutationFn: async ({ id, note }: { id: string; note: string }) => {
+      return await apiRequest("PATCH", `/api/recruits/${id}/notes`, {
+        additionalNotes: note,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/recruits"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/recruits", params?.id],
+      });
+      setIsAddingNote(false);
+      setNewNote("");
+      toast({
+        title: "Note Added",
+        description: "Your note has been saved successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Add Note",
         description: error.message,
         variant: "destructive",
       });
@@ -433,19 +491,87 @@ export default function RecruitDetail() {
                   </div>
                 </div>
               </div>
-              {recruit.additionalNotes && (
-                <div>
-                  <div className="text-sm text-muted-foreground">
-                    Additional Notes
-                  </div>
-                  <div
-                    className="font-medium"
-                    data-testid="detail-additionalNotes"
-                  >
-                    {recruit.additionalNotes}
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Recruiter Notes History
+                </CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAddingNote(!isAddingNote)}
+                  data-testid="button-addNote"
+                >
+                  {isAddingNote ? "Cancel" : "Add Note"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isAddingNote && (
+                <div className="mb-4 p-4 border border-muted rounded-lg">
+                  <Textarea
+                    value={newNote}
+                    onChange={(e) => setNewNote(e.target.value)}
+                    placeholder="Add a new note about your interaction with this recruit (phone calls, meetings, concerns, follow-up tasks, etc.)"
+                    className="min-h-[100px] mb-3"
+                    data-testid="textarea-newNote"
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setNewNote("");
+                        setIsAddingNote(false);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => addNoteMutation.mutate({ id: recruit.id, note: newNote })}
+                      disabled={!newNote.trim() || addNoteMutation.isPending}
+                      data-testid="button-saveNote"
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Note
+                    </Button>
                   </div>
                 </div>
               )}
+
+              <div className="space-y-4">
+                {notesHistory.length > 0 ? (
+                  [...notesHistory].reverse().map((entry, index) => (
+                    <div
+                      key={index}
+                      className="border-l-2 border-primary pl-4 py-2"
+                    >
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                        <User className="w-3 h-3" />
+                        <span className="font-medium">{entry.authorName}</span>
+                        <span>•</span>
+                        <Calendar className="w-3 h-3" />
+                        <span>
+                          {new Date(entry.timestamp).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap">
+                        {entry.note}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">
+                    No notes yet. Click "Add Note" to add notes about your interactions with this recruit.
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
