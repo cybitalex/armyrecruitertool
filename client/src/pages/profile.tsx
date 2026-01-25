@@ -64,6 +64,14 @@ function ProfileContent() {
   const [adminStationChangeError, setAdminStationChangeError] = useState("");
   const [adminStationChangeSuccess, setAdminStationChangeSuccess] = useState(false);
 
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [passwordChangeLoading, setPasswordChangeLoading] = useState(false);
+  const [passwordChangeError, setPasswordChangeError] = useState("");
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
+
   // Load stations
   useEffect(() => {
     const loadStations = async () => {
@@ -366,6 +374,67 @@ function ProfileContent() {
     }
   };
 
+  // Handle password change
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordChangeError("");
+    setPasswordChangeSuccess(false);
+
+    // Validation
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      setPasswordChangeError("Please fill in all password fields");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setPasswordChangeError("New password must be at least 8 characters long");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setPasswordChangeError("New passwords do not match");
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setPasswordChangeError("New password must be different from current password");
+      return;
+    }
+
+    setPasswordChangeLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to change password");
+      }
+
+      setPasswordChangeSuccess(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setPasswordChangeSuccess(false), 5000);
+    } catch (err) {
+      setPasswordChangeError(err instanceof Error ? err.message : "Failed to change password");
+    } finally {
+      setPasswordChangeLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
@@ -517,6 +586,89 @@ function ProfileContent() {
           </form>
         </Card>
 
+        {/* Password Change Card */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-2xl">
+              <Shield className="w-6 h-6 text-blue-600" />
+              Change Password
+            </CardTitle>
+            <CardDescription>
+              Update your account password for better security
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handlePasswordChange}>
+            <CardContent className="space-y-4">
+              {passwordChangeSuccess && (
+                <Alert className="bg-green-50 border-green-200">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    Password changed successfully!
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {passwordChangeError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{passwordChangeError}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current Password *</Label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter your current password"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password *</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password (min 8 characters)"
+                  required
+                  minLength={8}
+                />
+                <p className="text-xs text-gray-500">
+                  Password must be at least 8 characters long
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmNewPassword">Confirm New Password *</Label>
+                <Input
+                  id="confirmNewPassword"
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  placeholder="Re-enter new password"
+                  required
+                  minLength={8}
+                />
+              </div>
+            </CardContent>
+
+            <div className="px-6 pb-6">
+              <Button
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                disabled={passwordChangeLoading}
+              >
+                {passwordChangeLoading ? "Changing Password..." : "Change Password"}
+              </Button>
+            </div>
+          </form>
+        </Card>
+
         {/* Station Commander Request Card */}
         {user?.role !== 'admin' && user?.role !== 'station_commander' && (
           <Card className="mt-6">
@@ -615,43 +767,44 @@ function ProfileContent() {
           </Card>
         )}
 
-        {/* Station Change Request Card */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-2xl">
-              <MapPin className="w-6 h-6 text-green-600" />
-              Change Recruiting Station
-            </CardTitle>
-            <CardDescription>
-              Request to transfer to a different recruiting station
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Current Station Display */}
-            {currentStation ? (
-              <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
-                <p className="text-sm font-semibold text-gray-700">Current Station:</p>
-                <p className="text-lg font-bold text-gray-900 mt-1">
-                  {currentStation.name}
-                </p>
-                <p className="text-sm text-gray-600">
-                  Code: <span className="font-mono font-semibold">{currentStation.stationCode}</span>
-                  {currentStation.city && currentStation.state && ` • ${currentStation.city}, ${currentStation.state}`}
-                  {!currentStation.city && currentStation.state && ` • ${currentStation.state}`}
-                </p>
-              </div>
-            ) : user?.stationId ? (
-              <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
-                <p className="text-sm text-gray-600 italic">Loading your current station...</p>
-              </div>
-            ) : (
-              <Alert variant="default" className="bg-yellow-50 border-yellow-200">
-                <AlertCircle className="h-4 w-4 text-yellow-600" />
-                <AlertDescription className="text-yellow-800">
-                  You don't have a station assigned yet. Please contact an administrator.
-                </AlertDescription>
-              </Alert>
-            )}
+        {/* Station Change Request Card - Hidden for Admin since they see all stations */}
+        {user?.role !== 'admin' && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <MapPin className="w-6 h-6 text-green-600" />
+                Change Recruiting Station
+              </CardTitle>
+              <CardDescription>
+                Request to transfer to a different recruiting station
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Current Station Display */}
+              {currentStation ? (
+                <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
+                  <p className="text-sm font-semibold text-gray-700">Current Station:</p>
+                  <p className="text-lg font-bold text-gray-900 mt-1">
+                    {currentStation.name}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Code: <span className="font-mono font-semibold">{currentStation.stationCode}</span>
+                    {currentStation.city && currentStation.state && ` • ${currentStation.city}, ${currentStation.state}`}
+                    {!currentStation.city && currentStation.state && ` • ${currentStation.state}`}
+                  </p>
+                </div>
+              ) : user?.stationId ? (
+                <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 italic">Loading your current station...</p>
+                </div>
+              ) : (
+                <Alert variant="default" className="bg-yellow-50 border-yellow-200">
+                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-800">
+                    You don't have a station assigned yet. Please contact an administrator.
+                  </AlertDescription>
+                </Alert>
+              )}
 
             {/* Pending Request Alert */}
             {pendingStationChangeRequest ? (
@@ -847,6 +1000,7 @@ function ProfileContent() {
             )}
           </CardContent>
         </Card>
+        )}
       </div>
     </div>
   );

@@ -132,6 +132,7 @@ function ProspectingMap() {
   const [eventsPage, setEventsPage] = useState(1);
   const itemsPerPage = 15;
   const [activeSearchType, setActiveSearchType] = useState<"locations-current" | "locations-zip" | "events-current" | "events-zip" | null>(null);
+  const [searchRadiusKm, setSearchRadiusKm] = useState<number>(2); // Default 2km
   const { toast } = useToast();
 
   // Get recruiter's zip code
@@ -280,11 +281,12 @@ function ProspectingMap() {
         longitude,
         useZipCode,
         zipCode: useZip ? zipCode : undefined, // Pass zip code for filtering
+        radiusKm: searchRadiusKm, // Pass user-selected radius
       });
 
-      // Set search center and radius for map display
+      // Set search center and radius for map display (convert km to meters)
       setSearchCenter(center);
-      setSearchRadius(useZipCode ? 5000 : 5000); // 5km for both zip and current location
+      setSearchRadius(searchRadiusKm * 1000); // Convert km to meters
 
       // Clear old locations before adding new ones (only if this is a new search)
       // Delete all existing locations to start fresh
@@ -412,12 +414,13 @@ function ProspectingMap() {
           longitude,
           useZipCode,
           zipCode: useZip ? zipCode : undefined, // Pass zip code for filtering
+          radiusKm: searchRadiusKm, // Pass user-selected radius
         }
       );
 
-      // Set search center and radius for map display
+      // Set search center and radius for map display (convert km to meters)
       setSearchCenter(center);
-      setSearchRadius(useZipCode ? 8047 : 8047); // ~5 miles (8047m) for both zip and current location
+      setSearchRadius(searchRadiusKm * 1000); // Convert km to meters
 
       // Clear old events before adding new ones (only if this is a new search)
       try {
@@ -546,7 +549,24 @@ function ProspectingMap() {
         location.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         location.address?.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesType = typeFilter === "all" || location.type === typeFilter;
+      let matchesType = false;
+      if (typeFilter === "all") {
+        matchesType = true;
+      } else if (typeFilter === "high_school") {
+        // Filter for high schools specifically
+        matchesType = location.type === "school" && 
+          (location.name?.toLowerCase().includes("high school") || 
+           location.name?.toLowerCase().includes("high") ||
+           location.name?.toLowerCase().match(/\b(hs|h\.s\.)\b/));
+      } else if (typeFilter === "college") {
+        // Filter for colleges/universities
+        matchesType = location.type === "school" && 
+          (location.name?.toLowerCase().includes("college") ||
+           location.name?.toLowerCase().includes("university") ||
+           location.name?.toLowerCase().includes("community college"));
+      } else {
+        matchesType = location.type === typeFilter;
+      }
 
       return matchesSearch && matchesType;
     });
@@ -712,6 +732,29 @@ function ProspectingMap() {
                 </div>
               </div>
 
+              {/* Search Radius Slider */}
+              <div className="w-full sm:w-auto sm:min-w-[160px] md:min-w-[180px] flex-shrink-0">
+                <div className="flex flex-col gap-0.5">
+                  <Label htmlFor="searchRadius" className="text-[10px] md:text-xs text-army-tan whitespace-nowrap">
+                    Search Radius: {searchRadiusKm} km
+                  </Label>
+                  <input
+                    id="searchRadius"
+                    type="range"
+                    min="1"
+                    max="10"
+                    step="0.5"
+                    value={searchRadiusKm}
+                    onChange={(e) => setSearchRadiusKm(parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-army-field01 rounded-lg appearance-none cursor-pointer accent-army-gold"
+                  />
+                  <div className="flex justify-between text-[9px] text-army-tan/60">
+                    <span>1km</span>
+                    <span>10km</span>
+                  </div>
+                </div>
+              </div>
+
               {/* Search Buttons - Compact on Desktop */}
               <div className="flex flex-wrap gap-1.5 md:gap-1.5 w-full md:w-auto">
                 <Button
@@ -863,7 +906,9 @@ function ProspectingMap() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="school">Schools</SelectItem>
+                  <SelectItem value="school">Schools (All)</SelectItem>
+                  <SelectItem value="high_school">High Schools</SelectItem>
+                  <SelectItem value="college">Colleges</SelectItem>
                   <SelectItem value="gym">Gyms</SelectItem>
                   <SelectItem value="mall">Malls</SelectItem>
                   <SelectItem value="event_venue">Event Venues</SelectItem>
@@ -906,9 +951,9 @@ function ProspectingMap() {
 
         {/* Map and List Layout - Mobile: Stack vertically and scroll, Desktop: Side-by-side with fixed height */}
         {/* Account for header (~180px), footer (~140px), and some padding */}
-        <div className="flex flex-col md:flex-row md:h-[calc(100vh-320px)]">
+        <div className="flex flex-col md:flex-row md:h-[calc(100vh-320px)] min-h-0">
           {/* Map Container - Mobile: Fixed height, Desktop: Fill available space */}
-          <div className="relative h-[60vh] md:h-full md:flex-1 md:min-w-0">
+          <div className="relative h-[50vh] md:h-full md:flex-1 md:min-w-0 flex-shrink-0">
             <MapContainer
               center={mapCenter}
               zoom={13}
@@ -1132,11 +1177,11 @@ function ProspectingMap() {
           </div>
 
           {/* Results List - Mobile: Scrollable below map, Desktop: Fixed sidebar with scroll */}
-          <div className="w-full md:w-[450px] lg:w-[500px] border-t md:border-t-0 md:border-l bg-card md:h-full flex flex-col shadow-lg">
+          <div className="w-full md:w-[450px] lg:w-[500px] border-t md:border-t-0 md:border-l bg-card flex flex-col shadow-lg min-h-0 md:h-full">
             <Tabs
               value={activeTab}
               onValueChange={(v) => setActiveTab(v as "locations" | "events")}
-              className="flex flex-col flex-1 min-h-0"
+              className="flex flex-col h-full min-h-[400px] md:min-h-0"
             >
               <div className="bg-card border-b shrink-0 sticky top-0 z-10">
                 <TabsList className="w-full grid grid-cols-2">
@@ -1150,10 +1195,10 @@ function ProspectingMap() {
               </div>
 
               {/* TabsContent wrapper to ensure proper flex expansion */}
-              <div className="flex-1 min-h-0 flex flex-col overflow-hidden relative">
+              <div className="flex-1 min-h-0 flex flex-col overflow-hidden md:relative">
               <TabsContent
                 value="locations"
-                className="mt-0 flex-1 min-h-0 flex flex-col overflow-hidden data-[state=active]:flex data-[state=inactive]:hidden absolute inset-0"
+                className="mt-0 flex-1 min-h-0 flex flex-col overflow-hidden data-[state=active]:flex data-[state=inactive]:hidden md:absolute md:inset-0"
               >
                 <div className="flex-1 overflow-y-auto min-h-0 p-2 md:p-4 pb-6 md:pb-4 space-y-2 md:space-y-3">
                 {locationsLoading ? (
@@ -1279,7 +1324,7 @@ function ProspectingMap() {
 
               <TabsContent
                 value="events"
-                className="mt-0 flex-1 min-h-0 flex flex-col overflow-hidden data-[state=active]:flex data-[state=inactive]:hidden absolute inset-0"
+                className="mt-0 flex-1 min-h-0 flex flex-col overflow-hidden data-[state=active]:flex data-[state=inactive]:hidden md:absolute md:inset-0"
               >
                 <div className="flex-1 overflow-y-auto min-h-0 p-2 md:p-4 pb-6 md:pb-4 space-y-2 md:space-y-3">
                 {paginatedEvents.map((event) => (

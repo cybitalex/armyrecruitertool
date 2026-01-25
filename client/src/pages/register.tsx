@@ -216,7 +216,7 @@ export default function RegisterPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="recruiter@army.mil or personal email"
+                placeholder="your.email@example.com"
                 value={formData.email}
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
@@ -224,8 +224,7 @@ export default function RegisterPage() {
                 required
               />
               <p className="text-xs text-gray-600">
-                You can use your @army.mil email or personal email address
-                (testing phase only)
+                Use your work or personal email address
               </p>
             </div>
 

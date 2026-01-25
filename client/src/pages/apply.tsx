@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { recruits, recruiter as recruiterApi } from "../lib/api";
@@ -9,8 +9,9 @@ import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Alert, AlertDescription } from "../components/ui/alert";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, User as UserIcon } from "lucide-react";
 import type { User } from "@shared/schema";
+import { ARMY_RANKS } from "@shared/constants";
 
 export default function ApplyPage() {
   const [location] = useLocation();
@@ -58,10 +59,13 @@ export default function ApplyPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const scanTracked = useRef(false); // Prevent double-tracking
 
   // Fetch recruiter info if QR code is present AND track the scan
   useEffect(() => {
-    if (recruiterCode) {
+    if (recruiterCode && !scanTracked.current) {
+      scanTracked.current = true; // Mark as tracked to prevent double-counting
+      
       // Track the QR scan (for analytics)
       fetch("/api/qr-scan", {
         method: "POST",
@@ -184,6 +188,54 @@ export default function ApplyPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
+        {/* Recruiter Info Card - Compact style similar to survey page */}
+        {recruiterInfo && (
+          <Card className="mb-6 bg-green-50 border border-green-200">
+            <CardContent className="p-4">
+              <p className="text-xs font-semibold text-green-900 mb-3 text-center">
+                Your application will be sent to:
+              </p>
+              
+              <div className="flex items-center gap-4">
+                {/* Profile Picture */}
+                {recruiterInfo.profilePicture ? (
+                  <img
+                    src={recruiterInfo.profilePicture}
+                    alt={recruiterInfo.fullName}
+                    className="w-20 h-20 rounded-full object-cover border-3 border-green-600 shadow-md flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center border-3 border-green-600 shadow-md flex-shrink-0">
+                    <UserIcon className="w-10 h-10 text-green-600" />
+                  </div>
+                )}
+                
+                {/* Contact Information - Rank, Last Name, Phone */}
+                <div className="flex-1 space-y-1">
+                  {recruiterInfo.rank && (
+                    <p className="text-sm font-bold text-green-900">
+                      {ARMY_RANKS.find(r => r.value === recruiterInfo.rank)?.label || recruiterInfo.rank}
+                    </p>
+                  )}
+                  {recruiterInfo.fullName && (
+                    <p className="text-base font-bold text-green-900">
+                      {recruiterInfo.fullName.split(' ').pop()}
+                    </p>
+                  )}
+                  {recruiterInfo.phoneNumber && (
+                    <a 
+                      href={`tel:${recruiterInfo.phoneNumber}`}
+                      className="text-sm text-green-700 hover:underline flex items-center gap-1"
+                    >
+                      📞 {recruiterInfo.phoneNumber}
+                    </a>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold text-green-800">

@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import bcrypt from "bcrypt";
 import {
   insertRecruitSchema,
   insertLocationSchema,
@@ -178,6 +179,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("❌ Auth check error:", error);
       res.status(500).json({ error: "Failed to fetch user data" });
+    }
+  });
+
+  // Change password
+  app.post("/api/auth/change-password", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: "Current password and new password are required" });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: "New password must be at least 8 characters long" });
+      }
+
+      // Get user from database
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Verify current password
+      const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash);
+
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "Current password is incorrect" });
+      }
+
+      // Hash new password
+      const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+      // Update password in database
+      await db
+        .update(users)
+        .set({ passwordHash: newPasswordHash })
+        .where(eq(users.id, userId));
+
+      console.log(`✅ Password changed for user: ${user.email}`);
+      res.json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error("❌ Password change error:", error);
+      res.status(500).json({ error: "Failed to change password" });
     }
   });
 
@@ -3467,7 +3518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/places/search", async (req, res) => {
     try {
       const userId = (req as any).session?.userId;
-      let { latitude, longitude, radius, useZipCode } = req.body;
+      let { latitude, longitude, radius, useZipCode, radiusKm } = req.body;
 
       // If recruiter is logged in and useZipCode is true, use their zip code instead of provided coordinates
       if (userId && useZipCode === true) {
@@ -3504,12 +3555,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ message: "Latitude and longitude are required" });
       }
 
-      // Increased radius for both current location and zip code searches
+      // Use user-selected radius if provided, otherwise default to 5km
       const isCurrentLocation = !userId || useZipCode === false;
-      const radiusMeters = radius || 5000; // 5km for both current location and zip code
+      const radiusMeters = radiusKm ? radiusKm * 1000 : (radius || 5000); // Convert km to meters, or use radius, or default to 5km
 
       console.log(
-        `🔍 Searching locations: ${latitude}, ${longitude}, radius: ${radiusMeters}m (${
+        `🔍 Searching locations: ${latitude}, ${longitude}, radius: ${radiusMeters}m (${radiusKm || (radiusMeters/1000)}km) (${
           isCurrentLocation ? "current location" : "zip code"
         })`
       );
@@ -3574,7 +3625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/places/search-events", async (req, res) => {
     try {
       const userId = (req as any).session?.userId;
-      let { latitude, longitude, radius, useZipCode } = req.body;
+      let { latitude, longitude, radius, useZipCode, radiusKm } = req.body;
 
       // If recruiter is logged in and useZipCode is true, use their zip code instead of provided coordinates
       if (userId && useZipCode === true) {
@@ -3613,12 +3664,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ message: "Latitude and longitude are required" });
       }
 
-      // Radius for event searches
+      // Radius for event searches - convert km to miles if radiusKm is provided
       const isCurrentLocation = !userId || useZipCode === false;
-      const radiusMiles = radius || 5; // 5 miles for both current location and zip code
+      const radiusMiles = radiusKm ? radiusKm * 0.621371 : (radius || 5); // Convert km to miles, or use radius, or default to 5 miles
 
       console.log(
-        `🔍 Searching events: ${latitude}, ${longitude}, radius: ${radiusMiles}mi (${
+        `🔍 Searching events: ${latitude}, ${longitude}, radius: ${radiusMiles}mi (${radiusKm || (radiusMiles / 0.621371).toFixed(1)}km) (${
           isCurrentLocation ? "current location" : "zip code"
         })`
       );

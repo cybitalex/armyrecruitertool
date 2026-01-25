@@ -23,7 +23,7 @@ export function Footer() {
           <div className="text-center">
             <p className="text-army-tan/70 text-xs">
               <Shield className="w-3 h-3 inline mr-1" />
-              For Official Use Only - NIPR Compliant
+              UNCLASSIFIED System - Security Best Practices Implemented
             </p>
             <p className="text-army-tan/60 text-xs mt-1">
               Authorized US Army Personnel Only

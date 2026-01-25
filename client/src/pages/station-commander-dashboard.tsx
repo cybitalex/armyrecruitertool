@@ -27,6 +27,10 @@ import {
   ChevronUp,
   Filter,
   X,
+  User,
+  Mail,
+  Phone,
+  MapPin,
 } from "lucide-react";
 import { Input } from "../components/ui/input";
 import {
@@ -121,6 +125,14 @@ function StationCommanderDashboardContent() {
   const [totalsDialogOpen, setTotalsDialogOpen] = useState(false);
   const [totalsDialogType, setTotalsDialogType] = useState<'surveys' | 'leads' | null>(null);
   const [totalsDialogPeriod, setTotalsDialogPeriod] = useState<'monthly' | 'allTime'>('monthly');
+  const [focusedRecruiterId, setFocusedRecruiterId] = useState<string | null>(null); // For filtering dialog to one recruiter
+  
+  // Date filter state
+  const [dateFilter, setDateFilter] = useState<'allTime' | 'thisMonth' | 'lastMonth' | string>('thisMonth');
+  
+  // Selected recruit for detail dialog
+  const [selectedRecruit, setSelectedRecruit] = useState<Recruit | null>(null);
+  const [recruitDetailDialogOpen, setRecruitDetailDialogOpen] = useState(false);
 
   // Use React Query for optimized data fetching with caching
   const { 
@@ -245,6 +257,50 @@ function StationCommanderDashboardContent() {
     }
   };
 
+  // Helper function to filter items by date
+  const filterByDate = <T extends { createdAt?: Date | string }>(items: T[]): T[] => {
+    if (dateFilter === 'allTime') return items;
+    
+    const now = new Date();
+    let startDate: Date;
+    let endDate: Date = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59); // End of current month
+    
+    if (dateFilter === 'thisMonth') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (dateFilter === 'lastMonth') {
+      startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      endDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+    } else {
+      // Custom month in format yyyy-MM
+      const [year, month] = dateFilter.split('-').map(Number);
+      startDate = new Date(year, month - 1, 1);
+      endDate = new Date(year, month, 0, 23, 59, 59);
+    }
+    
+    return items.filter(item => {
+      if (!item.createdAt) return false;
+      const itemDate = new Date(item.createdAt);
+      return itemDate >= startDate && itemDate <= endDate;
+    });
+  };
+  
+  // Get period label for display
+  const getPeriodLabel = (): string => {
+    if (dateFilter === 'allTime') return 'All Time';
+    if (dateFilter === 'thisMonth') return format(new Date(), 'MMMM yyyy');
+    if (dateFilter === 'lastMonth') {
+      const lastMonth = new Date();
+      lastMonth.setMonth(lastMonth.getMonth() - 1);
+      return format(lastMonth, 'MMMM yyyy');
+    }
+    const [year, month] = dateFilter.split('-').map(Number);
+    return format(new Date(year, month - 1), 'MMMM yyyy');
+  };
+  
+  // Filter recruits and surveys by date
+  const filteredRecruitsList = filterByDate(recruitsList);
+  const filteredSurveyResponses = filterByDate(surveyResponses);
+
   // Filter and sort recruiters
   const filteredAndSortedRecruiters = (() => {
     let filtered = filterRecruiter === "all" 
@@ -292,27 +348,26 @@ function StationCommanderDashboardContent() {
     try {
       setExporting(true);
       const data = await stationCommander.getRecruitsForExport();
+      
+      // Filter recruits by selected date range
+      const filteredRecruitsForExport = filterByDate(data.recruits);
+      const periodLabel = getPeriodLabel();
 
       // Create workbook
       const wb = XLSX.utils.book_new();
 
-      // Sheet 1: Station Summary
+      // Sheet 1: Station Summary (filtered)
       const summaryData = [
         ["Station Commander Report"],
         ["Generated:", new Date().toLocaleString()],
         ["Station Commander:", user?.fullName || ""],
+        ["Period:", periodLabel],
         [],
-        ["STATION TOTALS - ALL TIME"],
-        ["Total Recruits:", stationTotals?.allTime.total || 0],
-        ["Surveys:", stationTotals?.allTime.surveys || 0],
-        ["Prospects:", stationTotals?.allTime.prospects || 0],
-        ["Leads:", stationTotals?.allTime.leads || 0],
-        [],
-        ["STATION TOTALS - THIS MONTH"],
-        ["Total Recruits:", stationTotals?.monthly.total || 0],
-        ["Surveys:", stationTotals?.monthly.surveys || 0],
-        ["Prospects:", stationTotals?.monthly.prospects || 0],
-        ["Leads:", stationTotals?.monthly.leads || 0],
+        ["FILTERED DATA - " + periodLabel.toUpperCase()],
+        ["Total Recruits:", filteredRecruitsForExport.length],
+        ["Surveys:", filteredRecruitsForExport.filter(r => r.status === 'survey').length],
+        ["Prospects:", filteredRecruitsForExport.filter(r => r.status === 'prospect').length],
+        ["Leads:", filteredRecruitsForExport.filter(r => r.status === 'lead').length],
       ];
       const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
       XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
@@ -357,7 +412,7 @@ function StationCommanderDashboardContent() {
       const recruiterStatsSheet = XLSX.utils.aoa_to_sheet(recruiterStatsData);
       XLSX.utils.book_append_sheet(wb, recruiterStatsSheet, "Recruiter Stats");
 
-      // Sheet 3: All Recruits Details
+      // Sheet 3: Filtered Recruits Details
       const recruitsData = [
         [
           "Recruiter",
@@ -372,7 +427,7 @@ function StationCommanderDashboardContent() {
           "Source",
           "Submitted Date",
         ],
-        ...data.recruits.map((r) => [
+        ...filteredRecruitsForExport.map((r) => [
           r.recruiterName,
           r.recruiterRank,
           r.firstName,
@@ -387,10 +442,11 @@ function StationCommanderDashboardContent() {
         ]),
       ];
       const recruitsSheet = XLSX.utils.aoa_to_sheet(recruitsData);
-      XLSX.utils.book_append_sheet(wb, recruitsSheet, "All Recruits");
+      XLSX.utils.book_append_sheet(wb, recruitsSheet, "Filtered Recruits");
 
-      // Generate filename with current date
-      const filename = `Station_Report_${new Date().toISOString().split("T")[0]}.xlsx`;
+      // Generate filename with current date and period
+      const periodSlug = dateFilter === 'allTime' ? 'AllTime' : dateFilter === 'thisMonth' ? 'ThisMonth' : dateFilter === 'lastMonth' ? 'LastMonth' : dateFilter;
+      const filename = `Station_Report_${periodSlug}_${new Date().toISOString().split("T")[0]}.xlsx`;
 
       // Save file
       XLSX.writeFile(wb, filename);
@@ -414,8 +470,6 @@ function StationCommanderDashboardContent() {
       </div>
     );
   }
-
-  const currentMonth = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -460,15 +514,41 @@ function StationCommanderDashboardContent() {
           </Alert>
         )}
 
-        {/* Export Button */}
-        <div className="mb-4 sm:mb-6 flex justify-end">
+        {/* Date Filter and Export */}
+        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-gray-500" />
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger className="w-[200px] h-8 sm:h-10 text-xs sm:text-sm">
+                <SelectValue placeholder="Select Period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="thisMonth">This Month</SelectItem>
+                <SelectItem value="lastMonth">Last Month</SelectItem>
+                <SelectItem value="allTime">All Time</SelectItem>
+                {/* Generate last 12 months */}
+                {Array.from({ length: 12 }, (_, i) => {
+                  const date = new Date();
+                  date.setMonth(date.getMonth() - i - 2); // Start from 2 months ago
+                  const monthValue = format(date, 'yyyy-MM');
+                  const monthLabel = format(date, 'MMMM yyyy');
+                  return (
+                    <SelectItem key={monthValue} value={monthValue}>
+                      {monthLabel}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+          
           <Button
             onClick={handleExportReport}
             disabled={exporting || loading}
             className="bg-blue-700 hover:bg-blue-800 text-xs sm:text-sm h-8 sm:h-10 px-3 sm:px-4"
           >
             <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">{exporting ? "Exporting..." : "Export Full Report"}</span>
+            <span className="hidden sm:inline">{exporting ? "Exporting..." : "Export Filtered Report"}</span>
             <span className="sm:hidden">{exporting ? "..." : "Export"}</span>
           </Button>
         </div>
@@ -482,12 +562,12 @@ function StationCommanderDashboardContent() {
             </TabsTrigger>
             <TabsTrigger value="applicants" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
               <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Leads ({recruitsList.length})</span>
+              <span className="hidden sm:inline">Leads ({filteredRecruitsList.length})</span>
               <span className="sm:hidden">Leads</span>
             </TabsTrigger>
             <TabsTrigger value="surveys" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
               <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Surveys ({surveyResponses.length})</span>
+              <span className="hidden sm:inline">Surveys ({filteredSurveyResponses.length})</span>
               <span className="sm:hidden">Surveys</span>
             </TabsTrigger>
           </TabsList>
@@ -499,7 +579,7 @@ function StationCommanderDashboardContent() {
           <>
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
               <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="text-sm sm:text-base">Station Totals - {currentMonth}</span>
+              <span className="text-sm sm:text-base">Station Totals - {getPeriodLabel()}</span>
             </h2>
             <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8">
               <Card>
@@ -518,6 +598,7 @@ function StationCommanderDashboardContent() {
               <Card 
                 className="cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => {
+                  setFocusedRecruiterId(null); // Show all recruiters
                   setTotalsDialogType('surveys');
                   setTotalsDialogPeriod('monthly');
                   setTotalsDialogOpen(true);
@@ -525,20 +606,21 @@ function StationCommanderDashboardContent() {
               >
                 <CardHeader className="pb-2 px-2 sm:px-6 pt-3 sm:pt-6">
                   <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">
-                    Surveys (Monthly)
+                    Survey Responses
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-2 sm:px-6 pb-3 sm:pb-6">
                   <div className="text-lg sm:text-2xl font-bold text-yellow-600">
                     {stationTotals.monthly.surveys}
                   </div>
-                  <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Click to view details</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Feedback surveys only</p>
                 </CardContent>
               </Card>
 
               <Card 
                 className="cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => {
+                  setFocusedRecruiterId(null); // Show all recruiters
                   setTotalsDialogType('leads');
                   setTotalsDialogPeriod('monthly');
                   setTotalsDialogOpen(true);
@@ -546,14 +628,14 @@ function StationCommanderDashboardContent() {
               >
                 <CardHeader className="pb-2 px-2 sm:px-6 pt-3 sm:pt-6">
                   <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">
-                    Leads (Monthly)
+                    Application Leads
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-2 sm:px-6 pb-3 sm:pb-6">
                   <div className="text-lg sm:text-2xl font-bold text-purple-600">
                     {stationTotals.monthly.leads}
                   </div>
-                  <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Click to view details</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Recruit applications</p>
                 </CardContent>
               </Card>
             </div>
@@ -579,6 +661,7 @@ function StationCommanderDashboardContent() {
               <Card 
                 className="cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => {
+                  setFocusedRecruiterId(null); // Show all recruiters
                   setTotalsDialogType('surveys');
                   setTotalsDialogPeriod('allTime');
                   setTotalsDialogOpen(true);
@@ -586,20 +669,21 @@ function StationCommanderDashboardContent() {
               >
                 <CardHeader className="pb-2 px-2 sm:px-6 pt-3 sm:pt-6">
                   <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">
-                    Surveys (All-Time)
+                    Survey Responses
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-2 sm:px-6 pb-3 sm:pb-6">
                   <div className="text-lg sm:text-2xl font-bold text-gray-700">
                     {stationTotals.allTime.surveys}
                   </div>
-                  <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Click to view details</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Feedback surveys only</p>
                 </CardContent>
               </Card>
 
               <Card 
                 className="cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => {
+                  setFocusedRecruiterId(null); // Show all recruiters
                   setTotalsDialogType('leads');
                   setTotalsDialogPeriod('allTime');
                   setTotalsDialogOpen(true);
@@ -607,14 +691,14 @@ function StationCommanderDashboardContent() {
               >
                 <CardHeader className="pb-2 px-2 sm:px-6 pt-3 sm:pt-6">
                   <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">
-                    Leads (All-Time)
+                    Application Leads
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-2 sm:px-6 pb-3 sm:pb-6">
                   <div className="text-lg sm:text-2xl font-bold text-gray-700">
                     {stationTotals.allTime.leads}
                   </div>
-                  <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Click to view details</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Recruit applications</p>
                 </CardContent>
               </Card>
             </div>
@@ -813,6 +897,82 @@ function StationCommanderDashboardContent() {
                                 </div>
                               </div>
                             </div>
+                            
+                            {/* View Details Section */}
+                            <div className="mt-3 space-y-2">
+                              {recruiter.stats.allTime.qrScanTracking && recruiter.stats.allTime.qrScanTracking.totalConverted > 0 && (
+                                <div className="text-[10px] sm:text-xs text-gray-600 bg-green-50 px-2 py-1 rounded border border-green-200">
+                                  <span className="font-medium text-green-700">
+                                    {recruiter.stats.allTime.qrScanTracking.totalConverted} Total Conversions:
+                                  </span>{" "}
+                                  {recruiter.stats.allTime.qrScanTracking.applicationsFromScans} Applications + {recruiter.stats.allTime.qrScanTracking.surveysFromScans} Survey Responses
+                                </div>
+                              )}
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    setFocusedRecruiterId(recruiter.id); // Focus on this specific recruiter
+                                    setTotalsDialogType('leads');
+                                    setTotalsDialogPeriod('allTime');
+                                    setTotalsDialogOpen(true);
+                                    // Load this recruiter's leads
+                                    if (!recruiterLeads[recruiter.id]) {
+                                      setLoadingLeads(prev => ({ ...prev, [recruiter.id]: true }));
+                                      try {
+                                        const data = await stationCommander.getRecruiterLeads(recruiter.id);
+                                        setRecruiterLeads(prev => ({ ...prev, [recruiter.id]: data.leads }));
+                                        setExpandedRecruitersInDialog(new Set([`${recruiter.id}-leads`]));
+                                      } catch (err) {
+                                        console.error("Failed to load leads:", err);
+                                      } finally {
+                                        setLoadingLeads(prev => ({ ...prev, [recruiter.id]: false }));
+                                      }
+                                    } else {
+                                      setExpandedRecruitersInDialog(new Set([`${recruiter.id}-leads`]));
+                                    }
+                                  }}
+                                  className="flex-1 text-xs sm:text-sm"
+                                  title="View application leads only"
+                                >
+                                  <FileText className="w-3 h-3 mr-1" />
+                                  Applications ({recruiter.stats.allTime.leads || 0})
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    setFocusedRecruiterId(recruiter.id); // Focus on this specific recruiter
+                                    setTotalsDialogType('surveys');
+                                    setTotalsDialogPeriod('allTime');
+                                    setTotalsDialogOpen(true);
+                                    // Load this recruiter's surveys
+                                    if (!recruiterSurveys[recruiter.id]) {
+                                      setLoadingSurveys(prev => ({ ...prev, [recruiter.id]: true }));
+                                      try {
+                                        const data = await stationCommander.getRecruiterSurveys(recruiter.id);
+                                        setRecruiterSurveys(prev => ({ ...prev, [recruiter.id]: data.surveys }));
+                                        setExpandedRecruitersInDialog(new Set([`${recruiter.id}-surveys`]));
+                                      } catch (err) {
+                                        console.error("Failed to load surveys:", err);
+                                      } finally {
+                                        setLoadingSurveys(prev => ({ ...prev, [recruiter.id]: false }));
+                                      }
+                                    } else {
+                                      setExpandedRecruitersInDialog(new Set([`${recruiter.id}-surveys`]));
+                                    }
+                                  }}
+                                  className="flex-1 text-xs sm:text-sm"
+                                  title="View survey responses only"
+                                >
+                                  <MessageSquare className="w-3 h-3 mr-1" />
+                                  Surveys ({recruiter.stats.allTime.surveys || 0})
+                                </Button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -840,18 +1000,21 @@ function StationCommanderDashboardContent() {
                   <div className="text-center py-8 text-gray-500">
                     Loading leads...
                   </div>
-                ) : recruitsList.length === 0 ? (
+                ) : filteredRecruitsList.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                    <p>No leads found</p>
+                    <p>No leads found for {getPeriodLabel()}</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {recruitsList.map((recruit) => (
+                    {filteredRecruitsList.map((recruit) => (
                       <div
                         key={recruit.id}
                         className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:bg-gray-50 transition cursor-pointer"
-                        onClick={() => window.open(`/recruits/${recruit.id}`, '_blank')}
+                        onClick={() => {
+                          setSelectedRecruit(recruit);
+                          setRecruitDetailDialogOpen(true);
+                        }}
                       >
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-gray-900 text-base">
@@ -908,14 +1071,14 @@ function StationCommanderDashboardContent() {
                   <div className="text-center py-8 text-gray-500">
                     Loading survey responses...
                   </div>
-                ) : surveyResponses.length === 0 ? (
+                ) : filteredSurveyResponses.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                    <p>No survey responses found</p>
+                    <p>No survey responses found for {getPeriodLabel()}</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {surveyResponses.map((response) => (
+                    {filteredSurveyResponses.map((response) => (
                       <div
                         key={response.id}
                         className="p-4 border rounded-lg bg-white"
@@ -977,15 +1140,30 @@ function StationCommanderDashboardContent() {
               ) : (
                 <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
               )}
-              <span className="text-sm sm:text-base">{totalsDialogType === 'surveys' ? 'Surveys' : 'Leads'} - {totalsDialogPeriod === 'monthly' ? currentMonth : 'All-Time'}</span>
+              <span className="text-sm sm:text-base">
+                {totalsDialogType === 'surveys' ? 'Survey Responses' : 'Application Leads'} - {totalsDialogPeriod === 'monthly' ? getPeriodLabel() : 'All-Time'}
+                {focusedRecruiterId && (() => {
+                  const focusedRecruiter = recruiters.find(r => r.id === focusedRecruiterId);
+                  return focusedRecruiter ? ` - ${focusedRecruiter.fullName}` : '';
+                })()}
+              </span>
             </DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
-              Breakdown by recruiter showing individual {totalsDialogType === 'surveys' ? 'surveys' : 'leads'}
+              {focusedRecruiterId ? (
+                `Showing ${totalsDialogType === 'surveys' ? 'survey responses' : 'application leads'} for this recruiter only`
+              ) : (
+                totalsDialogType === 'surveys' 
+                  ? 'Survey feedback responses collected from QR code scans'
+                  : 'Recruit application leads (excludes survey-only responses)'
+              )}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
             {recruiters.map((recruiter) => {
+              // Filter to show only focused recruiter if one is selected
+              if (focusedRecruiterId && recruiter.id !== focusedRecruiterId) return null;
+              
               const count = totalsDialogPeriod === 'monthly' 
                 ? (totalsDialogType === 'surveys' ? recruiter.stats.monthly.surveys : recruiter.stats.monthly.leads)
                 : (totalsDialogType === 'surveys' ? recruiter.stats.allTime.surveys : recruiter.stats.allTime.leads);
@@ -1105,8 +1283,11 @@ function StationCommanderDashboardContent() {
                                 {filteredLeads.map((lead) => (
                                 <div
                                   key={lead.id}
-                                  className="p-2 sm:p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                                  onClick={() => window.open(`/recruits/${lead.id}`, '_blank')}
+                                  className="p-2 sm:p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                                  onClick={() => {
+                                    setSelectedRecruit(lead);
+                                    setRecruitDetailDialogOpen(true);
+                                  }}
                                 >
                                   <div className="font-medium text-xs sm:text-sm">{lead.firstName} {lead.lastName}</div>
                                   <div className="text-[10px] sm:text-xs text-gray-500 break-words">{lead.email} • {lead.phone}</div>
@@ -1153,6 +1334,177 @@ function StationCommanderDashboardContent() {
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Recruit Detail Dialog */}
+      <Dialog open={recruitDetailDialogOpen} onOpenChange={setRecruitDetailDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {selectedRecruit && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl">
+                  {selectedRecruit.firstName} {selectedRecruit.lastName}
+                </DialogTitle>
+                <DialogDescription>
+                  Application submitted on {selectedRecruit.submittedAt && format(new Date(selectedRecruit.submittedAt), "MMMM d, yyyy")}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 mt-4">
+                {/* Status Badge */}
+                <div className="flex gap-2">
+                  <Badge variant="outline" className={`${getStatusColor(selectedRecruit.status)}`}>
+                    {selectedRecruit.status}
+                  </Badge>
+                  <Badge variant="outline" className={selectedRecruit.source === "qr_code" ? "bg-blue-50" : "bg-purple-50"}>
+                    {selectedRecruit.source === "qr_code" ? "🎯 QR Code" : "📝 Direct Entry"}
+                  </Badge>
+                </div>
+
+                {/* Contact Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Contact Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-gray-500" />
+                      <a href={`mailto:${selectedRecruit.email}`} className="text-blue-600 hover:underline">
+                        {selectedRecruit.email}
+                      </a>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-gray-500" />
+                      <a href={`tel:${selectedRecruit.phone}`} className="text-blue-600 hover:underline">
+                        {selectedRecruit.phone}
+                      </a>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-gray-500" />
+                      <span>{selectedRecruit.address}, {selectedRecruit.city}, {selectedRecruit.state} {selectedRecruit.zipCode}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Additional Details */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Additional Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {selectedRecruit.dateOfBirth && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <span className="text-sm font-medium text-gray-700">Date of Birth:</span>
+                        <span className="text-sm">{new Date(selectedRecruit.dateOfBirth).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                    {selectedRecruit.educationLevel && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <span className="text-sm font-medium text-gray-700">Education:</span>
+                        <span className="text-sm capitalize">{selectedRecruit.educationLevel.replace(/_/g, ' ')}</span>
+                      </div>
+                    )}
+                    {selectedRecruit.hasDriversLicense && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <span className="text-sm font-medium text-gray-700">Driver's License:</span>
+                        <span className="text-sm">{selectedRecruit.hasDriversLicense === 'yes' ? 'Yes' : 'No'}</span>
+                      </div>
+                    )}
+                    {selectedRecruit.hasPriorService && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <span className="text-sm font-medium text-gray-700">Prior Service:</span>
+                        <span className="text-sm">{selectedRecruit.hasPriorService === 'yes' ? 'Yes' : 'No'}</span>
+                      </div>
+                    )}
+                    {selectedRecruit.priorServiceBranch && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <span className="text-sm font-medium text-gray-700">Branch:</span>
+                        <span className="text-sm">{selectedRecruit.priorServiceBranch}</span>
+                      </div>
+                    )}
+                    {selectedRecruit.preferredMOS && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <span className="text-sm font-medium text-gray-700">Preferred MOS:</span>
+                        <span className="text-sm">{selectedRecruit.preferredMOS}</span>
+                      </div>
+                    )}
+                    {selectedRecruit.availability && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <span className="text-sm font-medium text-gray-700">Availability:</span>
+                        <span className="text-sm capitalize">{selectedRecruit.availability.replace(/_/g, ' ')}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Notes Section */}
+                {selectedRecruit.additionalNotes && (() => {
+                  // Parse notes history
+                  let notesHistory: Array<{ note: string; authorName: string; timestamp: string }> = [];
+                  try {
+                    const parsed = JSON.parse(selectedRecruit.additionalNotes);
+                    notesHistory = Array.isArray(parsed) ? parsed : [];
+                  } catch (e) {
+                    // Old format - single note
+                    if (selectedRecruit.additionalNotes.trim()) {
+                      notesHistory = [{
+                        note: selectedRecruit.additionalNotes,
+                        authorName: "Unknown",
+                        timestamp: new Date().toISOString()
+                      }];
+                    }
+                  }
+                  
+                  if (notesHistory.length === 0) return null;
+                  
+                  return (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Notes History</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {notesHistory.map((entry, index) => (
+                            <div key={index} className="border-l-2 border-blue-500 pl-3 py-1">
+                              <div className="flex justify-between items-start gap-2 mb-1">
+                                <span className="text-xs font-medium text-blue-600">
+                                  {entry.authorName}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {new Date(entry.timestamp).toLocaleString()}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                                {entry.note}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
+
+                {/* Close Button */}
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setRecruitDetailDialogOpen(false)}
+                    className="flex-1"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
