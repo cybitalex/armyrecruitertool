@@ -27,6 +27,7 @@ import {
   SearchableSelect,
   type SearchableSelectOption,
 } from "../components/ui/searchable-select";
+import { MilEmailNotice } from "../components/mil-email-notice";
 
 export default function RegisterPage() {
   const [, setLocation] = useLocation();
@@ -131,11 +132,21 @@ export default function RegisterPage() {
                 : "Please check your email to verify your account before logging in."}
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-center">
+          <CardContent className="text-center space-y-4">
             <p className="text-sm text-gray-600">
               We've sent a verification link to{" "}
               <strong>{formData.email}</strong>
             </p>
+            
+            {formData.email.toLowerCase().endsWith('.mil') && (
+              <Alert className="bg-yellow-50 border-yellow-300">
+                <AlertDescription className="text-xs text-yellow-800">
+                  <strong>⚠️ .mil email delay:</strong> Military email servers may delay delivery by 30 minutes to several hours. 
+                  You can log in now - you have <strong>14 days</strong> to verify. Check spam/junk folder.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {formData.accountType === "station_commander" && (
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
                 <p className="text-sm text-blue-800 font-medium">
@@ -227,6 +238,10 @@ export default function RegisterPage() {
                 Use your work or personal email address
               </p>
             </div>
+
+            {formData.email.toLowerCase().endsWith('.mil') && (
+              <MilEmailNotice />
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="fullName">Full Name *</Label>

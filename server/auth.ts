@@ -243,6 +243,9 @@ export async function sendVerificationEmail(email: string, token: string) {
   // Use frontend route that will handle the API call
   const verificationUrl = `${process.env.APP_URL || 'https://armyrecruitertool.duckdns.org'}/verify-email?token=${token}`;
   
+  // Check if it's a .mil domain
+  const isMilEmail = email.toLowerCase().endsWith('.mil');
+  
   const mailOptions = {
     from: `Army Recruiter Tool <${process.env.SMTP_USER || 'alex.cybitdevs@gmail.com'}>`,
     to: email,
@@ -251,6 +254,15 @@ export async function sendVerificationEmail(email: string, token: string) {
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #006400;">Welcome to Army Recruiter Tool! 🎖️</h2>
         <p>Thank you for registering. Please verify your email address to complete your registration.</p>
+        ${isMilEmail ? `
+          <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 16px 0;">
+            <p style="margin: 0; color: #856404; font-weight: bold;">📧 .mil Email Notice</p>
+            <p style="margin: 8px 0 0 0; color: #856404; font-size: 13px;">
+              If this email took a while to arrive, that's normal. Military email servers often delay external emails by 30 minutes to several hours.
+              <strong>You can log in immediately - you have 14 days to verify your account.</strong>
+            </p>
+          </div>
+        ` : ''}
         <p>
           <a href="${verificationUrl}" style="background-color: #006400; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
             Verify Email Address
@@ -895,9 +907,10 @@ export async function loginUser(email: string, password: string) {
     throw new Error('Invalid email or password');
   }
 
-  // Check if email is verified - allow grace period of 7 days
+  // Check if email is verified - allow grace period (14 days for .mil, 7 days for others)
   if (!user.isVerified) {
-    const VERIFICATION_GRACE_PERIOD_DAYS = 7;
+    const isMilEmail = user.email.toLowerCase().endsWith('.mil');
+    const VERIFICATION_GRACE_PERIOD_DAYS = isMilEmail ? 14 : 7;
     const accountAge = Date.now() - new Date(user.createdAt).getTime();
     const gracePeriodMs = VERIFICATION_GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000;
     
@@ -906,7 +919,7 @@ export async function loginUser(email: string, password: string) {
     }
     
     // Allow login but user will see warning in frontend
-    console.log(`⚠️  User ${user.email} logged in without verification (${Math.floor(accountAge / (24 * 60 * 60 * 1000))} days old)`);
+    console.log(`⚠️  User ${user.email} logged in without verification (${Math.floor(accountAge / (24 * 60 * 60 * 1000))} days old, ${VERIFICATION_GRACE_PERIOD_DAYS}-day grace period for ${isMilEmail ? '.mil' : 'standard'} account)`);
   }
 
   return user;

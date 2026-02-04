@@ -12,22 +12,14 @@ export function VerificationWarning() {
   const [dismissed, setDismissed] = useState(false);
   const [sending, setSending] = useState(false);
 
-  // Debug logging
-  console.log("🔍 VerificationWarning - user:", user);
-  console.log("🔍 VerificationWarning - user.isVerified:", user?.isVerified);
-  console.log("🔍 VerificationWarning - user.createdAt:", user?.createdAt);
-  console.log("🔍 VerificationWarning - dismissed:", dismissed);
-
   // Don't show if user is verified or dismissed
   if (!user || user.isVerified || dismissed) {
-    console.log("🚫 VerificationWarning - Not showing banner");
     return null;
   }
 
-  console.log("✅ VerificationWarning - Showing banner");
-
-  // Calculate days remaining for verification
-  const GRACE_PERIOD_DAYS = 7;
+  // Calculate days remaining for verification - 14 days for .mil, 7 days for others
+  const isMilEmail = user.email?.toLowerCase().endsWith('.mil') || false;
+  const GRACE_PERIOD_DAYS = isMilEmail ? 14 : 7;
   const accountAge = Date.now() - new Date(user.createdAt).getTime();
   const daysOld = Math.floor(accountAge / (24 * 60 * 60 * 1000));
   const daysRemaining = GRACE_PERIOD_DAYS - daysOld;
