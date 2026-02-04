@@ -27,6 +27,7 @@ import {
   createSession,
   destroySession,
   generateQRCodeImage,
+  resendVerificationEmail,
   generateSurveyQRCodeImage,
   requestPasswordReset,
   resetPassword as resetPasswordHandler,
@@ -82,6 +83,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const message =
         error instanceof Error ? error.message : "Verification failed";
       res.status(400).json({ error: message });
+    }
+  });
+
+  // Resend verification email
+  app.post("/api/auth/resend-verification", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      const result = await resendVerificationEmail(email);
+      res.json(result);
+    } catch (error) {
+      console.error("❌ Failed to resend verification email:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to resend verification email";
+      res.status(500).json({ error: message });
     }
   });
 

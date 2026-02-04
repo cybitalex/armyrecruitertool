@@ -15,6 +15,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth-context";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { VerificationWarning } from "@/components/verification-warning";
 
 // Auth pages
 import RegisterPage from "@/pages/register";
@@ -95,6 +96,7 @@ function AppContent() {
     <TooltipProvider>
       <div className="min-h-screen bg-army-green flex flex-col">
         {showLayout && <Header />}
+        {showLayout && <VerificationWarning />}
         <div className="flex-1">
           <Router />
         </div>

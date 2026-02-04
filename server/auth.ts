@@ -280,6 +280,43 @@ export async function sendVerificationEmail(email: string, token: string) {
   }
 }
 
+// Resend verification email
+export async function resendVerificationEmail(email: string) {
+  // Find user
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  if (!user) {
+    // Don't reveal that user doesn't exist (security best practice)
+    return { message: 'If an account exists for this email, a verification link has been sent.' };
+  }
+
+  if (user.isVerified) {
+    return { message: 'Email is already verified' };
+  }
+
+  // Generate new verification token
+  const verificationToken = generateVerificationToken();
+  const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+  // Update user with new token
+  await db
+    .update(users)
+    .set({
+      verificationToken,
+      verificationExpires,
+    })
+    .where(eq(users.id, user.id));
+
+  // Send verification email
+  await sendVerificationEmail(email, verificationToken);
+
+  return { message: 'Verification email has been resent. Please check your inbox.' };
+}
+
 // Send password reset email
 export async function sendPasswordResetEmail(email: string, token: string) {
   const resetUrl = `${process.env.APP_URL || 'https://armyrecruitertool.duckdns.org'}/reset-password?token=${token}`;
@@ -851,16 +888,25 @@ export async function loginUser(email: string, password: string) {
     throw new Error('Invalid email or password');
   }
 
-  // Check if email is verified
-  if (!user.isVerified) {
-    throw new Error('Please verify your email before logging in');
-  }
-
-  // Verify password
+  // Verify password first
   const isValidPassword = await comparePassword(password, user.passwordHash);
 
   if (!isValidPassword) {
     throw new Error('Invalid email or password');
+  }
+
+  // Check if email is verified - allow grace period of 7 days
+  if (!user.isVerified) {
+    const VERIFICATION_GRACE_PERIOD_DAYS = 7;
+    const accountAge = Date.now() - new Date(user.createdAt).getTime();
+    const gracePeriodMs = VERIFICATION_GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000;
+    
+    if (accountAge > gracePeriodMs) {
+      throw new Error('Your account verification period has expired. Please contact support to reactivate your account.');
+    }
+    
+    // Allow login but user will see warning in frontend
+    console.log(`⚠️  User ${user.email} logged in without verification (${Math.floor(accountAge / (24 * 60 * 60 * 1000))} days old)`);
   }
 
   return user;

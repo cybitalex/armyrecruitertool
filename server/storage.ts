@@ -514,7 +514,7 @@ export class MemStorage implements IStorage {
       const allTimeRecruitStats = await db
         .select({
           total: sql<number>`count(*)::int`,
-          leads: sql<number>`count(*) filter (where ${recruitsTable.status} = 'lead')::int`,
+          leads: sql<number>`count(*) filter (where ${recruitsTable.status} IN ('lead', 'pending'))::int`,
           prospects: sql<number>`count(*) filter (where ${recruitsTable.status} = 'prospect')::int`,
           qrCodeScans: sql<number>`count(*) filter (where ${recruitsTable.source} = 'qr_code')::int`,
           directEntries: sql<number>`count(*) filter (where ${recruitsTable.source} = 'direct')::int`,
@@ -526,7 +526,7 @@ export class MemStorage implements IStorage {
       const monthlyRecruitStats = await db
         .select({
           total: sql<number>`count(*)::int`,
-          leads: sql<number>`count(*) filter (where ${recruitsTable.status} = 'lead')::int`,
+          leads: sql<number>`count(*) filter (where ${recruitsTable.status} IN ('lead', 'pending'))::int`,
           prospects: sql<number>`count(*) filter (where ${recruitsTable.status} = 'prospect')::int`,
         })
         .from(recruitsTable)

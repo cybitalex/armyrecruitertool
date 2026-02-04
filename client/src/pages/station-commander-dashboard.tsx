@@ -633,7 +633,7 @@ function StationCommanderDashboardContent() {
                 </CardHeader>
                 <CardContent className="px-2 sm:px-6 pb-3 sm:pb-6">
                   <div className="text-lg sm:text-2xl font-bold text-purple-600">
-                    {stationTotals.monthly.leads}
+                    {stationTotals.monthly.total}
                   </div>
                   <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Recruit applications</p>
                 </CardContent>
@@ -696,7 +696,7 @@ function StationCommanderDashboardContent() {
                 </CardHeader>
                 <CardContent className="px-2 sm:px-6 pb-3 sm:pb-6">
                   <div className="text-lg sm:text-2xl font-bold text-gray-700">
-                    {stationTotals.allTime.leads}
+                    {stationTotals.allTime.total}
                   </div>
                   <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Recruit applications</p>
                 </CardContent>
@@ -938,7 +938,7 @@ function StationCommanderDashboardContent() {
                                   title="View application leads only"
                                 >
                                   <FileText className="w-3 h-3 mr-1" />
-                                  Applications ({recruiter.stats.allTime.leads || 0})
+                                  Applications ({recruiter.stats.allTime.total || 0})
                                 </Button>
                                 <Button
                                   size="sm"
@@ -1165,8 +1165,8 @@ function StationCommanderDashboardContent() {
               if (focusedRecruiterId && recruiter.id !== focusedRecruiterId) return null;
               
               const count = totalsDialogPeriod === 'monthly' 
-                ? (totalsDialogType === 'surveys' ? recruiter.stats.monthly.surveys : recruiter.stats.monthly.leads)
-                : (totalsDialogType === 'surveys' ? recruiter.stats.allTime.surveys : recruiter.stats.allTime.leads);
+                ? (totalsDialogType === 'surveys' ? recruiter.stats.monthly.surveys : recruiter.stats.monthly.total)
+                : (totalsDialogType === 'surveys' ? recruiter.stats.allTime.surveys : recruiter.stats.allTime.total);
               
               if (count === 0) return null;
               
@@ -1315,22 +1315,22 @@ function StationCommanderDashboardContent() {
             })}
             {recruiters.filter(r => {
               const count = totalsDialogPeriod === 'monthly' 
-                ? (totalsDialogType === 'surveys' ? r.stats.monthly.surveys : r.stats.monthly.leads)
-                : (totalsDialogType === 'surveys' ? r.stats.allTime.surveys : r.stats.allTime.leads);
+                ? (totalsDialogType === 'surveys' ? r.stats.monthly.surveys : r.stats.monthly.total)
+                : (totalsDialogType === 'surveys' ? r.stats.allTime.surveys : r.stats.allTime.total);
               return count === 0;
             }).length > 0 && (
               <div className="text-center py-4 text-gray-500 text-xs sm:text-sm">
                 {recruiters.filter(r => {
                   const count = totalsDialogPeriod === 'monthly' 
-                    ? (totalsDialogType === 'surveys' ? r.stats.monthly.surveys : r.stats.monthly.leads)
-                    : (totalsDialogType === 'surveys' ? r.stats.allTime.surveys : r.stats.allTime.leads);
+                    ? (totalsDialogType === 'surveys' ? r.stats.monthly.surveys : r.stats.monthly.total)
+                    : (totalsDialogType === 'surveys' ? r.stats.allTime.surveys : r.stats.allTime.total);
                   return count === 0;
                 }).length} recruiter{recruiters.filter(r => {
                   const count = totalsDialogPeriod === 'monthly' 
-                    ? (totalsDialogType === 'surveys' ? r.stats.monthly.surveys : r.stats.monthly.leads)
-                    : (totalsDialogType === 'surveys' ? r.stats.allTime.surveys : r.stats.allTime.leads);
+                    ? (totalsDialogType === 'surveys' ? r.stats.monthly.surveys : r.stats.monthly.total)
+                    : (totalsDialogType === 'surveys' ? r.stats.allTime.surveys : r.stats.allTime.total);
                   return count === 0;
-                }).length !== 1 ? 's' : ''} with no {totalsDialogType === 'surveys' ? 'surveys' : 'leads'}
+                }).length !== 1 ? 's' : ''} with no {totalsDialogType === 'surveys' ? 'surveys' : 'applications'}
               </div>
             )}
           </div>
