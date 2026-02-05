@@ -113,7 +113,7 @@ export default function ShippersPage() {
   const { data: qualifiedApplicants = [] } = useQuery<QualifiedApplicant[]>({
     queryKey: ["/api/recruits"],
     select: (data: any[]) => data.filter(recruit => 
-      recruit.status === "lead" && 
+      (recruit.status === "lead" || recruit.status === "qualified") && 
       !recruit.shipDate
     ),
     enabled: addShipperDialogOpen,
