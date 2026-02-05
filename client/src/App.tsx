@@ -32,6 +32,7 @@ import RecruitDetail from "@/pages/recruit-detail";
 import ProspectingMap from "@/pages/prospecting-map";
 import AdminRequests from "@/pages/admin-requests";
 import StationCommanderDashboard from "@/pages/station-commander-dashboard";
+import ShippersPage from "@/pages/shippers";
 
 // Public pages
 import ApplyPage from "@/pages/apply";
@@ -68,6 +69,7 @@ function Router() {
       
       {/* Station Commander routes */}
       <Route path="/station-commander" component={StationCommanderDashboard} />
+      <Route path="/shippers" component={ShippersPage} />
       
       {/* 404 */}
       <Route component={NotFound} />

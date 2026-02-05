@@ -17,6 +17,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { checkUpcomingShippers } from "./shipper-notifications";
 
 const app = express();
 
@@ -174,6 +175,37 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+      
+      // Start shipper notification scheduler (runs daily at 8 AM)
+      const scheduleShipperNotifications = () => {
+        const now = new Date();
+        const scheduledTime = new Date();
+        scheduledTime.setHours(8, 0, 0, 0); // 8 AM
+        
+        // If it's already past 8 AM today, schedule for tomorrow
+        if (now > scheduledTime) {
+          scheduledTime.setDate(scheduledTime.getDate() + 1);
+        }
+        
+        const timeUntilRun = scheduledTime.getTime() - now.getTime();
+        
+        setTimeout(() => {
+          checkUpcomingShippers().catch((error) => {
+            console.error('❌ Error in shipper notification check:', error);
+          });
+          
+          // Reschedule for next day
+          setInterval(() => {
+            checkUpcomingShippers().catch((error) => {
+              console.error('❌ Error in shipper notification check:', error);
+            });
+          }, 24 * 60 * 60 * 1000); // Run every 24 hours
+        }, timeUntilRun);
+        
+        log(`📅 Shipper notifications scheduled for ${scheduledTime.toLocaleString()}`);
+      };
+      
+      scheduleShipperNotifications();
     }
   );
 })();

@@ -42,8 +42,8 @@ import {
   sendStationChangeRequestNotification,
 } from "./auth";
 import { db } from "./database";
-import { users, qrScans, qrCodeLocations } from "@shared/schema";
-import { eq, sql, and, desc, inArray } from "drizzle-orm";
+import { users, qrScans, qrCodeLocations, notifications, recruits, armyMOS } from "@shared/schema";
+import { eq, sql, and, desc, inArray, lte, gte } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // AUTHENTICATION ENDPOINTS
@@ -3775,6 +3775,234 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message:
           error instanceof Error ? error.message : "Failed to get AI response",
       });
+    }
+  });
+
+  // SHIPPER TRACKING ENDPOINTS
+
+  // Get upcoming shippers for station commander
+  app.get("/api/shippers", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Only station commanders and admins can see shippers
+      if (!['station_commander', 'admin'].includes(user.role)) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // Get all recruits with ship dates for this station
+      const shippers = await db
+        .select({
+          id: recruits.id,
+          firstName: recruits.firstName,
+          lastName: recruits.lastName,
+          email: recruits.email,
+          phone: recruits.phone,
+          shipDate: recruits.shipDate,
+          component: recruits.component,
+          actualMOS: recruits.actualMOS,
+          preferredMOS: recruits.preferredMOS,
+          status: recruits.status,
+          recruiterId: recruits.recruiterId,
+          recruiterName: users.fullName,
+          recruiterEmail: users.email,
+          recruiterRank: users.rank,
+        })
+        .from(recruits)
+        .leftJoin(users, eq(recruits.recruiterId, users.id))
+        .where(
+          and(
+            eq(users.stationId, user.stationId),
+            sql`${recruits.shipDate} IS NOT NULL`
+          )
+        )
+        .orderBy(recruits.shipDate);
+
+      res.json(shippers);
+    } catch (error) {
+      console.error("Error fetching shippers:", error);
+      res.status(500).json({ error: "Failed to fetch shippers" });
+    }
+  });
+
+  // Update recruit shipping info
+  app.patch("/api/recruits/:id/shipping", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { id } = req.params;
+      const { shipDate, component, actualMOS } = req.body;
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Check permissions
+      if (!['recruiter', 'station_commander', 'admin'].includes(user.role)) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // Update the recruit
+      await db
+        .update(recruits)
+        .set({
+          shipDate,
+          component,
+          actualMOS,
+        })
+        .where(eq(recruits.id, id));
+
+      res.json({ message: "Shipping info updated successfully" });
+    } catch (error) {
+      console.error("Error updating shipping info:", error);
+      res.status(500).json({ error: "Failed to update shipping info" });
+    }
+  });
+
+  // MOS ENDPOINTS
+
+  // Get all Army MOS
+  app.get("/api/mos", async (req, res) => {
+    try {
+      const mosList = await db
+        .select()
+        .from(armyMOS)
+        .orderBy(armyMOS.category, armyMOS.mosCode);
+
+      res.json(mosList);
+    } catch (error) {
+      console.error("Error fetching MOS list:", error);
+      res.status(500).json({ error: "Failed to fetch MOS list" });
+    }
+  });
+
+  // Get specific MOS by code
+  app.get("/api/mos/:code", async (req, res) => {
+    try {
+      const { code } = req.params;
+      const [mos] = await db
+        .select()
+        .from(armyMOS)
+        .where(eq(armyMOS.mosCode, code.toUpperCase()));
+
+      if (!mos) {
+        return res.status(404).json({ error: "MOS not found" });
+      }
+
+      res.json(mos);
+    } catch (error) {
+      console.error("Error fetching MOS:", error);
+      res.status(500).json({ error: "Failed to fetch MOS" });
+    }
+  });
+
+  // NOTIFICATION ENDPOINTS
+
+  // Get user notifications
+  app.get("/api/notifications", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const userNotifications = await db
+        .select()
+        .from(notifications)
+        .where(eq(notifications.userId, userId))
+        .orderBy(desc(notifications.createdAt))
+        .limit(50);
+
+      res.json(userNotifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+
+  // Get unread notification count
+  app.get("/api/notifications/unread-count", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const [result] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.userId, userId),
+            eq(notifications.read, false)
+          )
+        );
+
+      res.json({ count: result.count });
+    } catch (error) {
+      console.error("Error fetching unread count:", error);
+      res.status(500).json({ error: "Failed to fetch unread count" });
+    }
+  });
+
+  // Mark notification as read
+  app.patch("/api/notifications/:id/read", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { id } = req.params;
+
+      await db
+        .update(notifications)
+        .set({ read: true })
+        .where(
+          and(
+            eq(notifications.id, id),
+            eq(notifications.userId, userId)
+          )
+        );
+
+      res.json({ message: "Notification marked as read" });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ error: "Failed to mark notification as read" });
+    }
+  });
+
+  // Mark all notifications as read
+  app.patch("/api/notifications/read-all", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      await db
+        .update(notifications)
+        .set({ read: true })
+        .where(eq(notifications.userId, userId));
+
+      res.json({ message: "All notifications marked as read" });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ error: "Failed to mark all notifications as read" });
     }
   });
 

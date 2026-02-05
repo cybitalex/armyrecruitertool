@@ -13,7 +13,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { FileText, Home, Shield, MapPin, Menu, LogOut, User, Users, Settings, HelpCircle } from "lucide-react";
+import { FileText, Home, Shield, MapPin, Menu, LogOut, User, Users, Settings, HelpCircle, Ship, Bell } from "lucide-react";
 import { Tutorial, getTutorialPage } from "@/components/tutorial";
 
 export function Header() {
@@ -51,6 +51,16 @@ export function Header() {
 
   const pendingRequestCount = pendingCounts?.total || 0;
 
+  // Fetch unread notification count (poll every 30 seconds)
+  const { data: notificationData } = useQuery<{ count: number }>({
+    queryKey: ['/api/notifications/unread-count'],
+    enabled: isLoggedIn,
+    refetchInterval: 30000, // Poll every 30 seconds
+    staleTime: 10000,
+  });
+
+  const unreadNotificationCount = notificationData?.count || 0;
+
   // Hide main app navigation when viewing the public survey page
   const isSurveyRoute = location.startsWith("/survey");
 
@@ -82,6 +92,13 @@ export function Header() {
       label: "Station Overview",
       icon: Users,
       testId: "nav-station-commander",
+      roles: ["station_commander", "admin"],
+    },
+    {
+      path: "/shippers",
+      label: "Shippers",
+      icon: Ship,
+      testId: "nav-shippers",
       roles: ["station_commander", "admin"],
     },
     {
@@ -209,10 +226,26 @@ export function Header() {
                       <Button
                         variant="ghost"
                         onClick={() => {
+                          navigate("/notifications");
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full justify-start text-army-tan hover:text-army-gold hover:bg-army-green border-t border-army-field01 mt-4 pt-4 relative"
+                      >
+                        <Bell className="w-4 h-4 mr-3" />
+                        Notifications
+                        {unreadNotificationCount > 0 && (
+                          <Badge className="absolute right-4 bg-red-600 text-white text-[10px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full">
+                            {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                          </Badge>
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
                           setTutorialOpen(true);
                           setMobileMenuOpen(false);
                         }}
-                        className="w-full justify-start text-army-tan hover:text-army-gold hover:bg-army-green border-t border-army-field01 mt-4 pt-4"
+                        className="w-full justify-start text-army-tan hover:text-army-gold hover:bg-army-green"
                       >
                         <HelpCircle className="w-4 h-4 mr-3" />
                         Help & Tutorial
@@ -239,7 +272,7 @@ export function Header() {
 
         {/* Desktop Navigation (hidden on public survey route) */}
         {!isSurveyRoute && (
-          <nav className="hidden md:flex items-center gap-2">
+          <nav className="hidden md:flex items-center gap-1">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const showBadge = item.path === "/admin/requests" && pendingRequestCount > 0;
@@ -249,14 +282,15 @@ export function Header() {
                   variant={location === item.path ? "default" : "ghost"}
                   onClick={() => navigate(item.path)}
                   data-testid={item.testId}
+                  size="sm"
                   className={`relative ${
                     location === item.path
                       ? "bg-army-gold text-army-black hover:bg-army-gold/90 font-semibold"
                       : "text-army-tan hover:text-army-gold hover:bg-army-green"
                   }`}
                 >
-                  <Icon className="w-4 h-4 mr-2" />
-                  {item.label}
+                  <Icon className="w-4 h-4 md:mr-1" />
+                  <span className="hidden lg:inline">{item.label}</span>
                   {showBadge && (
                     <Badge className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full border-2 border-army-black">
                       {pendingRequestCount > 99 ? '99+' : pendingRequestCount}
@@ -269,23 +303,39 @@ export function Header() {
               <>
                 <Button
                   variant="ghost"
-                  onClick={() => setTutorialOpen(true)}
-                  className="text-army-tan hover:text-army-gold hover:bg-army-green ml-2"
-                  title="Help & Tutorial"
+                  size="sm"
+                  onClick={() => navigate("/notifications")}
+                  className="text-army-tan hover:text-army-gold hover:bg-army-green relative"
+                  title="Notifications"
                 >
-                  <HelpCircle className="w-4 h-4 mr-2" />
-                  Help
+                  <Bell className="w-4 h-4" />
+                  {unreadNotificationCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full border-2 border-army-black">
+                      {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                    </Badge>
+                  )}
                 </Button>
                 <Button
                   variant="ghost"
+                  size="sm"
+                  onClick={() => setTutorialOpen(true)}
+                  className="text-army-tan hover:text-army-gold hover:bg-army-green"
+                  title="Help & Tutorial"
+                >
+                  <HelpCircle className="w-4 h-4 lg:mr-1" />
+                  <span className="hidden lg:inline">Help</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={async () => {
                     await logout();
                     navigate("/login");
                   }}
-                  className="text-army-tan hover:text-red-400 hover:bg-red-900/20 ml-2 border-l border-army-field01 pl-3"
+                  className="text-army-tan hover:text-red-400 hover:bg-red-900/20 border-l border-army-field01 pl-2"
                 >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
+                  <LogOut className="w-4 h-4 lg:mr-1" />
+                  <span className="hidden lg:inline">Logout</span>
                 </Button>
               </>
             )}

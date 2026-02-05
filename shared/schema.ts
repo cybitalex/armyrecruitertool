@@ -103,6 +103,11 @@ export const recruits = pgTable("recruits", {
   source: text("source").notNull().default("direct"), // "qr_code" or "direct"
   ipAddress: text("ip_address"), // Track submission IP
   submittedAt: timestamp("submitted_at").notNull().defaultNow(),
+  // Shipper tracking fields
+  shipDate: date("ship_date"), // Date shipping to basic training
+  component: text("component"), // "active" or "reserve"
+  actualMOS: text("actual_mos"), // MOS assigned (different from preferred)
+  shipNotificationSent: boolean("ship_notification_sent").default(false), // Track if 3-day notification was sent
 });
 
 export const insertRecruitSchema = createInsertSchema(recruits).omit({
@@ -342,3 +347,49 @@ export type InsertStationChangeRequest = z.infer<
   typeof insertStationChangeRequestSchema
 >;
 export type StationChangeRequest = typeof stationChangeRequests.$inferSelect;
+
+// Notifications table for in-app notifications
+export const notifications = pgTable("notifications", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  type: text("type").notNull(), // 'shipper_alert', 'general', etc.
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  link: text("link"), // Optional link to relevant page
+  read: boolean("read").default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;
+
+// Army MOS (Military Occupational Specialties) table
+export const armyMOS = pgTable("army_mos", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  mosCode: text("mos_code").notNull().unique(), // e.g., "11B", "68W"
+  title: text("title").notNull(), // Job title
+  description: text("description"), // Job description
+  category: text("category").notNull(), // e.g., "Infantry", "Medical", "Aviation"
+  component: text("component"), // "Active", "Reserve", "Both"
+  isOfficer: boolean("is_officer").default(false), // Officer vs Enlisted
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertArmyMOSSchema = createInsertSchema(armyMOS).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertArmyMOS = z.infer<typeof insertArmyMOSSchema>;
+export type ArmyMOS = typeof armyMOS.$inferSelect;

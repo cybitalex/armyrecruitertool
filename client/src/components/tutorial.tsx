@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import type { User as UserType } from "@shared/schema";
 import { useAuth } from "@/lib/auth-context";
-import { Calendar, MessageSquare, Download, BarChart3, Filter } from "lucide-react";
+import { Calendar, MessageSquare, Download, BarChart3, Filter, Ship, Briefcase, Bell } from "lucide-react";
 
 interface TutorialStep {
   title: string;
@@ -309,9 +309,33 @@ const tutorialContent: Record<string, TutorialContent> = {
         icon: Users,
       },
       {
+        title: "Shippers Dashboard - Track Future Soldiers",
+        description:
+          "The Shippers Dashboard (accessible via the 'Shippers' tab in the header) is your command center for tracking recruits who are preparing to ship to basic training. This feature provides comprehensive oversight of all upcoming shippers across your station, organized by ship date with automatic urgency indicators. Red badges indicate shippers leaving within 3 days (critical timeline), orange badges show those shipping within 7 days (attention needed), and gray badges represent future ships. For each shipper, you'll see their ship date, component (Active Duty or Reserve), assigned MOS with full job details, and which recruiter is responsible for their processing.",
+        icon: Ship,
+      },
+      {
+        title: "MOS Information and Tracking",
+        description:
+          "When viewing shippers, each Military Occupational Specialty (MOS) code is interactive. On desktop, hover your cursor over any MOS code (like '11B' or '68W') to see a tooltip displaying the complete job title, detailed description, and category. On mobile devices, the MOS information displays automatically below each shipper entry in an easy-to-read card format. This helps you quickly understand what role each future soldier will fulfill and ensure proper pipeline management across different job categories. You can update shipping information (ship date, component, or MOS) by clicking 'Edit Info' on any shipper card - useful when dates change or when a recruit's MOS is finalized after MEPS processing.",
+        icon: Briefcase,
+      },
+      {
+        title: "Automated Shipper Notifications",
+        description:
+          "The system automatically monitors all upcoming ship dates and sends notifications 3 days before departure. These alerts are delivered both via email and as in-app notifications (visible via the bell icon in the header). Notifications are sent to you as Station Commander, the assigned recruiter, and any admins. Email notifications include complete shipper details: name, exact ship date with day-of-week, component, MOS, and recruiter name, plus a direct link to the Shippers Dashboard. This automation ensures no shipper falls through the cracks during the critical final days before departure. In-app notifications accumulate in your notification center and show an unread count badge, so you'll never miss time-sensitive shipper updates.",
+        icon: Bell,
+      },
+      {
+        title: "Shipper Statistics and Insights",
+        description:
+          "At the top of the Shippers Dashboard, four key metrics provide instant situational awareness: Total Shippers (everyone with a ship date), Shipping Next 7 Days (immediate attention required), Active Component count, and Reserve Component count. Use these numbers to balance workload across recruiters, identify peak shipping periods, and ensure adequate station manning during high-volume ship weeks. The dashboard automatically refreshes every minute to reflect real-time changes. Sort the shipper list by date to prioritize follow-ups, or filter mentally by recruiter name to see each team member's ship pipeline. This visibility helps you coach recruiters on proper ship preparation timelines and recognize those who consistently get applicants to the finish line.",
+        icon: BarChart3,
+      },
+      {
         title: "Best Practices for Station Commanders",
         description:
-          "Daily: Review the Overview tab each morning to check for new activity and ensure no critical leads are aging without follow-up. Weekly: Sort recruiters by different metrics to identify coaching opportunities and recognize excellence. Conduct spot-checks on the Leads tab to ensure data quality and appropriate status updates. Monthly: Export comprehensive reports for higher headquarters. Compare current month to previous periods. Hold team meetings to share best practices from top performers. Quarterly: Analyze long-term trends in conversion rates, lead sources, and overall productivity. Update station SOPs based on what the data reveals. This consistent, data-driven approach transforms recruiting management from reactive to proactive.",
+          "Daily: Review the Overview tab each morning to check for new activity and ensure no critical leads are aging without follow-up. Check the Shippers Dashboard for any red-badge (≤3 days) departures requiring final coordination. Weekly: Sort recruiters by different metrics to identify coaching opportunities and recognize excellence. Review upcoming shippers for the next 7-14 days and ensure recruiters have completed all pre-ship requirements. Monthly: Export comprehensive reports for higher headquarters. Compare current month to previous periods. Hold team meetings to share best practices from top performers. Analyze ship success rates and identify any patterns in last-minute cancellations. Quarterly: Analyze long-term trends in conversion rates, lead sources, ship rates, and overall productivity. Update station SOPs based on what the data reveals. This consistent, data-driven approach transforms recruiting management from reactive to proactive.",
         icon: CheckCircle2,
       },
     ],
