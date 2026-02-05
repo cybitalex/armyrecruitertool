@@ -303,6 +303,12 @@ export default function RecruitDetail() {
                   {new Date(recruit.submittedAt).toLocaleDateString()}
                 </div>
                 <div>{getStatusBadge(recruit.status)}</div>
+                <Badge 
+                  variant={(recruit as any).shipDate ? "default" : "secondary"}
+                  className={(recruit as any).shipDate ? "bg-green-600" : ""}
+                >
+                  {(recruit as any).shipDate ? "🚢 Shipping" : "📋 Not Shipping"}
+                </Badge>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">

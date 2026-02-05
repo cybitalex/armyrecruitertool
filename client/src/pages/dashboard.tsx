@@ -466,6 +466,12 @@ function DashboardContent() {
                             <Badge variant="outline" className={`text-xs ${getStatusColor(recruit.status)}`}>
                               {recruit.status}
                             </Badge>
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs ${(recruit as any).shipDate ? "bg-green-50 text-green-700 border-green-300" : "bg-gray-50 text-gray-600"}`}
+                            >
+                              {(recruit as any).shipDate ? "🚢 Shipping" : "📋 Not Shipping"}
+                            </Badge>
                           </div>
                         </div>
                         <div className="text-left sm:text-right text-xs sm:text-sm text-gray-500 whitespace-nowrap">
@@ -618,6 +624,12 @@ function DashboardContent() {
                             </Badge>
                             <Badge variant="outline" className={`text-xs ${getStatusColor(recruit.status)}`}>
                               {recruit.status}
+                            </Badge>
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs ${(recruit as any).shipDate ? "bg-green-50 text-green-700 border-green-300" : "bg-gray-50 text-gray-600"}`}
+                            >
+                              {(recruit as any).shipDate ? "🚢 Shipping" : "📋 Not Shipping"}
                             </Badge>
                             {recruit.preferredMOS && (
                               <Badge variant="outline" className="text-xs bg-green-50">
