@@ -134,11 +134,13 @@ function ShippersPageContent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/shippers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/recruits"] });
       toast({
         title: "Shipping Info Updated",
         description: "The recruit's shipping information has been updated successfully.",
       });
       setEditDialogOpen(false);
+      setAddShipperDialogOpen(false);
     },
     onError: (error: Error) => {
       toast({
