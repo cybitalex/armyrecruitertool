@@ -111,11 +111,11 @@ function ShippersPageContent() {
     staleTime: Infinity, // MOS list doesn't change often
   });
 
-  // Fetch qualified applicants (those without ship date)
+  // Fetch qualified applicants (those with qualified status and no ship date)
   const { data: qualifiedApplicants = [] } = useQuery<QualifiedApplicant[]>({
     queryKey: ["/api/recruits"],
     select: (data: any[]) => data.filter(recruit => 
-      (recruit.status === "lead" || recruit.status === "qualified") && 
+      recruit.status === "qualified" && 
       !recruit.shipDate
     ),
     enabled: addShipperDialogOpen,
