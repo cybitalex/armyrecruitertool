@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth, ProtectedRoute } from "@/lib/auth-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -81,8 +82,9 @@ interface MOSDetails {
   isOfficer: boolean;
 }
 
-export default function ShippersPage() {
+function ShippersPageContent() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const [selectedShipper, setSelectedShipper] = useState<Shipper | null>(null);
@@ -734,5 +736,13 @@ export default function ShippersPage() {
         </AlertDialog>
       </div>
     </div>
+  );
+}
+
+export default function ShippersPage() {
+  return (
+    <ProtectedRoute allowedRoles={["station_commander", "admin"]}>
+      <ShippersPageContent />
+    </ProtectedRoute>
   );
 }
