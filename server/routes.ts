@@ -3800,32 +3800,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get all recruits with ship dates for this station
-      const shippers = await db
-        .select({
-          id: recruits.id,
-          firstName: recruits.firstName,
-          lastName: recruits.lastName,
-          email: recruits.email,
-          phone: recruits.phone,
-          shipDate: recruits.shipDate,
-          component: recruits.component,
-          actualMOS: recruits.actualMOS,
-          preferredMOS: recruits.preferredMOS,
-          status: recruits.status,
-          recruiterId: recruits.recruiterId,
-          recruiterName: users.fullName,
-          recruiterEmail: users.email,
-          recruiterRank: users.rank,
-        })
-        .from(recruits)
-        .leftJoin(users, eq(recruits.recruiterId, users.id))
-        .where(
-          and(
-            eq(users.stationId, user.stationId),
-            sql`${recruits.shipDate} IS NOT NULL`
+      // For admins, show all shippers; for station commanders, only their station
+      let shippers;
+      
+      if (user.role === 'admin') {
+        // Admins see all shippers across all stations
+        shippers = await db
+          .select({
+            id: recruits.id,
+            firstName: recruits.firstName,
+            lastName: recruits.lastName,
+            email: recruits.email,
+            phone: recruits.phone,
+            shipDate: recruits.shipDate,
+            component: recruits.component,
+            actualMOS: recruits.actualMOS,
+            preferredMOS: recruits.preferredMOS,
+            status: recruits.status,
+            recruiterId: recruits.recruiterId,
+            recruiterName: users.fullName,
+            recruiterEmail: users.email,
+            recruiterRank: users.rank,
+          })
+          .from(recruits)
+          .leftJoin(users, eq(recruits.recruiterId, users.id))
+          .where(sql`${recruits.shipDate} IS NOT NULL`)
+          .orderBy(recruits.shipDate);
+      } else {
+        // Station commanders see only their station's shippers
+        const recruiterIds = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.stationId, user.stationId));
+        
+        const recruiterIdsList = recruiterIds.map(r => r.id);
+        
+        shippers = await db
+          .select({
+            id: recruits.id,
+            firstName: recruits.firstName,
+            lastName: recruits.lastName,
+            email: recruits.email,
+            phone: recruits.phone,
+            shipDate: recruits.shipDate,
+            component: recruits.component,
+            actualMOS: recruits.actualMOS,
+            preferredMOS: recruits.preferredMOS,
+            status: recruits.status,
+            recruiterId: recruits.recruiterId,
+            recruiterName: users.fullName,
+            recruiterEmail: users.email,
+            recruiterRank: users.rank,
+          })
+          .from(recruits)
+          .leftJoin(users, eq(recruits.recruiterId, users.id))
+          .where(
+            and(
+              inArray(recruits.recruiterId, recruiterIdsList),
+              sql`${recruits.shipDate} IS NOT NULL`
+            )
           )
-        )
-        .orderBy(recruits.shipDate);
+          .orderBy(recruits.shipDate);
+      }
 
       res.json(shippers);
     } catch (error) {

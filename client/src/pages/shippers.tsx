@@ -210,6 +210,19 @@ function ShippersPageContent() {
     });
   };
 
+  const handleClearShippingInfo = () => {
+    if (!selectedShipper) return;
+
+    updateShippingInfo.mutate({
+      id: selectedShipper.id,
+      data: {
+        shipDate: null,
+        component: null,
+        actualMOS: null,
+      },
+    });
+  };
+
   const handleAddShipperSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedApplicantId) {
@@ -579,17 +592,28 @@ function ShippersPageContent() {
                 />
               </div>
 
-              <div className="flex justify-end gap-2">
+              <div className="flex flex-col sm:flex-row justify-between gap-2">
                 <Button
                   type="button"
-                  variant="outline"
-                  onClick={() => setEditDialogOpen(false)}
+                  variant="destructive"
+                  onClick={handleClearShippingInfo}
+                  disabled={updateShippingInfo.isPending}
+                  className="sm:mr-auto"
                 >
-                  Cancel
+                  Clear Shipping Info
                 </Button>
-                <Button type="submit" disabled={updateShippingInfo.isPending}>
-                  {updateShippingInfo.isPending ? "Updating..." : "Update"}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={updateShippingInfo.isPending}>
+                    {updateShippingInfo.isPending ? "Updating..." : "Update"}
+                  </Button>
+                </div>
               </div>
             </form>
           </DialogContent>
