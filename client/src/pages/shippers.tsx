@@ -103,6 +103,7 @@ function ShippersPageContent() {
   const { data: shippers = [], isLoading } = useQuery<Shipper[]>({
     queryKey: ["/api/shippers"],
     refetchInterval: 60000, // Refresh every minute
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   });
 
   // Fetch MOS list
@@ -132,9 +133,12 @@ function ShippersPageContent() {
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
       await apiRequest("PATCH", `/api/recruits/${id}/shipping`, data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/shippers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/recruits"] });
+    onSuccess: async () => {
+      // Invalidate and refetch queries immediately
+      await queryClient.invalidateQueries({ queryKey: ["/api/shippers"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/recruits"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/shippers"] });
+      
       toast({
         title: "Shipping Info Updated",
         description: "The recruit's shipping information has been updated successfully.",
