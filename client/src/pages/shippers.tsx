@@ -30,9 +30,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Ship, User, Calendar, MapPin, Briefcase, AlertCircle, Info, Trash2, Plus } from "lucide-react";
+import { Ship, User, Calendar, MapPin, Briefcase, AlertCircle, Info, Trash2, Plus, Edit, Mail, Phone as PhoneIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 import {
   Tooltip,
   TooltipContent,
@@ -57,6 +58,19 @@ interface Shipper {
   recruiterRank: string | null;
 }
 
+interface QualifiedApplicant {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  preferredMOS: string | null;
+  status: string;
+  recruiterId: string;
+  recruiterName: string;
+  recruiterRank: string | null;
+}
+
 interface MOSDetails {
   id: string;
   mosCode: string;
@@ -70,10 +84,13 @@ interface MOSDetails {
 export default function ShippersPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   const [selectedShipper, setSelectedShipper] = useState<Shipper | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [addShipperDialogOpen, setAddShipperDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [shipperToDelete, setShipperToDelete] = useState<Shipper | null>(null);
+  const [selectedApplicantId, setSelectedApplicantId] = useState<string>("");
   const [editFormData, setEditFormData] = useState({
     shipDate: "",
     component: "",
@@ -90,6 +107,16 @@ export default function ShippersPage() {
   const { data: mosList = [] } = useQuery<MOSDetails[]>({
     queryKey: ["/api/mos"],
     staleTime: Infinity, // MOS list doesn't change often
+  });
+
+  // Fetch qualified applicants (those without ship date)
+  const { data: qualifiedApplicants = [] } = useQuery<QualifiedApplicant[]>({
+    queryKey: ["/api/recruits"],
+    select: (data: any[]) => data.filter(recruit => 
+      recruit.status === "lead" && 
+      !recruit.shipDate
+    ),
+    enabled: addShipperDialogOpen,
   });
 
   // Helper to get MOS details
@@ -127,6 +154,7 @@ export default function ShippersPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/shippers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/recruits"] });
       toast({
         title: "Shipper Deleted",
         description: "The recruit has been removed from the system.",
@@ -143,6 +171,7 @@ export default function ShippersPage() {
     },
   });
 
+
   const handleEditClick = (shipper: Shipper) => {
     setSelectedShipper(shipper);
     setEditFormData({
@@ -153,6 +182,16 @@ export default function ShippersPage() {
     setEditDialogOpen(true);
   };
 
+  const handleAddShipperClick = () => {
+    setSelectedApplicantId("");
+    setEditFormData({
+      shipDate: "",
+      component: "",
+      actualMOS: "",
+    });
+    setAddShipperDialogOpen(true);
+  };
+
   const handleUpdateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedShipper) return;
@@ -161,6 +200,28 @@ export default function ShippersPage() {
       id: selectedShipper.id,
       data: editFormData,
     });
+  };
+
+  const handleAddShipperSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedApplicantId) {
+      toast({
+        title: "No Applicant Selected",
+        description: "Please select an applicant from the list.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updateShippingInfo.mutate({
+      id: selectedApplicantId,
+      data: editFormData,
+    });
+    setAddShipperDialogOpen(false);
+  };
+
+  const handleShipperClick = (shipperId: string) => {
+    navigate(`/recruits/${shipperId}`);
   };
 
   const getDaysUntilShip = (shipDate: string) => {
@@ -204,30 +265,29 @@ export default function ShippersPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <Ship className="w-8 h-8 text-green-700" />
-              Shippers Dashboard
-            </h1>
-            <p className="mt-2 text-gray-600">
-              Track recruits shipping to basic training
-            </p>
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
+                <Ship className="w-6 h-6 sm:w-8 sm:h-8 text-green-700" />
+                Shippers Dashboard
+              </h1>
+              <p className="mt-2 text-sm sm:text-base text-gray-600">
+                Track recruits shipping to basic training
+              </p>
+            </div>
+            <Button
+              onClick={handleAddShipperClick}
+              className="w-full sm:w-auto"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Shipper
+            </Button>
           </div>
-          <Button
-            onClick={() => {
-              setSelectedShipper(null);
-              setEditFormData({ shipDate: "", component: "", actualMOS: "" });
-              setEditDialogOpen(true);
-            }}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Shipper
-          </Button>
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-8">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -296,14 +356,19 @@ export default function ShippersPage() {
 
               return (
                 <Card key={shipper.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <h3 className="text-lg font-semibold text-gray-900">
+                  <CardContent className="p-4 sm:p-6">
+                    {/* Mobile: Stack vertically, Desktop: Side by side */}
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        {/* Name and Badges */}
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                          <h3 
+                            className="text-base sm:text-lg font-semibold text-gray-900 hover:text-blue-600 cursor-pointer transition-colors"
+                            onClick={() => handleShipperClick(shipper.id)}
+                          >
                             {shipper.firstName} {shipper.lastName}
                           </h3>
-                          <Badge variant={urgency}>
+                          <Badge variant={urgency} className="text-xs">
                             {daysUntilShip === 0
                               ? "Ships Today"
                               : daysUntilShip === 1
@@ -311,36 +376,37 @@ export default function ShippersPage() {
                               : `${daysUntilShip} days`}
                           </Badge>
                           {shipper.component && (
-                            <Badge variant={shipper.component === "active" ? "default" : "secondary"}>
+                            <Badge variant={shipper.component === "active" ? "default" : "secondary"} className="text-xs">
                               {shipper.component.toUpperCase()}
                             </Badge>
                           )}
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <Calendar className="w-4 h-4" />
-                            <span>
+                        {/* Details Grid */}
+                        <div className="grid grid-cols-1 gap-3 text-xs sm:text-sm">
+                          <div className="flex items-start gap-2 text-gray-600">
+                            <Calendar className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                            <span className="break-words">
                               <strong>Ship Date:</strong>{" "}
                               {new Date(shipper.shipDate).toLocaleDateString("en-US", {
-                                weekday: "long",
+                                weekday: "short",
                                 year: "numeric",
-                                month: "long",
+                                month: "short",
                                 day: "numeric",
                               })}
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <User className="w-4 h-4" />
-                            <span>
+                          <div className="flex items-start gap-2 text-gray-600">
+                            <User className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                            <span className="break-words">
                               <strong>Recruiter:</strong> {shipper.recruiterRank}{" "}
                               {shipper.recruiterName}
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <Briefcase className="w-4 h-4" />
+                          <div className="flex items-start gap-2 text-gray-600">
+                            <Briefcase className="w-4 h-4 flex-shrink-0 mt-0.5" />
                             <span>
                               <strong>MOS:</strong>{" "}
                               {shipper.actualMOS || shipper.preferredMOS ? (
@@ -383,49 +449,51 @@ export default function ShippersPage() {
                             </span>
                           </div>
                           
-                          {/* Mobile-friendly MOS details */}
-                          <div className="md:hidden mt-2 p-2 bg-blue-50 rounded-md text-xs">
-                            {(() => {
-                              const mosDetails = getMOSDetails(
-                                shipper.actualMOS || shipper.preferredMOS
-                              );
-                              if (mosDetails) {
-                                return (
-                                  <div className="space-y-1">
-                                    <p className="font-semibold text-blue-900">
-                                      {mosDetails.title}
-                                    </p>
-                                    {mosDetails.description && (
-                                      <p className="text-gray-700">
-                                        {mosDetails.description}
-                                      </p>
-                                    )}
-                                    <p className="text-blue-700">
-                                      Category: {mosDetails.category}
-                                    </p>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            })()}
-                          </div>
-
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <MapPin className="w-4 h-4" />
-                            <span>
+                          <div className="flex items-start gap-2 text-gray-600">
+                            <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                            <span className="break-words">
                               <strong>Phone:</strong> {shipper.phone}
                             </span>
                           </div>
                         </div>
+
+                        {/* Mobile-friendly MOS details */}
+                        {(() => {
+                          const mosDetails = getMOSDetails(
+                            shipper.actualMOS || shipper.preferredMOS
+                          );
+                          if (mosDetails) {
+                            return (
+                              <div className="sm:hidden mt-3 p-3 bg-blue-50 rounded-md text-xs border border-blue-200">
+                                <div className="space-y-1">
+                                  <p className="font-semibold text-blue-900">
+                                    {mosDetails.title}
+                                  </p>
+                                  {mosDetails.description && (
+                                    <p className="text-gray-700">
+                                      {mosDetails.description}
+                                    </p>
+                                  )}
+                                  <p className="text-blue-700">
+                                    Category: {mosDetails.category}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
 
-                      <div className="flex gap-2">
+                      {/* Action Buttons - Full width on mobile */}
+                      <div className="flex gap-2 w-full sm:w-auto sm:flex-shrink-0">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleEditClick(shipper)}
+                          className="flex-1 sm:flex-initial"
                         >
-                          Edit Info
+                          <span className="sm:mr-2">Edit</span>
                         </Button>
                         <Button
                           variant="destructive"
@@ -434,6 +502,7 @@ export default function ShippersPage() {
                             setShipperToDelete(shipper);
                             setDeleteDialogOpen(true);
                           }}
+                          className="px-3"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -446,28 +515,17 @@ export default function ShippersPage() {
           </div>
         )}
 
-        {/* Edit/Add Dialog */}
+        {/* Edit Ship Info Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>
-                {selectedShipper ? "Edit Shipping Information" : "Add New Shipper"}
-              </DialogTitle>
+              <DialogTitle>Edit Shipping Information</DialogTitle>
               <DialogDescription>
-                {selectedShipper
-                  ? "Update the recruit's shipping details"
-                  : "Add shipping information for an existing recruit"}
+                Update the recruit's shipping details
               </DialogDescription>
             </DialogHeader>
 
             <form onSubmit={handleUpdateSubmit} className="space-y-4">
-              {!selectedShipper && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
-                  Note: To add a shipper, first create the recruit through "New Application", 
-                  then assign their ship date here.
-                </div>
-              )}
-              
               <div className="space-y-2">
                 <Label htmlFor="shipDate">Ship Date *</Label>
                 <Input
@@ -523,6 +581,122 @@ export default function ShippersPage() {
                 </Button>
                 <Button type="submit" disabled={updateShippingInfo.isPending}>
                   {updateShippingInfo.isPending ? "Updating..." : "Update"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Shipper Dialog - Select from Qualified Applicants */}
+        <Dialog open={addShipperDialogOpen} onOpenChange={setAddShipperDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add New Shipper</DialogTitle>
+              <DialogDescription>
+                Select a qualified applicant and assign shipping information
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleAddShipperSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="applicant">Select Applicant *</Label>
+                <Select
+                  value={selectedApplicantId}
+                  onValueChange={setSelectedApplicantId}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose an applicant" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {qualifiedApplicants.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500 text-sm">
+                        No qualified applicants available. All applicants either have ship dates or are not in "lead" status.
+                      </div>
+                    ) : (
+                      qualifiedApplicants.map((applicant) => (
+                        <SelectItem key={applicant.id} value={applicant.id}>
+                          <div className="flex flex-col py-1">
+                            <span className="font-semibold">
+                              {applicant.firstName} {applicant.lastName}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {applicant.email} • {applicant.phone}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              Recruiter: {applicant.recruiterRank} {applicant.recruiterName}
+                            </span>
+                            {applicant.preferredMOS && (
+                              <span className="text-xs text-blue-600">
+                                Preferred MOS: {applicant.preferredMOS}
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="addShipDate">Ship Date *</Label>
+                <Input
+                  id="addShipDate"
+                  type="date"
+                  value={editFormData.shipDate}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, shipDate: e.target.value })
+                  }
+                  onClick={(e) => e.currentTarget.showPicker?.()}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="addComponent">Component</Label>
+                <Select
+                  value={editFormData.component}
+                  onValueChange={(value) =>
+                    setEditFormData({ ...editFormData, component: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select component" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="reserve">Reserve</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="addActualMOS">Assigned MOS</Label>
+                <Input
+                  id="addActualMOS"
+                  type="text"
+                  value={editFormData.actualMOS}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, actualMOS: e.target.value })
+                  }
+                  placeholder="e.g., 11B, 68W"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setAddShipperDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={updateShippingInfo.isPending || !selectedApplicantId}
+                >
+                  {updateShippingInfo.isPending ? "Adding..." : "Add Shipper"}
                 </Button>
               </div>
             </form>

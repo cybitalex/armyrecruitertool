@@ -13,8 +13,17 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Calendar, Mail, MapPin, Phone, User, FileText, Save } from "lucide-react";
+import { ArrowLeft, Calendar, Mail, MapPin, Phone, User, FileText, Save, Edit } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,8 +42,28 @@ export default function RecruitDetail() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [isAddingNote, setIsAddingNote] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    firstName: "",
+    middleName: "",
+    lastName: "",
+    dateOfBirth: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    educationLevel: "",
+    hasDriversLicense: "",
+    hasPriorService: "",
+    priorServiceBranch: "",
+    priorServiceYears: "",
+    preferredMOS: "",
+    availability: "",
+  });
 
   interface NoteEntry {
     note: string;
@@ -141,6 +170,62 @@ export default function RecruitDetail() {
     },
   });
 
+  const updateRecruitInfoMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      return await apiRequest("PATCH", `/api/recruits/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/recruits"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/recruits", params?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shippers"] });
+      toast({
+        title: "Information Updated",
+        description: "The recruit's information has been updated successfully.",
+      });
+      setShowEditDialog(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditClick = () => {
+    if (!recruit) return;
+    setEditFormData({
+      firstName: recruit.firstName,
+      middleName: recruit.middleName || "",
+      lastName: recruit.lastName,
+      dateOfBirth: recruit.dateOfBirth || "",
+      email: recruit.email,
+      phone: recruit.phone,
+      address: recruit.address,
+      city: recruit.city,
+      state: recruit.state,
+      zipCode: recruit.zipCode,
+      educationLevel: recruit.educationLevel,
+      hasDriversLicense: recruit.hasDriversLicense,
+      hasPriorService: recruit.hasPriorService,
+      priorServiceBranch: recruit.priorServiceBranch || "",
+      priorServiceYears: recruit.priorServiceYears?.toString() || "",
+      preferredMOS: recruit.preferredMOS || "",
+      availability: recruit.availability,
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!recruit) return;
+    updateRecruitInfoMutation.mutate({
+      id: recruit.id,
+      data: editFormData,
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -221,6 +306,14 @@ export default function RecruitDetail() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={handleEditClick}
+                data-testid="button-editRecruit"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Info
+              </Button>
               <Select
                 value={recruit.status}
                 onValueChange={(status) =>
@@ -600,6 +693,325 @@ export default function RecruitDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Recruit Information</DialogTitle>
+            <DialogDescription>
+              Update all recruit details and information
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleEditSubmit} className="space-y-6">
+            {/* Personal Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Personal Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name *</Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    value={editFormData.firstName}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, firstName: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="middleName">Middle Name</Label>
+                  <Input
+                    id="middleName"
+                    type="text"
+                    value={editFormData.middleName}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, middleName: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name *</Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    value={editFormData.lastName}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, lastName: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                <Input
+                  id="dateOfBirth"
+                  type="date"
+                  value={editFormData.dateOfBirth}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, dateOfBirth: e.target.value })
+                  }
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Contact Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Contact Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={editFormData.email}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, email: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone *</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={editFormData.phone}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, phone: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Address */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Address</h3>
+              <div className="space-y-2">
+                <Label htmlFor="address">Street Address *</Label>
+                <Input
+                  id="address"
+                  type="text"
+                  value={editFormData.address}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, address: e.target.value })
+                  }
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="city">City *</Label>
+                  <Input
+                    id="city"
+                    type="text"
+                    value={editFormData.city}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, city: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="state">State *</Label>
+                  <Input
+                    id="state"
+                    type="text"
+                    value={editFormData.state}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, state: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="zipCode">ZIP Code *</Label>
+                  <Input
+                    id="zipCode"
+                    type="text"
+                    value={editFormData.zipCode}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, zipCode: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Education & Background */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Education & Background</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="educationLevel">Education Level *</Label>
+                  <Select
+                    value={editFormData.educationLevel}
+                    onValueChange={(value) =>
+                      setEditFormData({ ...editFormData, educationLevel: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select education level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="high_school">High School</SelectItem>
+                      <SelectItem value="some_college">Some College</SelectItem>
+                      <SelectItem value="associates">Associate's Degree</SelectItem>
+                      <SelectItem value="bachelors">Bachelor's Degree</SelectItem>
+                      <SelectItem value="graduate">Graduate Degree</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="hasDriversLicense">Driver's License *</Label>
+                  <Select
+                    value={editFormData.hasDriversLicense}
+                    onValueChange={(value) =>
+                      setEditFormData({ ...editFormData, hasDriversLicense: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="yes">Yes</SelectItem>
+                      <SelectItem value="no">No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Military Service History */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Military Service History</h3>
+              <div className="space-y-2">
+                <Label htmlFor="hasPriorService">Prior Military Service *</Label>
+                <Select
+                  value={editFormData.hasPriorService}
+                  onValueChange={(value) =>
+                    setEditFormData({ ...editFormData, hasPriorService: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {editFormData.hasPriorService === "yes" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="priorServiceBranch">Branch</Label>
+                    <Select
+                      value={editFormData.priorServiceBranch}
+                      onValueChange={(value) =>
+                        setEditFormData({ ...editFormData, priorServiceBranch: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="army">Army</SelectItem>
+                        <SelectItem value="navy">Navy</SelectItem>
+                        <SelectItem value="air_force">Air Force</SelectItem>
+                        <SelectItem value="marines">Marines</SelectItem>
+                        <SelectItem value="coast_guard">Coast Guard</SelectItem>
+                        <SelectItem value="space_force">Space Force</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="priorServiceYears">Years of Service</Label>
+                    <Input
+                      id="priorServiceYears"
+                      type="number"
+                      min="0"
+                      max="50"
+                      value={editFormData.priorServiceYears}
+                      onChange={(e) =>
+                        setEditFormData({ ...editFormData, priorServiceYears: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Preferences & Availability */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Preferences & Availability</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="preferredMOS">Preferred MOS</Label>
+                  <Input
+                    id="preferredMOS"
+                    type="text"
+                    value={editFormData.preferredMOS}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, preferredMOS: e.target.value })
+                    }
+                    placeholder="e.g., 11B, 68W"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="availability">Availability *</Label>
+                  <Select
+                    value={editFormData.availability}
+                    onValueChange={(value) =>
+                      setEditFormData({ ...editFormData, availability: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select availability" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="immediately">Immediately</SelectItem>
+                      <SelectItem value="1_3_months">1-3 Months</SelectItem>
+                      <SelectItem value="3_6_months">3-6 Months</SelectItem>
+                      <SelectItem value="6_plus_months">6+ Months</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowEditDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateRecruitInfoMutation.isPending}>
+                {updateRecruitInfoMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

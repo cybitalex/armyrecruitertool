@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sheet";
 import { FileText, Home, Shield, MapPin, Menu, LogOut, User, Users, Settings, HelpCircle, Ship, Bell } from "lucide-react";
 import { Tutorial, getTutorialPage } from "@/components/tutorial";
+import { NotificationsDropdown } from "@/components/notifications-dropdown";
 
 export function Header() {
   const [location, navigate] = useLocation();
@@ -223,22 +224,14 @@ export function Header() {
                   })}
                   {isLoggedIn && (
                     <>
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          navigate("/notifications");
-                          setMobileMenuOpen(false);
-                        }}
-                        className="w-full justify-start text-army-tan hover:text-army-gold hover:bg-army-green border-t border-army-field01 mt-4 pt-4 relative"
-                      >
-                        <Bell className="w-4 h-4 mr-3" />
-                        Notifications
-                        {unreadNotificationCount > 0 && (
-                          <Badge className="absolute right-4 bg-red-600 text-white text-[10px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full">
-                            {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
-                          </Badge>
-                        )}
-                      </Button>
+                      <div className="border-t border-army-field01 mt-4 pt-4">
+                        <div className="px-2 mb-2">
+                          <NotificationsDropdown 
+                            unreadCount={unreadNotificationCount}
+                            className="w-full justify-start text-army-tan hover:text-army-gold hover:bg-army-green"
+                          />
+                        </div>
+                      </div>
                       <Button
                         variant="ghost"
                         onClick={() => {
@@ -301,20 +294,11 @@ export function Header() {
             })}
             {isLoggedIn && (
               <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate("/notifications")}
-                  className="text-army-tan hover:text-army-gold hover:bg-army-green relative"
-                  title="Notifications"
-                >
-                  <Bell className="w-4 h-4" />
-                  {unreadNotificationCount > 0 && (
-                    <Badge className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full border-2 border-army-black">
-                      {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
-                    </Badge>
-                  )}
-                </Button>
+                <NotificationsDropdown 
+                  unreadCount={unreadNotificationCount}
+                  iconOnly={true}
+                  className="text-army-tan hover:text-army-gold hover:bg-army-green"
+                />
                 <Button
                   variant="ghost"
                   size="sm"

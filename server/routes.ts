@@ -3873,6 +3873,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update recruit basic information
+  app.patch("/api/recruits/:id", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { id } = req.params;
+      const { 
+        firstName, 
+        middleName,
+        lastName, 
+        dateOfBirth,
+        email, 
+        phone, 
+        address,
+        city,
+        state,
+        zipCode,
+        educationLevel,
+        hasDriversLicense,
+        hasPriorService,
+        priorServiceBranch,
+        priorServiceYears,
+        preferredMOS,
+        availability,
+        status 
+      } = req.body;
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Check permissions
+      if (!['recruiter', 'station_commander', 'admin'].includes(user.role)) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // Get the recruit to check ownership
+      const [recruit] = await db
+        .select()
+        .from(recruits)
+        .where(eq(recruits.id, id));
+
+      if (!recruit) {
+        return res.status(404).json({ error: "Recruit not found" });
+      }
+
+      // Station commanders and admins can edit any recruit at their station
+      // Recruiters can only edit their own recruits
+      if (user.role === 'recruiter' && recruit.recruiterId !== userId) {
+        return res.status(403).json({ error: "You can only edit your own recruits" });
+      }
+
+      // Prepare update object with only provided fields
+      const updateData: any = {};
+      if (firstName !== undefined) updateData.firstName = firstName;
+      if (middleName !== undefined) updateData.middleName = middleName;
+      if (lastName !== undefined) updateData.lastName = lastName;
+      if (dateOfBirth !== undefined) updateData.dateOfBirth = dateOfBirth;
+      if (email !== undefined) updateData.email = email;
+      if (phone !== undefined) updateData.phone = phone;
+      if (address !== undefined) updateData.address = address;
+      if (city !== undefined) updateData.city = city;
+      if (state !== undefined) updateData.state = state;
+      if (zipCode !== undefined) updateData.zipCode = zipCode;
+      if (educationLevel !== undefined) updateData.educationLevel = educationLevel;
+      if (hasDriversLicense !== undefined) updateData.hasDriversLicense = hasDriversLicense;
+      if (hasPriorService !== undefined) updateData.hasPriorService = hasPriorService;
+      if (priorServiceBranch !== undefined) updateData.priorServiceBranch = priorServiceBranch;
+      if (priorServiceYears !== undefined) updateData.priorServiceYears = priorServiceYears ? parseInt(priorServiceYears) : null;
+      if (preferredMOS !== undefined) updateData.preferredMOS = preferredMOS;
+      if (availability !== undefined) updateData.availability = availability;
+      if (status !== undefined) updateData.status = status;
+
+      // Update the recruit
+      await db
+        .update(recruits)
+        .set(updateData)
+        .where(eq(recruits.id, id));
+
+      res.json({ message: "Recruit info updated successfully" });
+    } catch (error) {
+      console.error("Error updating recruit info:", error);
+      res.status(500).json({ error: "Failed to update recruit info" });
+    }
+  });
+
   // MOS ENDPOINTS
 
   // Get all Army MOS
