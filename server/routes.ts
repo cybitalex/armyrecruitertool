@@ -2990,10 +2990,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Add new note to history
       if (additionalNotes && additionalNotes.trim()) {
+        // Add role indicator for station commanders
+        const displayName = user.role === 'station_commander' 
+          ? `${user.fullName} (SC)` 
+          : user.fullName;
+          
         notesHistory.push({
           note: additionalNotes.trim(),
           author: userId,
-          authorName: user.fullName,
+          authorName: displayName,
           timestamp: new Date().toISOString()
         });
       }

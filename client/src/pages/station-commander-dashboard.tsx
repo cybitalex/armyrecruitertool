@@ -176,13 +176,34 @@ function StationCommanderDashboardContent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/station-commander/recruiters"] });
-      // Update the selected recruit with new notes
-      if (selectedRecruit) {
+      
+      // Update the selected recruit with the new note
+      if (selectedRecruit && user) {
+        // Parse existing notes
+        let notesHistory: Array<{ note: string; author: string; authorName: string; timestamp: string }> = [];
+        try {
+          if (selectedRecruit.additionalNotes) {
+            notesHistory = JSON.parse(selectedRecruit.additionalNotes);
+          }
+        } catch (e) {
+          // Old format - ignore
+        }
+
+        // Add new note
+        notesHistory.push({
+          note: newNote.trim(),
+          author: user.id,
+          authorName: user.fullName + (user.role === 'station_commander' ? ' (SC)' : ''),
+          timestamp: new Date().toISOString()
+        });
+
+        // Update selected recruit
         setSelectedRecruit({
           ...selectedRecruit,
-          additionalNotes: newNote,
+          additionalNotes: JSON.stringify(notesHistory),
         });
       }
+      
       setIsAddingNote(false);
       setNewNote("");
       toast({
