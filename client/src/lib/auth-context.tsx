@@ -91,6 +91,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
 
     let inactivityTimer: NodeJS.Timeout | null = null;
+    let sessionCheckInterval: NodeJS.Timeout | null = null;
+
+    const handleLogout = async () => {
+      console.log('⏰ Inactivity timeout - logging out user');
+      await logout();
+      window.location.href = '/login?timeout=true';
+    };
 
     const resetTimer = () => {
       // Clear existing timer
@@ -99,11 +106,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Set new inactivity timer
-      inactivityTimer = setTimeout(async () => {
-        console.log('⏰ Inactivity timeout - logging out user');
-        await logout();
-        window.location.href = '/login?timeout=true';
-      }, INACTIVITY_TIMEOUT);
+      inactivityTimer = setTimeout(handleLogout, INACTIVITY_TIMEOUT);
+    };
+
+    // Check session validity periodically (every 5 minutes)
+    const checkSession = async () => {
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include',
+        });
+        if (!response.ok) {
+          // Session expired on server
+          console.log('🔒 Session expired on server - logging out');
+          setUser(null);
+          window.location.href = '/login?timeout=true';
+        }
+      } catch (error) {
+        console.error('Session check failed:', error);
+      }
+    };
+
+    // Check session every 5 minutes
+    sessionCheckInterval = setInterval(checkSession, 5 * 60 * 1000);
+
+    // Also check session when page becomes visible (user returns to tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkSession();
+      }
     };
 
     // Activity events that reset the timer
@@ -121,17 +151,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       document.addEventListener(event, resetTimer, { passive: true });
     });
 
-    // Initial timer
+    // Set up visibility change listener
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Initial timer and check
     resetTimer();
+    checkSession();
 
     // Cleanup
     return () => {
       if (inactivityTimer) {
         clearTimeout(inactivityTimer);
       }
+      if (sessionCheckInterval) {
+        clearInterval(sessionCheckInterval);
+      }
       activityEvents.forEach(event => {
         document.removeEventListener(event, resetTimer);
       });
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);

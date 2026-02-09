@@ -112,6 +112,38 @@ app.use(
   })
 );
 
+// Session inactivity timeout middleware (30 minutes)
+const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+app.use((req, res, next) => {
+  // Skip for public routes
+  const publicPaths = ['/api/auth/login', '/api/auth/register', '/api/apply', '/survey'];
+  const isPublic = publicPaths.some(path => req.path.startsWith(path));
+  
+  if (isPublic || !req.session || !(req as any).session?.userId) {
+    return next();
+  }
+
+  const now = Date.now();
+  const lastActivity = (req.session as any).lastActivity;
+
+  if (lastActivity && (now - lastActivity > INACTIVITY_TIMEOUT)) {
+    // Session expired due to inactivity
+    console.log('⏰ Session expired due to inactivity');
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Error destroying session:', err);
+      }
+      res.status(401).json({ error: 'Session expired due to inactivity' });
+    });
+    return;
+  }
+
+  // Update last activity timestamp
+  (req.session as any).lastActivity = now;
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

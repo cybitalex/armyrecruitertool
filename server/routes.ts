@@ -1643,9 +1643,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get all scans for this user (or station if station commander/admin)
+      // Sort by most recent first
       let allScans;
       if (user.role === "admin") {
-        allScans = await db.select().from(qrScans);
+        allScans = await db
+          .select()
+          .from(qrScans)
+          .orderBy(desc(qrScans.scannedAt));
       } else if (user.role === "station_commander" && user.stationId) {
         const stationRecruiters = await db
           .select()
@@ -1658,12 +1662,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 .select()
                 .from(qrScans)
                 .where(inArray(qrScans.recruiterId, recruiterIds))
+                .orderBy(desc(qrScans.scannedAt))
             : [];
       } else {
         allScans = await db
           .select()
           .from(qrScans)
-          .where(eq(qrScans.recruiterId, userId));
+          .where(eq(qrScans.recruiterId, userId))
+          .orderBy(desc(qrScans.scannedAt));
       }
 
       // Get location QR codes for labeling
