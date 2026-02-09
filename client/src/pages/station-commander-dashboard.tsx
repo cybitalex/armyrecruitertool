@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth, ProtectedRoute } from "../lib/auth-context";
 import { stationCommander, recruits as recruitsApi, surveys } from "../lib/api";
+import { apiRequest } from "../lib/queryClient";
 import { Button } from "../components/ui/button";
+import { useToast } from "../hooks/use-toast";
 import {
   Card,
   CardContent,
@@ -33,6 +35,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -133,6 +136,13 @@ function StationCommanderDashboardContent() {
   // Selected recruit for detail dialog
   const [selectedRecruit, setSelectedRecruit] = useState<Recruit | null>(null);
   const [recruitDetailDialogOpen, setRecruitDetailDialogOpen] = useState(false);
+  
+  // Notes state
+  const [newNote, setNewNote] = useState("");
+  const [isAddingNote, setIsAddingNote] = useState(false);
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Use React Query for optimized data fetching with caching
   const { 
@@ -156,6 +166,38 @@ function StationCommanderDashboardContent() {
   const recruiters = recruitersData?.recruiters || [];
   const stationTotals = recruitersData?.stationTotals || null;
   const error = queryError?.message || "";
+
+  // Mutation for adding notes
+  const addNoteMutation = useMutation({
+    mutationFn: async ({ id, note }: { id: string; note: string }) => {
+      return await apiRequest("PATCH", `/api/recruits/${id}/notes`, {
+        additionalNotes: note,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/station-commander/recruiters"] });
+      // Update the selected recruit with new notes
+      if (selectedRecruit) {
+        setSelectedRecruit({
+          ...selectedRecruit,
+          additionalNotes: newNote,
+        });
+      }
+      setIsAddingNote(false);
+      setNewNote("");
+      toast({
+        title: "Note Added",
+        description: "Your note has been saved successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Failed to Add Note",
+        description: "There was an error saving your note.",
+        variant: "destructive",
+      });
+    },
+  });
 
   useEffect(() => {
     if (activeTab === "applicants" && recruitsList.length === 0) {
@@ -1014,6 +1056,8 @@ function StationCommanderDashboardContent() {
                         onClick={() => {
                           setSelectedRecruit(recruit);
                           setRecruitDetailDialogOpen(true);
+                          setIsAddingNote(false);
+                          setNewNote("");
                         }}
                       >
                         <div className="flex-1 min-w-0">
@@ -1287,6 +1331,8 @@ function StationCommanderDashboardContent() {
                                   onClick={() => {
                                     setSelectedRecruit(lead);
                                     setRecruitDetailDialogOpen(true);
+                                    setIsAddingNote(false);
+                                    setNewNote("");
                                   }}
                                 >
                                   <div className="font-medium text-xs sm:text-sm">{lead.firstName} {lead.lastName}</div>
@@ -1445,52 +1491,95 @@ function StationCommanderDashboardContent() {
                 </Card>
 
                 {/* Notes Section */}
-                {selectedRecruit.additionalNotes && (() => {
-                  // Parse notes history
-                  let notesHistory: Array<{ note: string; authorName: string; timestamp: string }> = [];
-                  try {
-                    const parsed = JSON.parse(selectedRecruit.additionalNotes);
-                    notesHistory = Array.isArray(parsed) ? parsed : [];
-                  } catch (e) {
-                    // Old format - single note
-                    if (selectedRecruit.additionalNotes.trim()) {
-                      notesHistory = [{
-                        note: selectedRecruit.additionalNotes,
-                        authorName: "Unknown",
-                        timestamp: new Date().toISOString()
-                      }];
-                    }
-                  }
-                  
-                  if (notesHistory.length === 0) return null;
-                  
-                  return (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Notes History</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          {notesHistory.map((entry, index) => (
-                            <div key={index} className="border-l-2 border-blue-500 pl-3 py-1">
-                              <div className="flex justify-between items-start gap-2 mb-1">
-                                <span className="text-xs font-medium text-blue-600">
-                                  {entry.authorName}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  {new Date(entry.timestamp).toLocaleString()}
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                                {entry.note}
-                              </p>
-                            </div>
-                          ))}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                    <CardTitle className="text-lg">Recruiter Notes History</CardTitle>
+                    <Button
+                      variant={isAddingNote ? "outline" : "default"}
+                      size="sm"
+                      onClick={() => setIsAddingNote(!isAddingNote)}
+                    >
+                      {isAddingNote ? "Cancel" : "Add Note"}
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {isAddingNote && (
+                      <div className="mb-4 space-y-2">
+                        <Textarea
+                          value={newNote}
+                          onChange={(e) => setNewNote(e.target.value)}
+                          placeholder="Add a new note about your interaction with this recruit (phone calls, meetings, concerns, follow-up tasks, etc.)"
+                          className="min-h-[100px]"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setNewNote("");
+                              setIsAddingNote(false);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => addNoteMutation.mutate({ id: selectedRecruit.id, note: newNote })}
+                            disabled={!newNote.trim() || addNoteMutation.isPending}
+                          >
+                            Save Note
+                          </Button>
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })()}
+                      </div>
+                    )}
+
+                    {(() => {
+                      // Parse notes history
+                      let notesHistory: Array<{ note: string; authorName: string; timestamp: string }> = [];
+                      try {
+                        if (selectedRecruit.additionalNotes) {
+                          const parsed = JSON.parse(selectedRecruit.additionalNotes);
+                          notesHistory = Array.isArray(parsed) ? parsed : [];
+                        }
+                      } catch (e) {
+                        // Old format - single note
+                        if (selectedRecruit.additionalNotes && selectedRecruit.additionalNotes.trim()) {
+                          notesHistory = [{
+                            note: selectedRecruit.additionalNotes,
+                            authorName: "Unknown",
+                            timestamp: new Date().toISOString()
+                          }];
+                        }
+                      }
+
+                      return (
+                        <div className="space-y-3">
+                          {notesHistory.length > 0 ? (
+                            [...notesHistory].reverse().map((entry, index) => (
+                              <div key={index} className="border-l-2 border-blue-500 pl-3 py-1">
+                                <div className="flex justify-between items-start gap-2 mb-1">
+                                  <span className="text-xs font-medium text-blue-600">
+                                    {entry.authorName}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(entry.timestamp).toLocaleString()}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                                  {entry.note}
+                                </p>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-gray-500 italic">
+                              No notes yet. Click "Add Note" to add notes about your interactions with this recruit.
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
 
                 {/* Close Button */}
                 <div className="flex gap-2 pt-4">
