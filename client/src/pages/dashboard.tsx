@@ -800,21 +800,21 @@ function DashboardContent() {
                         No QR code scans recorded yet
                       </div>
                     ) : (
-                      <div className="w-full overflow-x-auto">
+                      <div className="w-full">
                         <Table className="w-full">
                           <TableHeader>
                             <TableRow>
-                              <TableHead className="text-xs sm:text-sm min-w-[120px]">Location</TableHead>
-                              <TableHead className="text-right text-xs sm:text-sm whitespace-nowrap">Scans</TableHead>
-                              <TableHead className="text-right text-xs sm:text-sm whitespace-nowrap">Converted</TableHead>
-                              <TableHead className="text-right text-xs sm:text-sm whitespace-nowrap">Rate</TableHead>
+                              <TableHead className="text-xs sm:text-sm px-2 sm:px-4">Location</TableHead>
+                              <TableHead className="text-right text-xs sm:text-sm px-2 sm:px-4">Scans</TableHead>
+                              <TableHead className="text-right text-xs sm:text-sm px-2 sm:px-4 hidden sm:table-cell">Converted</TableHead>
+                              <TableHead className="text-right text-xs sm:text-sm px-2 sm:px-4">Rate</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {qrAnalyticsData.locations.map((location) => (
                               <TableRow key={location.locationLabel}>
-                                <TableCell className="font-medium text-xs sm:text-sm">
-                                  <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+                                <TableCell className="font-medium text-xs sm:text-sm px-2 sm:px-4">
+                                  <div className="flex items-center gap-1 sm:gap-2 min-w-0 max-w-[120px] sm:max-w-none">
                                     {location.locationLabel === 'Default QR' ? (
                                       <QrCode className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
                                     ) : (
@@ -823,15 +823,20 @@ function DashboardContent() {
                                     <span className="truncate">{location.locationLabel}</span>
                                   </div>
                                 </TableCell>
-                                <TableCell className="text-right font-semibold text-xs sm:text-sm whitespace-nowrap">
-                                  {location.totalScans}
+                                <TableCell className="text-right font-semibold text-xs sm:text-sm px-2 sm:px-4">
+                                  <div className="flex flex-col sm:block">
+                                    <span>{location.totalScans}</span>
+                                    <span className="text-green-600 text-[10px] sm:hidden">
+                                      ({location.convertedScans})
+                                    </span>
+                                  </div>
                                 </TableCell>
-                                <TableCell className="text-right text-xs sm:text-sm whitespace-nowrap">
+                                <TableCell className="text-right text-xs sm:text-sm px-2 sm:px-4 hidden sm:table-cell">
                                   <span className="text-green-600 font-semibold">
                                     {location.convertedScans}
                                   </span>
                                 </TableCell>
-                                <TableCell className="text-right text-xs sm:text-sm whitespace-nowrap">
+                                <TableCell className="text-right text-xs sm:text-sm px-2 sm:px-4">
                                   <Badge variant={location.conversionRate >= 50 ? "default" : location.conversionRate >= 25 ? "secondary" : "outline"} className="text-[10px] sm:text-xs">
                                     {location.conversionRate}%
                                   </Badge>
