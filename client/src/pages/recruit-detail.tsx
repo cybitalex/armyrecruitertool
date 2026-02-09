@@ -590,6 +590,49 @@ export default function RecruitDetail() {
                   </div>
                 </div>
               </div>
+
+              {/* AI-Generated MOS Suggestions */}
+              {recruit.suggestedMOS && (() => {
+                try {
+                  const suggestions = JSON.parse(recruit.suggestedMOS);
+                  if (Array.isArray(suggestions) && suggestions.length > 0) {
+                    return (
+                      <div className="mt-4 pt-4 border-t">
+                        <div className="text-sm text-muted-foreground mb-2">
+                          🎯 AI-Suggested MOS (based on interest)
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {suggestions.slice(0, 4).map((mos: any, index: number) => (
+                            <div
+                              key={index}
+                              className="p-2 border rounded-lg bg-blue-50 hover:bg-blue-100 transition"
+                            >
+                              <div className="flex items-start gap-2">
+                                <Badge variant="outline" className="flex-shrink-0 bg-white">
+                                  {mos.code}
+                                </Badge>
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-sm font-medium truncate">
+                                    {mos.name}
+                                  </div>
+                                  {mos.reason && (
+                                    <div className="text-xs text-gray-600 mt-0.5">
+                                      {mos.reason}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                } catch (e) {
+                  return null;
+                }
+                return null;
+              })()}
             </CardContent>
           </Card>
 

@@ -99,6 +99,7 @@ export const recruits = pgTable("recruits", {
   preferredMOS: text("preferred_mos"),
   availability: text("availability").notNull(),
   additionalNotes: text("additional_notes"),
+  suggestedMOS: text("suggested_mos"), // AI-generated MOS suggestions (stored as JSON)
   status: text("status").notNull().default("pending"),
   source: text("source").notNull().default("direct"), // "qr_code" or "direct"
   ipAddress: text("ip_address"), // Track submission IP

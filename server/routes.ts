@@ -2568,6 +2568,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Generate AI MOS suggestions based on preferred MOS field
+      if (validatedData.preferredMOS && validatedData.preferredMOS.trim()) {
+        try {
+          console.log(`🎯 Generating MOS suggestions for: "${validatedData.preferredMOS}"`);
+          const suggestions = await suggestMOS(validatedData.preferredMOS);
+          
+          if (suggestions.length > 0) {
+            // Store suggestions as JSON in the database
+            await db
+              .update(recruits)
+              .set({
+                suggestedMOS: JSON.stringify(suggestions)
+              })
+              .where(eq(recruits.id, recruit.id));
+            
+            console.log(`✅ Stored ${suggestions.length} MOS suggestions for recruit ${recruit.id}`);
+          }
+        } catch (mosError) {
+          console.error("⚠️ Failed to generate MOS suggestions:", mosError);
+          // Don't fail the request if MOS suggestion fails
+        }
+      }
+
       // Send confirmation email to applicant
       try {
         await sendApplicantConfirmationEmail(
