@@ -257,14 +257,14 @@ function MyQRCodeContent() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-3 sm:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded mb-4 text-sm">
             {error}
           </div>
         )}
 
-        <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
+        <div className="grid md:grid-cols-2 gap-4 sm:gap-6 w-full">
           {/* Application QR Code */}
           <Card>
             <CardHeader className="text-center px-4 sm:px-6 pt-4 sm:pt-6">

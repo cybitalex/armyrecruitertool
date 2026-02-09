@@ -1,0 +1,6385 @@
+{
+  "mosList": [
+    {
+      "code": "MOS",
+      "name": "Name",
+      "rank": "Rank"
+    },
+    {
+      "code": "00B",
+      "name": "Diver",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "00E",
+      "name": "Recruiter",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "00H",
+      "name": "Enlisted Aide",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "00R",
+      "name": "Recruiter/Retention NCO",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "00Z",
+      "name": "Command Sergeant Major Nominative",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "01A",
+      "name": "Officer Generalist",
+      "rank": "Officer"
+    },
+    {
+      "code": "01B",
+      "name": "Electrical-Electronic Engineering Assistant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "01B",
+      "name": "Aviation/Infantry/Armor/Military Intelligence Immaterial",
+      "rank": "Officer"
+    },
+    {
+      "code": "01C",
+      "name": "Mechanical Engineering Assistant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "01C",
+      "name": "Chemical/Engineer/Military Police Immaterial",
+      "rank": "Officer"
+    },
+    {
+      "code": "01D",
+      "name": "Civil Engineering Assistant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "01D",
+      "name": "Financial Management/Adjutant General immaterial",
+      "rank": "Officer"
+    },
+    {
+      "code": "01E",
+      "name": "Mathematics-Statistics Assistant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "01F",
+      "name": "Physical Sciences Assistant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "01G",
+      "name": "Chemical Engineering Assistant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "01H",
+      "name": "Biological Sciences Assistant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02A",
+      "name": "Army Bandperson",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02A",
+      "name": "Combat Arms Generalist",
+      "rank": "Officer"
+    },
+    {
+      "code": "02B",
+      "name": "Cornet or Trumpet Player",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02B",
+      "name": "Infantry/Armor Immaterial",
+      "rank": "Officer"
+    },
+    {
+      "code": "02C",
+      "name": "Baritone or Euphonium Player",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02C",
+      "name": "Infantry/Armor/Field Artillery/Engineer Immaterial",
+      "rank": "Officer"
+    },
+    {
+      "code": "02D",
+      "name": "French Horn Player",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02E",
+      "name": "Trombone Player",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02F",
+      "name": "Tuba Player",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02G",
+      "name": "Flute or Piccolo Player",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02H",
+      "name": "Oboe Player",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02J",
+      "name": "Clarinet Player",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02K",
+      "name": "Bassoon Player",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02L",
+      "name": "Saxophone Player",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02M",
+      "name": "Percussion Player",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02N",
+      "name": "Keyboard Player",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02N",
+      "name": "Piano Player",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02P",
+      "name": "Brass Group Leader",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02Q",
+      "name": "Woodwind Group Leader",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02R",
+      "name": "Percussion Group Leader",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02S",
+      "name": "Special Bandmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02T",
+      "name": "Guitar Player",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02U",
+      "name": "Electric Bass Player",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "02Z",
+      "name": "Bands Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "03B",
+      "name": "Performing Arts Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "03C",
+      "name": "Physical Activities Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "03D",
+      "name": "Arts and Crafts Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "03Z",
+      "name": "Special Services Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "04B",
+      "name": "Translator-Interpreter",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "05A",
+      "name": "Army Medical Department (AMEDD) Immaterial",
+      "rank": "Officer"
+    },
+    {
+      "code": "05B",
+      "name": "Radio Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "05C",
+      "name": "Radio Teletype Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "05D",
+      "name": "Electronic Warfare/Signal Intelligence Emitter Identifier/Locator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "05E",
+      "name": "Voice Radio Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "05F",
+      "name": "Radio Teletypewriter Operator (Non-Morse)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "05G",
+      "name": "Signal Security Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "05H",
+      "name": "Electronic Warfare/Signal Intelligence Morse Interceptor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "05K",
+      "name": "Electronic Warfare/Signal Intelligence Non-Morse Interceptor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "09L",
+      "name": "Interpreter/Translator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "11A",
+      "name": "Infantry Officer",
+      "rank": "Officer"
+    },
+    {
+      "code": "11B",
+      "name": "Infantryman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "11C",
+      "name": "Indirect Fire Infantryman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "11D",
+      "name": "Armor Reconnaissance Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "11E",
+      "name": "Armor Crewman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "11H",
+      "name": "Heavy Anti-armor Weapons Crewman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "11L",
+      "name": "lnfantry Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "11M",
+      "name": "Fighting Vehicle Infantryman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "11Z",
+      "name": "Infantry Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "120A",
+      "name": "Construction Engineering Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "125D",
+      "name": "Geospatial Engineering Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "12A",
+      "name": "Armor, General",
+      "rank": "Officer"
+    },
+    {
+      "code": "12A",
+      "name": "Engineer",
+      "rank": "Officer"
+    },
+    {
+      "code": "12A",
+      "name": "General Engineer",
+      "rank": "Officer"
+    },
+    {
+      "code": "12A",
+      "name": "Engineer Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12B",
+      "name": "Armor",
+      "rank": "Officer"
+    },
+    {
+      "code": "12B",
+      "name": "Combat Engineer",
+      "rank": "Officer"
+    },
+    {
+      "code": "12B",
+      "name": "Combat Engineer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12B",
+      "name": "Combat Engineer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12C",
+      "name": "Bridge Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12C",
+      "name": "Cavalry",
+      "rank": "Officer"
+    },
+    {
+      "code": "12C",
+      "name": "Bridge Crewman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12D",
+      "name": "Facilities/Contract Construction Management Engineer (FCCME)",
+      "rank": "Officer"
+    },
+    {
+      "code": "12D",
+      "name": "Diver",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12E",
+      "name": "Atomic Demolition Munitions (ADM) Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12F",
+      "name": "Engineer Tracked Vehicle Crewman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12G",
+      "name": "Quarrying Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12H",
+      "name": "Construction Engineering Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12K",
+      "name": "Plumber",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12M",
+      "name": "Firefighter",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12N",
+      "name": "Horizontal Construction Engineer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12P",
+      "name": "Prime Power Production Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12Q",
+      "name": "Power Line Distribution Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12R",
+      "name": "Interior Electrician",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12T",
+      "name": "Technical Engineer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12V",
+      "name": "Concrete and Asphalt Equipment Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12W",
+      "name": "Carpentry and Masonry Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12X",
+      "name": "General Engineering Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12X",
+      "name": "General Engineering Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12Y",
+      "name": "Geospatial Engineer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12Z",
+      "name": "Engineering Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12Z",
+      "name": "Combat Engineering Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "12Z",
+      "name": "Combat Engineering Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "131A",
+      "name": "Field Artillery Targeting Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "13A",
+      "name": "Field Artillery, General",
+      "rank": "Officer"
+    },
+    {
+      "code": "13B",
+      "name": "Cannon Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "13B",
+      "name": "Light Missile Field Artillery",
+      "rank": "Officer"
+    },
+    {
+      "code": "13C",
+      "name": "Tactical Automated Fire Control Systems Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "13D",
+      "name": "Field Artillery Automated tactical Data Systems Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "13D",
+      "name": "Field Artillery Target Acquisition",
+      "rank": "Officer"
+    },
+    {
+      "code": "13E",
+      "name": "Cannon Fire Direction Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "13E",
+      "name": "Cannon Field Artillery",
+      "rank": "Officer"
+    },
+    {
+      "code": "13F",
+      "name": "Fire Support Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "13M",
+      "name": "Multiple Launch Rocket System (MLRS)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "13M",
+      "name": "Multiple Launch Rocket System",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "13N",
+      "name": "Lance Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "13P",
+      "name": "Multiple Launch Rocket System/Fire Direction Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "13R",
+      "name": "Field Artillery Firefinder Radar Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "13S",
+      "name": "Field Artillery Surveyor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "13T",
+      "name": "Field Artillery Metrological/Surveyor Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "13W",
+      "name": "Field Artillery Meteorological Crewmembers",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "13Y",
+      "name": "Cannon/Missile Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "13Z",
+      "name": "Field Artillery (FA) Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "140A",
+      "name": "Command and Control Systems Integrator",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "140B",
+      "name": "FAAD Systems Technician (Reserve Component only)",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "140D",
+      "name": "HAWK Systems Technician (Reserve Component only)",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "140E",
+      "name": "Air and Missile Defense (AMD) Systems Tactician/Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "140X",
+      "name": "Air Defense Artillery Immaterial",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "14A",
+      "name": "Air Defense Artillery Officer",
+      "rank": "Officer"
+    },
+    {
+      "code": "14B",
+      "name": "Short-Range Air Defense Artillery (Shorad)",
+      "rank": "Officer"
+    },
+    {
+      "code": "14D",
+      "name": "Hawk Missile System Crewmember (RC)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "14D",
+      "name": "Hawk Missile Air Defense Artillery",
+      "rank": "Officer"
+    },
+    {
+      "code": "14E",
+      "name": "PATRIOT Fire Control Enhanced Operator/Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "14E",
+      "name": "Patriot Missile Air Defense Artillery",
+      "rank": "Officer"
+    },
+    {
+      "code": "14G",
+      "name": "Air Defense (AD) Battle Management System Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "14H",
+      "name": "Air Defense (AD) Enhanced Early Warning System Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "14J",
+      "name": "Air Defense Command, Control, Communications, Computers Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "14L",
+      "name": "AN/TSQ 73 Air Defense Artillery System Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "14M",
+      "name": "Man Portable Air Defense System Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "14R",
+      "name": "Bradley Linebacker Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "14S",
+      "name": "Avenger Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "14S",
+      "name": "Air and Missile Defense (AMD) Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "14T",
+      "name": "PATRIOT Launching Station Enhanced Operator/Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "14Z",
+      "name": "Air Defense Artillery (ADA) Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "150A",
+      "name": "Air Traffic and Air Space Management Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "150U",
+      "name": "Unmanned Aircraft Systems Operations Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "151A",
+      "name": "Aviation Maintenance Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "152B",
+      "name": "OH-58A/C Scout",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "152C",
+      "name": "OH-6 Pilot",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "152D",
+      "name": "OH-58D Pilot",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "152E",
+      "name": "RAH-66 COMMANCHE Pilot",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "152E",
+      "name": "ARH-70A Pilot",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "152F",
+      "name": "AH-64A Attack Pilot",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "152G",
+      "name": "AH-1 Attack Pilot (RC)",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "152H",
+      "name": "AH-64D Attack Pilot",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "153A",
+      "name": "Rotary Wing Aviator (Aircraft Nonspecific)",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "153B",
+      "name": "UH-1 Pilot (Reserve Component only)",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "153D",
+      "name": "UH-60 Pilot",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "153E",
+      "name": "MH-60 Pilot",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "153L",
+      "name": "UH-72A Pilot (RC only)",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "153M",
+      "name": "UH-60M Pilot",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "154C",
+      "name": "CH-47D Pilot",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "154E",
+      "name": "MH-47 Pilot",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "154F",
+      "name": "CH-47F Pilot",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "155A",
+      "name": "Fixed Wing Aviator (Aircraft Nonspecific)",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "155D",
+      "name": "U-21 Pilot",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "155E",
+      "name": "C-12 Pilot",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "155F",
+      "name": "Jet Aircraft Pilot",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "155G",
+      "name": "O-5A/EO-5B/RC-7 Pilot",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "156A",
+      "name": "OV-1/RV-1 Pilot",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "15A",
+      "name": "Aviation, General",
+      "rank": "Officer"
+    },
+    {
+      "code": "15A",
+      "name": "Aviation Life Support Systems Repairer (ALSS Rep)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15B",
+      "name": "Aviation Combined Arms Operations",
+      "rank": "Officer"
+    },
+    {
+      "code": "15B",
+      "name": "Aircraft Powerplant Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15C",
+      "name": "Aviation All-Source Intelligence",
+      "rank": "Officer"
+    },
+    {
+      "code": "15D",
+      "name": "Aircraft Powertrain Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15D",
+      "name": "Aviation Logistics",
+      "rank": "Officer"
+    },
+    {
+      "code": "15E",
+      "name": "Unmanned Aircraft Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15F",
+      "name": "Aircraft Electrician",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15G",
+      "name": "Aircraft Structural Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15H",
+      "name": "Aircraft Pneudraulics Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15J",
+      "name": "OH-58D Armament/Electrical/Avionics Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15K",
+      "name": "Aircraft Components Repair Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15M",
+      "name": "UH-1 Helicopter Repairer (RC)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15N",
+      "name": "Avionic Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15P",
+      "name": "Aviation Operations Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15Q",
+      "name": "Air Traffic Control (ATC) Operator (ATC Operator)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15Q",
+      "name": "Air Traffic Control Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15R",
+      "name": "AH-64 Attack Helicopter Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15S",
+      "name": "OH-58D Helicopter Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15T",
+      "name": "UH-60 Helicopter Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15U",
+      "name": "CH-47 Helicopter Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15V",
+      "name": "Observation/Scout Helicopter Repairer (RC)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15W",
+      "name": "Unmanned Aerial Vehicle Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15X",
+      "name": "AH-64A Armament/Electrical/Avionics Systems Repairer (AH-64A",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15X",
+      "name": "AH-64A Armament/Electrical/Avionics Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15Y",
+      "name": "AH-64D Armament/Electrical/Avionics Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15Z",
+      "name": "Field Artillery Missile/Rocket Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "15Z",
+      "name": "Aircraft Maintenance Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "16B",
+      "name": "Hercules Missile Crew Member",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "16C",
+      "name": "Hercules Fire Control Crew Member",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "16D",
+      "name": "Hawk Missile Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "16E",
+      "name": "Hawk Fire Control Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "16F",
+      "name": "Light Air Defense Artillery Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "16J",
+      "name": "Defense Acquisition Radar Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "16J",
+      "name": "Forward Area Alerting Radar Crewman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "16L",
+      "name": "Sgt. York Air Defense Gun System Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "16P",
+      "name": "Chaparral Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "16R",
+      "name": "Vulcan Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "16S",
+      "name": "Man Portable Air Defense System (MANPADS) Crewmember or Pedestal Mounted Stinger Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "16S",
+      "name": "Man Portable Air Defense System (MANPADS) Crewmember or Pedestal M",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "16T",
+      "name": "Patriot Missile Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "16Z",
+      "name": "Air Defense Artillery Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "17A",
+      "name": "Combat Surveillance and Target Acquisition Crewman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "17B",
+      "name": "Field Artillery Radar Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "17C",
+      "name": "Field Artillery Target Acquisition Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "17D",
+      "name": "Flash Ranging Crewman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "17E",
+      "name": "Field Illumination Crewman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "17K",
+      "name": "Ground Surveillance Radar Crewman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "17L",
+      "name": "Aerial Sensor Specialist (OV-1B/C)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "17M",
+      "name": "Unattended Ground Sensor Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "17Z",
+      "name": "Combat Surveillance and Target Acquisition NCO",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "180A",
+      "name": "Special Forces Warrant Officer",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "18A",
+      "name": "Special Forces",
+      "rank": "Officer"
+    },
+    {
+      "code": "18B",
+      "name": "Special Forces Weapons Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "18C",
+      "name": "Special Forces Engineer Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "18D",
+      "name": "Special Forces Medical Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "18E",
+      "name": "Special Forces Communications Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "18F",
+      "name": "Special Forces Assistant Operations and Intelligence Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "18Z",
+      "name": "Special Forces Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "19A",
+      "name": "Armor, General",
+      "rank": "Officer"
+    },
+    {
+      "code": "19B",
+      "name": "Armor",
+      "rank": "Officer"
+    },
+    {
+      "code": "19C",
+      "name": "Cavalry",
+      "rank": "Officer"
+    },
+    {
+      "code": "19D",
+      "name": "Cavalry Scout",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "19E",
+      "name": "M48-M60 Armor Crewman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "19F",
+      "name": "Tank Driver",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "19G",
+      "name": "Armor Reconnaissance Vehicle Crewman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "19H",
+      "name": "Armor Reconnaissance Vehicle Driver",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "19J",
+      "name": "M60A2 Armor Crewman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "19K",
+      "name": "M1 Armor Crewman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "19Z",
+      "name": "Armor Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "210A",
+      "name": "Utilities Operation and Maintenance Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "210A",
+      "name": "Construction Engineering Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "215D",
+      "name": "Geospatial Engineering",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "215D",
+      "name": "Geospatial Information Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "215D",
+      "name": "Terrain Analysis Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "21A",
+      "name": "Engineer General",
+      "rank": "Officer"
+    },
+    {
+      "code": "21B",
+      "name": "Combat Engineer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21B",
+      "name": "Combat Engineer",
+      "rank": "Officer"
+    },
+    {
+      "code": "21C",
+      "name": "Bridge Crewman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21D",
+      "name": "Facilities/Contract Construction Management Engineer (FCCME)",
+      "rank": "Officer"
+    },
+    {
+      "code": "21D",
+      "name": "Diver",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21E",
+      "name": "Heavy Construction Equipment Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21F",
+      "name": "Crane Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21G",
+      "name": "Quarrying Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21H",
+      "name": "Construction Engineering Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21J",
+      "name": "General Construction Equipment Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21K",
+      "name": "Plumber",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21L",
+      "name": "Lithographer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21M",
+      "name": "Firefighter",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21N",
+      "name": "Horizontal Construction Engineer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21N",
+      "name": "Construction Equipment Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21P",
+      "name": "Prime Power Production Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21Q",
+      "name": "Power Line Distribution Specialist (RC)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21R",
+      "name": "Interior Electrician",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21S",
+      "name": "Sergeant Missile Guidance Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21S",
+      "name": "Topographic Surveyor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21T",
+      "name": "Technical Engineering Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21U",
+      "name": "Topographic Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21V",
+      "name": "Concrete and Asphalt Equipment Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21W",
+      "name": "Carpentry and Masonry Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21X",
+      "name": "General Engineering Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21Y",
+      "name": "Geospatial Engineer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "21Z",
+      "name": "Combat Engineering Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "22K",
+      "name": "Hawk Missile and Launcher Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "22L",
+      "name": "Nike Test Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "22N",
+      "name": "Nike-Hercules Missile Launcher Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "23N",
+      "name": "Nike Track Radar Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "23Q",
+      "name": "Hawk Fire Control Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "23R",
+      "name": "Hawk Missile System Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "23S",
+      "name": "Hawk Pulse Radar Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "23T",
+      "name": "Hawk Continuous Wave Radar Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "23U",
+      "name": "Nike High Power Radar-Simulator Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "23V",
+      "name": "Hawk Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "23W",
+      "name": "Nike Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24A",
+      "name": "Telecommunications Systems Engineer (functional Area)",
+      "rank": "Officer"
+    },
+    {
+      "code": "24B",
+      "name": "Hawk Continuous Wave Radar Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24B",
+      "name": "Data Systems Engineer",
+      "rank": "Officer"
+    },
+    {
+      "code": "24C",
+      "name": "Hawk Firing Section Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24D",
+      "name": "Hawk Missile-Launcher Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24E",
+      "name": "Hawk Fire Control Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24F",
+      "name": "Hawk Fire Control Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24G",
+      "name": "Hawk Information Coordination Central Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24H",
+      "name": "Hawk Fire Control Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24J",
+      "name": "Hawk Pulse Radar Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24K",
+      "name": "Hawk Continuous Wave Radar Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24L",
+      "name": "Hawk Launcher and Mechanical Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24M",
+      "name": "Vulcan System Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24N",
+      "name": "Chaparral System Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24P",
+      "name": "Defense Acquisition Radar Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24Q",
+      "name": "Nike-Hercules Fire Control Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24R",
+      "name": "Hawk Master Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24T",
+      "name": "Patriot Operator and System Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24U",
+      "name": "Nike-Hercules Custodial Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24V",
+      "name": "Hawk Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "24W",
+      "name": "Sgt. York Air Defense Gun System Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "250A",
+      "name": "Communications Security Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "250A",
+      "name": "Telecommunications Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "250B",
+      "name": "Tactical Automated Network Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "250N",
+      "name": "Network Management Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "251A",
+      "name": "Information Systems Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "254A",
+      "name": "Signal Systems Support Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "255A",
+      "name": "Information Services Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "255N",
+      "name": "Network Management Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "255S",
+      "name": "Information Protection Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "255Z",
+      "name": "Senior Signal Systems Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "255Z",
+      "name": "Senior Network Operations Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "256A",
+      "name": "Communications-Electronics Repair Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "25A",
+      "name": "Signal, Operations",
+      "rank": "Officer"
+    },
+    {
+      "code": "25B",
+      "name": "Information Technology Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25B",
+      "name": "Communications-Electronics (C-E) Automation",
+      "rank": "Officer"
+    },
+    {
+      "code": "25C",
+      "name": "Radio Operator-Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25C",
+      "name": "Communications-Electronics (C-E) Operations",
+      "rank": "Officer"
+    },
+    {
+      "code": "25D",
+      "name": "Telecommunications Operator/Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25D",
+      "name": "Communications-Electronics (C-E) Engineering",
+      "rank": "Officer"
+    },
+    {
+      "code": "25E",
+      "name": "Electromagnetic Spectrum Manager",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25E",
+      "name": "Information Systems and Networking",
+      "rank": "Officer"
+    },
+    {
+      "code": "25F",
+      "name": "Network Switching Systems Operator-Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25G",
+      "name": "Mobile ADCP Monitor Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25H",
+      "name": "Radar Data Processing Equipment Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25J",
+      "name": "Operations Central Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25K",
+      "name": "AN/TSQ-51 System Repairman/Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25L",
+      "name": "AN/TSQ-73 ADA Command & Control System Operator/Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25L",
+      "name": "Cable Systems Installer-Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25M",
+      "name": "Multimedia Illustrator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25N",
+      "name": "Nodal Network Systems Operator-Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25P",
+      "name": "Microwave Systems Operator-Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25Q",
+      "name": "Multichannel Transmission Systems Operator-Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25Q",
+      "name": "Multichannel Transmission Systems",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25R",
+      "name": "Visual Information/Audio Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25S",
+      "name": "Satellite Communication Systems Operator-Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25T",
+      "name": "Satellite/Microwave Systems Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25U",
+      "name": "Signal Support Systems Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25V",
+      "name": "Combat Documentation/Production Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25W",
+      "name": "Telecommunications Operations Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25X",
+      "name": "Senior Signal Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25Y",
+      "name": "Information Systems Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "25Z",
+      "name": "Visual Information Operations Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26B",
+      "name": "Weapons Support Radar Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26C",
+      "name": "Target Acquisition/Surveillance Radar Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26D",
+      "name": "Ground Control Approach Radar Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26E",
+      "name": "Aerial Radar Sensor Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26F",
+      "name": "Aerial Photoactive Sensor Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26H",
+      "name": "Air Defense Radar Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26K",
+      "name": "Aerial Electronic Warning Defense Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26L",
+      "name": "Tactical Microwave Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26M",
+      "name": "Aerial Surveillance Radar Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26N",
+      "name": "Aerial Surveillance Infrared Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26P",
+      "name": "Radio Propagation Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26Q",
+      "name": "Tactical Satellite/Microwave Systems Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26R",
+      "name": "Strategic Satellite/Microwave System Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26T",
+      "name": "Radio/Television Systems Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26U",
+      "name": "Unattended Ground Sensor Systems Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26V",
+      "name": "Strategic Microwave Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26W",
+      "name": "Radar Maintenance Supervisor-Inspector",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "26Y",
+      "name": "Satellite Communications Ground Station Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "270A",
+      "name": "Legal Administrator",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "27A",
+      "name": "Judge Advocate, General",
+      "rank": "Officer"
+    },
+    {
+      "code": "27B",
+      "name": "Military Judge",
+      "rank": "Officer"
+    },
+    {
+      "code": "27B",
+      "name": "Land Combat Support System (LCSS) Test Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "27D",
+      "name": "Paralegal Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "27E",
+      "name": "Land Combat Electronic Missile System Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "27F",
+      "name": "Vulcan Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "27G",
+      "name": "Chaparral and Redeye Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "27H",
+      "name": "Hawk Field Maintenance Equipment and Firing Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "27J",
+      "name": "Hawk Field Maintenance Equipment/Pulse Acquisition Radar Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "27K",
+      "name": "Hawk Fire Control/Continuous Wave Radar Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "27L",
+      "name": "Lance System Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "27M",
+      "name": "Multiple Launch Rocket System (MLRS) Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "27N",
+      "name": "Forward Area Alerting Radar (FAAR) Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "27P",
+      "name": "Sgt. York Air Defense Gun System Radar/Electronic Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "27Q",
+      "name": "Sgt. York Air Defense Gun System Test Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "27T",
+      "name": "Avenger System Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "27V",
+      "name": "Hawk Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "27X",
+      "name": "Patriot System Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "27Z",
+      "name": "Missile Systems Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "28M",
+      "name": "Anti-Ballistic Missile Maintenance Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "290A",
+      "name": "Electronic Warfare (EW) Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "29A",
+      "name": "Electronic Warfare Officer (Functional Area)",
+      "rank": "Officer"
+    },
+    {
+      "code": "29E",
+      "name": "Electronic Warfare Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "29E",
+      "name": "Communications Electronics Radio Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "29F",
+      "name": "Fixed Communications Security Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "29G",
+      "name": "Digital Communications Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "29H",
+      "name": "Automatic Digital Message Switch Equipment (ADMSE) Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "29J",
+      "name": "Teletypewriter Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "29M",
+      "name": "Tactical Satellite/Microwave Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "29N",
+      "name": "Switching Central Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "29P",
+      "name": "Communications Security Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "29S",
+      "name": "Communications Security Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "29T",
+      "name": "Satellite/Microwave Communications Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "29U",
+      "name": "Digital Equipment Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "29V",
+      "name": "Microwave Systems Operator/Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "29W",
+      "name": "Electronics Maintenance Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "29X",
+      "name": "Communications Equipment Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "29Y",
+      "name": "Satellite Communications (SATCOM) Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "29Z",
+      "name": "Electronics Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "30A",
+      "name": "Information Operations Officer (functional area)",
+      "rank": "Officer"
+    },
+    {
+      "code": "311A",
+      "name": "CID Special Agent",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "31A",
+      "name": "Military Police",
+      "rank": "Officer"
+    },
+    {
+      "code": "31B",
+      "name": "Military Police",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31C",
+      "name": "Radio Operator-Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31D",
+      "name": "CID Special Agent",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31D",
+      "name": "Mobile Subscriber Equipment Transmission System Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31E",
+      "name": "Internment/Resettlement Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31F",
+      "name": "Network Switching Systems Operator/Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31G",
+      "name": "Tactical Communication Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31J",
+      "name": "Teletypewriter Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31K",
+      "name": "Working Dog Handler",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31K",
+      "name": "Combat Signaler",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31L",
+      "name": "Cable Systems Installer-Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31M",
+      "name": "Multichannel Transmission Systems Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31N",
+      "name": "Communications Systems/Circuit Controller",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31P",
+      "name": "Microwave Systems Operator-Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31Q",
+      "name": "Tactical Satellite/Microwave Systems Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31R",
+      "name": "Multichannel Transmission Systems Operator/Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31S",
+      "name": "Satellite Communication Systems Operator-Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31T",
+      "name": "Satellite/Microwave Systems Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31U",
+      "name": "Signal Support Systems Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31V",
+      "name": "Unit Level Communications Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31W",
+      "name": "Telecommunications Operations Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31X",
+      "name": "Communications Systems/Circuit Control Supervisor Systems",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31Y",
+      "name": "Telecommunications Systems Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "31Z",
+      "name": "Senior Signal Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "32D",
+      "name": "Communications Systems Circuit Controller",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "32E",
+      "name": "Fixed Plant Carrier Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "32F",
+      "name": "Fixed Ciphony Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "32G",
+      "name": "Fixed Cryptographic Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "32H",
+      "name": "Fixed Station Radio Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "32Z",
+      "name": "Communications-Electronics Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "33B",
+      "name": "General Intercept Equipment Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "33C",
+      "name": "Intercept Receiving Systems Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "33D",
+      "name": "Intercept Recording Systems Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "33F",
+      "name": "Demultiplex Systems Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "33G",
+      "name": "ECM/DF Systems Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "33M",
+      "name": "Electronic Warfare/Intercept Strategic Systems Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "33P",
+      "name": "Electronic Warfare Intercept Strategic Receiving Subsystems",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "33Q",
+      "name": "Electronic Warfare/Intercept Strategic Processing/Storage",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "33R",
+      "name": "Electronic Warfare/ Intercept Aviation Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "33R",
+      "name": "Aviation Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "33S",
+      "name": "EW/Intercept Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "33T",
+      "name": "Electronic Warfare/ Intercept Tactical Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "33V",
+      "name": "Electronic Warfare/Intercept Aerial Sensor Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "33W",
+      "name": "Military Intelligence Systems Maintainer/Integrator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "33Z",
+      "name": "Intercept Systems Maintenance Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "33Z",
+      "name": "Electronic Warfare/Intercept Systems Maintenance Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "34A",
+      "name": "Strategic Intelligence Officer",
+      "rank": "Officer"
+    },
+    {
+      "code": "34B",
+      "name": "Punch Card Machine Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "34C",
+      "name": "Decentralized Automated Service Support System Computer Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "34D",
+      "name": "ADPS (Automatic Data Processing Systems) Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "34E",
+      "name": "NCR 500 Computer Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "34F",
+      "name": "DSTE Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "34G",
+      "name": "Fire Control Computer Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "34H",
+      "name": "ADMSE Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "34J",
+      "name": "UNIVAC 1004/1005, DCT-9000 System Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "34K",
+      "name": "IBM 360 Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "34L",
+      "name": "Field Artillery (FA) Digital Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "34M",
+      "name": "SDS 920 Equipment Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "34T",
+      "name": "Tactical Computer Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "34Y",
+      "name": "Field Artillery Tactical Fire Direction Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "34Z",
+      "name": "ADPS (Automatic Data Processing Systems) Maintenance Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "350B",
+      "name": "All Source Intelligence Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "350D",
+      "name": "Imagery Intelligence Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "350F",
+      "name": "All Source Intelligence Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "350G",
+      "name": "Imagery Intelligence Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "350L",
+      "name": "Attache Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "350Z",
+      "name": "Attache Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "351B",
+      "name": "Counter-intelligence Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "351E",
+      "name": "Human Intelligence Collection Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "351L",
+      "name": "Counter-intelligence Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "351M",
+      "name": "Human Intelligence (HUMINT) Collection Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "351Z",
+      "name": "Attache Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "352C",
+      "name": "Traffic Analysis Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "352D",
+      "name": "Emitter Location/Identification Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "352G",
+      "name": "Voice Intercept Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "352H",
+      "name": "Morse Intercept Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "352J",
+      "name": "Emanations Analysis Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "352K",
+      "name": "Non-Morse Intercept Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "352N",
+      "name": "Signals Intelligence Analysis Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "352P",
+      "name": "Voice Intercept Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "352Q",
+      "name": "Communications Interceptor/Locator Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "352R",
+      "name": "Emanations Analysis Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "352S",
+      "name": "Signals Collector Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "353A",
+      "name": "IEW Systems Maintenance Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "353T",
+      "name": "IEW Systems Maintenance Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "35A",
+      "name": "Land Combat Electronic Missile System Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35B",
+      "name": "Electronic Instrument Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35B",
+      "name": "Strategic Intelligence",
+      "rank": "Officer"
+    },
+    {
+      "code": "35B",
+      "name": "Land Combat Support Systems (LCSS) Test Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35C",
+      "name": "Surveillance Radar Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35C",
+      "name": "Imagery Intelligence (IMINT)",
+      "rank": "Officer"
+    },
+    {
+      "code": "35D",
+      "name": "All Source Intelligence",
+      "rank": "Officer"
+    },
+    {
+      "code": "35D",
+      "name": "Air Traffic Control Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35E",
+      "name": "Counter Intelligence",
+      "rank": "Officer"
+    },
+    {
+      "code": "35E",
+      "name": "Radio and Communications Security (COMSEC) Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35F",
+      "name": "Human Intelligence (HUMINT)",
+      "rank": "Officer"
+    },
+    {
+      "code": "35F",
+      "name": "Intelligence Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35F",
+      "name": "Special Electronic Devices Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35G",
+      "name": "Imagery Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35G",
+      "name": "Geospatial Intelligence Imagery Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35G",
+      "name": "Signals Intelligence/Electronic Warfare (SIGINT/EW)",
+      "rank": "Officer"
+    },
+    {
+      "code": "35H",
+      "name": "Common Ground Station (CGS) Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35H",
+      "name": "Test, Measurement, and Diagnostic Equipment (TMDE) Maintenance Sup",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35J",
+      "name": "Computer/Automation Systems Repair",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35K",
+      "name": "Apache Attack Helicopter Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35K",
+      "name": "Unmanned Aerial Vehicle Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35L",
+      "name": "Avionic Communications Equipment",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35L",
+      "name": "Counter Intelligence Agent",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35M",
+      "name": "Radar Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35M",
+      "name": "Human Intelligence Collector",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35N",
+      "name": "Wire Systems Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35N",
+      "name": "Signals Intelligence Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35P",
+      "name": "Multiple Launch Rocket System (MLRS) Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35P",
+      "name": "Cryptologic Linguist (Crypto Linguist)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35Q",
+      "name": "Avionic Flight Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35Q",
+      "name": "Cryptologic Network Warfare Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35R",
+      "name": "Avionic System Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35S",
+      "name": "PATRIOT System Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35S",
+      "name": "Signals Collector/Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35S",
+      "name": "Signals Collector/Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35T",
+      "name": "Avenger System Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35T",
+      "name": "Military Intelligence (MI) Systems Maintainer/Integrator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35T",
+      "name": "Military Intelligence (MI) Systems Maintainer/Integrator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35T",
+      "name": "Military Intelligence (MI) Systems Maintainer/Integrator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35U",
+      "name": "Biomedical Equipment Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35U",
+      "name": "Multi Sensor Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35V",
+      "name": "Signals Intelligence",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35V",
+      "name": "Electronic and Missile Systems Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35W",
+      "name": "Electronic Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35X",
+      "name": "Intelligence Senior Sergeant/Chief Intelligence Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35X",
+      "name": "Intelligence Senior Sergeant/Chief Intelligence Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35Y",
+      "name": "Integrated Family of Test Equipment Operator/Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35Y",
+      "name": "Chief Counter Intelligence/Human Intelligence Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35Z",
+      "name": "Senior Electronic Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "35Z",
+      "name": "Signals Intelligence (Electronic Warfare)/ Senior Sergeant/Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "36A",
+      "name": "Financial Manager",
+      "rank": "Officer"
+    },
+    {
+      "code": "36B",
+      "name": "Financial Management Technician",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "36C",
+      "name": "Wire Systems Installer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "36D",
+      "name": "Antennaman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "36E",
+      "name": "Cable Splicer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "36G",
+      "name": "Manual Central Office Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "36H",
+      "name": "Dial/Manual Central Office Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "36L",
+      "name": "Transportable Automatic Switching Systems Operator/Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "36M",
+      "name": "Wire Systems Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "37A",
+      "name": "Psychological Operations",
+      "rank": "Officer"
+    },
+    {
+      "code": "37F",
+      "name": "Psychological Operations Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "38A",
+      "name": "Civil Affairs",
+      "rank": "Officer"
+    },
+    {
+      "code": "38A",
+      "name": "Civil Affairs Specialist (Reserve Components)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "38B",
+      "name": "Civil Affairs Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "38C",
+      "name": "Civil Affairs",
+      "rank": "Officer"
+    },
+    {
+      "code": "39A",
+      "name": "PSYOP or CA, General",
+      "rank": "Officer"
+    },
+    {
+      "code": "39B",
+      "name": "Automatic Test Equipment Operator/Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "39B",
+      "name": "Psychological Operations",
+      "rank": "Officer"
+    },
+    {
+      "code": "39C",
+      "name": "Target Acquisition/Surveillance Radar Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "39C",
+      "name": "Civil Affairs",
+      "rank": "Officer"
+    },
+    {
+      "code": "39D",
+      "name": "Decentralized Automated Service Support System",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "39E",
+      "name": "Special Electronic Devices Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "39G",
+      "name": "Automated Communications Computer Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "39K",
+      "name": "IBM Automatic Data Processing Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "39L",
+      "name": "Field Artillery Digital Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "39T",
+      "name": "Tactical Computer Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "39V",
+      "name": "Computerized Systems Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "39W",
+      "name": "Radar/Special Electronic Devices Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "39X",
+      "name": "Electronics Equipment Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "39Y",
+      "name": "Field Artillery (FA) Tactical Fire Direction Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "40A",
+      "name": "Space Operations",
+      "rank": "Officer"
+    },
+    {
+      "code": "40C",
+      "name": "Army Astronauts",
+      "rank": "Officer"
+    },
+    {
+      "code": "41A",
+      "name": "Personnel Programs Management Staff",
+      "rank": "Officer"
+    },
+    {
+      "code": "41B",
+      "name": "Topographic Instrument Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "41C",
+      "name": "Fire Control Instrument Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "41E",
+      "name": "Camera Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "41F",
+      "name": "Projector Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "41G",
+      "name": "Surveillance Photographic Equipment Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "41H",
+      "name": "Photographic Equipment Repair Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "41J",
+      "name": "Office Machine Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "41K",
+      "name": "Reproduction Equipment Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "420A",
+      "name": "Human Resources Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "420C",
+      "name": "Bandmaster",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "42A",
+      "name": "Human Resource Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "42A",
+      "name": "Adjutant General, General",
+      "rank": "Officer"
+    },
+    {
+      "code": "42C",
+      "name": "Army Bands",
+      "rank": "Officer"
+    },
+    {
+      "code": "42C",
+      "name": "Orthotic Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "42D",
+      "name": "Dental Removal Prosthetic Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "42E",
+      "name": "Optical Laboratory Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "42E",
+      "name": "Administrative System Management",
+      "rank": "Officer"
+    },
+    {
+      "code": "42F",
+      "name": "Dental Fixed Prosthetic Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "42F",
+      "name": "Human Resources Information Systems Management Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "42H",
+      "name": "Senior Human Resources Officer",
+      "rank": "Officer"
+    },
+    {
+      "code": "42L",
+      "name": "Administrative Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "42R",
+      "name": "Band Member",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "42S",
+      "name": "Special Band Member",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "43A",
+      "name": "Human Resource Management Officer",
+      "rank": "Officer"
+    },
+    {
+      "code": "43E",
+      "name": "Parachute Rigger",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "43J",
+      "name": "Textile Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "43K",
+      "name": "Canvas Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "43M",
+      "name": "Fabric and Leather Repair Foreman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "43M",
+      "name": "Fabric Repair Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "44A",
+      "name": "Finance, General",
+      "rank": "Officer"
+    },
+    {
+      "code": "44B",
+      "name": "Metal Body Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "44B",
+      "name": "Metal Worker",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "44C",
+      "name": "Financial Management Technician",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "44E",
+      "name": "Machinist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "45A",
+      "name": "Armament Maintenance Apprentice",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "45A",
+      "name": "Comptroller",
+      "rank": "Officer"
+    },
+    {
+      "code": "45B",
+      "name": "Small Arms Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "45D",
+      "name": "Self-Propelled Field Artillery Turret Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "45E",
+      "name": "XM1 Tank Turret Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "45G",
+      "name": "Fire Control Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "45J",
+      "name": "Aircraft Armament Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "45K",
+      "name": "Armament Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "45K",
+      "name": "Tank Turret Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "45L",
+      "name": "Artillery Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "45M",
+      "name": "Aircraft Armament Subsystem Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "45N",
+      "name": "M60A1/A3 Tank Turret Mechanic (RC)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "45P",
+      "name": "Sheridan Turret Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "45R",
+      "name": "Missile Tank Turret Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "45T",
+      "name": "Bradley Fighting Vehicle System Turret Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "45Z",
+      "name": "Armament Maintenance Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "46A",
+      "name": "Public Affairs, General",
+      "rank": "Officer"
+    },
+    {
+      "code": "46B",
+      "name": "Broadcast",
+      "rank": "Officer"
+    },
+    {
+      "code": "46D",
+      "name": "Improved Hawk Mechanical Systems Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "46L",
+      "name": "Sergeant Electrical-Mechanical Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "46N",
+      "name": "Pershing Electrical-Mechanical Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "46Q",
+      "name": "Public Affairs Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "46R",
+      "name": "Public Affairs Broadcast Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "46Z",
+      "name": "Chief Public Affairs NCO",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "47A",
+      "name": "USMA, Professor",
+      "rank": "Officer"
+    },
+    {
+      "code": "47B",
+      "name": "USMA Permanent Associate Professor",
+      "rank": "Officer"
+    },
+    {
+      "code": "47C",
+      "name": "USMA, Professor of English",
+      "rank": "Officer"
+    },
+    {
+      "code": "47D",
+      "name": "USMA, Professor of Electrical Engineering and Computer Science",
+      "rank": "Officer"
+    },
+    {
+      "code": "47E",
+      "name": "USMA, Professor of Law",
+      "rank": "Officer"
+    },
+    {
+      "code": "47F",
+      "name": "USMA, Professor of Systems Engineering",
+      "rank": "Officer"
+    },
+    {
+      "code": "47G",
+      "name": "USMA, Professor of Foreign Languages",
+      "rank": "Officer"
+    },
+    {
+      "code": "47H",
+      "name": "USMA, Professor Physics",
+      "rank": "Officer"
+    },
+    {
+      "code": "47J",
+      "name": "USMA, Professor of Social Sciences",
+      "rank": "Officer"
+    },
+    {
+      "code": "47K",
+      "name": "USMA, Professor of History",
+      "rank": "Officer"
+    },
+    {
+      "code": "47L",
+      "name": "USMA, Professor of Behavioral Sciences and Leadership",
+      "rank": "Officer"
+    },
+    {
+      "code": "47M",
+      "name": "USMA, Professor of Chemistry",
+      "rank": "Officer"
+    },
+    {
+      "code": "47N",
+      "name": "USMA, Professor of Mathematical Sciences",
+      "rank": "Officer"
+    },
+    {
+      "code": "47P",
+      "name": "USMA, Professor Geography and Environmental Engineering",
+      "rank": "Officer"
+    },
+    {
+      "code": "47Q",
+      "name": "USMA, Professor and Associate Dean",
+      "rank": "Officer"
+    },
+    {
+      "code": "47R",
+      "name": "USMA, Professor of Civil and Mechanical Engineering",
+      "rank": "Officer"
+    },
+    {
+      "code": "47S",
+      "name": "USMA, Professor of Physical Education",
+      "rank": "Officer"
+    },
+    {
+      "code": "47T",
+      "name": "USMA, Professor of Leader Development and Organizational Learning",
+      "rank": "Officer"
+    },
+    {
+      "code": "47U",
+      "name": "USMA, Professor of Military Art and Science",
+      "rank": "Officer"
+    },
+    {
+      "code": "48B",
+      "name": "Latin America",
+      "rank": "Officer"
+    },
+    {
+      "code": "48C",
+      "name": "Europe (Foreign Area Officer)",
+      "rank": "Officer"
+    },
+    {
+      "code": "48D",
+      "name": "South Asia (Foreign Area Officer)",
+      "rank": "Officer"
+    },
+    {
+      "code": "48E",
+      "name": "Eurasia (Foreign Area Officer)",
+      "rank": "Officer"
+    },
+    {
+      "code": "48F",
+      "name": "China (Foreign Area Officer)",
+      "rank": "Officer"
+    },
+    {
+      "code": "48G",
+      "name": "Mideast/North Africa (Foreign Area Officer)",
+      "rank": "Officer"
+    },
+    {
+      "code": "48H",
+      "name": "Northeast Asia (Foreign Area Officer)",
+      "rank": "Officer"
+    },
+    {
+      "code": "48I",
+      "name": "Southeast Asia (Foreign Area Officer)",
+      "rank": "Officer"
+    },
+    {
+      "code": "48J",
+      "name": "Africa, South of the Sahara (Foreign Area Officer)",
+      "rank": "Officer"
+    },
+    {
+      "code": "49A",
+      "name": "Operations Research/Systems Analysis",
+      "rank": "Officer"
+    },
+    {
+      "code": "49B",
+      "name": "Operations Research, Personnel",
+      "rank": "Officer"
+    },
+    {
+      "code": "49C",
+      "name": "Operations Research, Combat Operations/Materiel Systems",
+      "rank": "Officer"
+    },
+    {
+      "code": "49D",
+      "name": "Operations Research, Planning, Programming, and Resource",
+      "rank": "Officer"
+    },
+    {
+      "code": "49E",
+      "name": "Operations Research, Test, and Evaluation",
+      "rank": "Officer"
+    },
+    {
+      "code": "50A",
+      "name": "Force Development",
+      "rank": "Officer"
+    },
+    {
+      "code": "51A",
+      "name": "Systems Development",
+      "rank": "Officer"
+    },
+    {
+      "code": "51A",
+      "name": "Construction and Utilities Worker",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51B",
+      "name": "Carpenter",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51B",
+      "name": "Carpentry and Masonry Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51C",
+      "name": "Structures Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51C",
+      "name": "Acquisition, Logistics & Technology (AL&T) Contracting NCO",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51C",
+      "name": "Contract and Industrial Management",
+      "rank": "Officer"
+    },
+    {
+      "code": "51D",
+      "name": "Mason",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51D",
+      "name": "Acquisition",
+      "rank": "Officer"
+    },
+    {
+      "code": "51E",
+      "name": "Camouflage Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51F",
+      "name": "Pipeline Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51G",
+      "name": "Soils Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51G",
+      "name": "Materials Quality Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51H",
+      "name": "Construction Foreman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51H",
+      "name": "Construction Engineering Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51J",
+      "name": "Heating and Ventilating Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51K",
+      "name": "Plumber",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51L",
+      "name": "Heating and Cooling Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51M",
+      "name": "Firefighter",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51N",
+      "name": "Water Supply Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51P",
+      "name": "Utilities Foreman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51Q",
+      "name": "Terrain Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51R",
+      "name": "Systems Automation Acquisition and Engineering",
+      "rank": "Officer"
+    },
+    {
+      "code": "51R",
+      "name": "Interior Electrician",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51R",
+      "name": "Electrician",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51S",
+      "name": "Research and Engineering",
+      "rank": "Officer"
+    },
+    {
+      "code": "51T",
+      "name": "Test and Evaluations",
+      "rank": "Officer"
+    },
+    {
+      "code": "51T",
+      "name": "Technical Engineering Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "51Z",
+      "name": "Acquisition",
+      "rank": "Officer"
+    },
+    {
+      "code": "51Z",
+      "name": "General Engineering Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "52B",
+      "name": "Nuclear and Counter-Proliferation",
+      "rank": "Officer"
+    },
+    {
+      "code": "52B",
+      "name": "Power Generation Equipment Operator/Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "52C",
+      "name": "Utilities Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "52C",
+      "name": "Power Pack Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "52D",
+      "name": "Power Generation Equipment Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "52E",
+      "name": "Power Station Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "52E",
+      "name": "Prime Power Production Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "52F",
+      "name": "Turbine Engine Driven Generator Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "52G",
+      "name": "Transmission and Distribution Specialist (RC)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "52H",
+      "name": "Nuclear Power Plant Mechanic or Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "52J",
+      "name": "Nuclear Power Plant Electrician or Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "52K",
+      "name": "Nuclear Power Plant Instrumentman or Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "52L",
+      "name": "Nuclear Power Plant Process Control Specialist or Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "52M",
+      "name": "Nuclear Power Plant Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "52X",
+      "name": "Special Purpose Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "53A",
+      "name": "Information Systems Management",
+      "rank": "Officer"
+    },
+    {
+      "code": "53B",
+      "name": "Oxygen-Acetylene Production Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "53B",
+      "name": "Systems Automation Engineering",
+      "rank": "Officer"
+    },
+    {
+      "code": "53C",
+      "name": "Carbon Dioxide-Hydrogen Production Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "53C",
+      "name": "Systems Automation Acquisition",
+      "rank": "Officer"
+    },
+    {
+      "code": "54A",
+      "name": "Chemical Operations Assistant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "54B",
+      "name": "Chemical Operations Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "54C",
+      "name": "Smoke and Flame Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "54D",
+      "name": "Chemical Equipment Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "54E",
+      "name": "Chemical Staff Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "54Z",
+      "name": "Chemical Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "550A",
+      "name": "Legal Administrator",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "55A",
+      "name": "Ammunition Apprentice",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "55A",
+      "name": "Judge Advocate, General",
+      "rank": "Officer"
+    },
+    {
+      "code": "55B",
+      "name": "Ammunition Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "55B",
+      "name": "Military Judge",
+      "rank": "Officer"
+    },
+    {
+      "code": "55C",
+      "name": "Ammunition Renovation Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "55D",
+      "name": "Explosive Ordnance Disposal Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "55G",
+      "name": "Nuclear Weapons Maintenance Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "55R",
+      "name": "Ammunition Stock Control and Accounting Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "55X",
+      "name": "Ammunition Inspector",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "55Z",
+      "name": "Ammunition Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "56A",
+      "name": "Command and Unit Chaplain",
+      "rank": "Officer"
+    },
+    {
+      "code": "56D",
+      "name": "Clinical Pastoral Educator",
+      "rank": "Officer"
+    },
+    {
+      "code": "56M",
+      "name": "Chaplain Assistant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "57A",
+      "name": "Simulation Operations Officer",
+      "rank": "Officer"
+    },
+    {
+      "code": "57D",
+      "name": "Sawyer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "57E",
+      "name": "Laundry and Bath Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "57F",
+      "name": "Memorial Activities Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "57F",
+      "name": "Graves Registration Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "57G",
+      "name": "Duty Foreman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "57H",
+      "name": "Cargo Handler",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "57H",
+      "name": "Terminal Operations Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "59A",
+      "name": "Strategic Plans and Policy",
+      "rank": "Officer"
+    },
+    {
+      "code": "600A",
+      "name": "Physician Assistant",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "60A",
+      "name": "Operational Medicine",
+      "rank": "Officer"
+    },
+    {
+      "code": "60B",
+      "name": "Nuclear Medicine Officer",
+      "rank": "Officer"
+    },
+    {
+      "code": "60C",
+      "name": "Preventive Medicine Officer",
+      "rank": "Officer"
+    },
+    {
+      "code": "60D",
+      "name": "Occupational Medicine Officer",
+      "rank": "Officer"
+    },
+    {
+      "code": "60F",
+      "name": "Pulmonary Disease/Critical Care Officer",
+      "rank": "Officer"
+    },
+    {
+      "code": "60G",
+      "name": "Gastroenterologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "60H",
+      "name": "Cardiologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "60J",
+      "name": "Obstetrician and Gynecologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "60K",
+      "name": "Urologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "60L",
+      "name": "Dermatologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "60M",
+      "name": "Allergist, Clinical Immunologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "60N",
+      "name": "Anesthesiologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "60P",
+      "name": "Pediatrician",
+      "rank": "Officer"
+    },
+    {
+      "code": "60Q",
+      "name": "Pediatric Sub-specialist",
+      "rank": "Officer"
+    },
+    {
+      "code": "60R",
+      "name": "Child Neurologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "60S",
+      "name": "Ophthalmologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "60T",
+      "name": "Otolaryngologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "60U",
+      "name": "Child Psychiatrist",
+      "rank": "Officer"
+    },
+    {
+      "code": "60V",
+      "name": "Neurologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "60W",
+      "name": "Psychiatrist",
+      "rank": "Officer"
+    },
+    {
+      "code": "61A",
+      "name": "Nephrologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "61B",
+      "name": "Medical Oncologist/Hematologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "61B",
+      "name": "Watercraft Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "61C",
+      "name": "Endocrinologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "61C",
+      "name": "Marine Engineer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "61D",
+      "name": "Rheumatologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "61E",
+      "name": "Clinical Pharmacologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "61F",
+      "name": "Internist",
+      "rank": "Officer"
+    },
+    {
+      "code": "61F",
+      "name": "Marine Hull Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "61G",
+      "name": "Infectious Disease Officer",
+      "rank": "Officer"
+    },
+    {
+      "code": "61H",
+      "name": "Family Medicine",
+      "rank": "Officer"
+    },
+    {
+      "code": "61J",
+      "name": "General Surgeon",
+      "rank": "Officer"
+    },
+    {
+      "code": "61K",
+      "name": "Thoracic Surgeon",
+      "rank": "Officer"
+    },
+    {
+      "code": "61L",
+      "name": "Plastic Surgeon",
+      "rank": "Officer"
+    },
+    {
+      "code": "61M",
+      "name": "Orthopedic Surgeon",
+      "rank": "Officer"
+    },
+    {
+      "code": "61N",
+      "name": "Flight Surgeon",
+      "rank": "Officer"
+    },
+    {
+      "code": "61P",
+      "name": "Physiatrist",
+      "rank": "Officer"
+    },
+    {
+      "code": "61R",
+      "name": "Diagnostic Radiologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "61U",
+      "name": "Pathologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "61W",
+      "name": "Peripheral Vascular Surgeon",
+      "rank": "Officer"
+    },
+    {
+      "code": "61Z",
+      "name": "Neurosurgeon",
+      "rank": "Officer"
+    },
+    {
+      "code": "61Z",
+      "name": "Marine Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "62A",
+      "name": "Emergency Physician",
+      "rank": "Officer"
+    },
+    {
+      "code": "62B",
+      "name": "Field Surgeon",
+      "rank": "Officer"
+    },
+    {
+      "code": "62B",
+      "name": "Construction Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "62C",
+      "name": "Engineer Missile Equipment Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "62D",
+      "name": "Asphalt Equipment Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "62E",
+      "name": "Heavy Construction Equipment Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "62F",
+      "name": "Crane Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "62G",
+      "name": "Quarryman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "62G",
+      "name": "Quarrying Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "62H",
+      "name": "Concrete Paving Equipment Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "62H",
+      "name": "Concrete and Asphalt Equipment Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "62J",
+      "name": "General Construction Machine Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "62J",
+      "name": "General Construction Equipment Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "62K",
+      "name": "Grader Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "62L",
+      "name": "Wheeled Tractor Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "62M",
+      "name": "Rough Terrain Forklift and Loader Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "62N",
+      "name": "Construction Machine Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "62N",
+      "name": "Construction Equipment Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63A",
+      "name": "General Dentist",
+      "rank": "Officer"
+    },
+    {
+      "code": "63A",
+      "name": "M1 Abrams Tank System Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63B",
+      "name": "Comprehensive Dentist",
+      "rank": "Officer"
+    },
+    {
+      "code": "63B",
+      "name": "Wheel Vehicle Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63C",
+      "name": "Track Vehicle Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63D",
+      "name": "Periodontist",
+      "rank": "Officer"
+    },
+    {
+      "code": "63D",
+      "name": "Self-Propelled Field Artillery System Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63D",
+      "name": "Artillery Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63E",
+      "name": "Endodontist",
+      "rank": "Officer"
+    },
+    {
+      "code": "63E",
+      "name": "M1 Abrams Tank System Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63F",
+      "name": "Prosthodontist",
+      "rank": "Officer"
+    },
+    {
+      "code": "63F",
+      "name": "Recovery Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63G",
+      "name": "Fuel and Electrical Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63H",
+      "name": "Public Health Dentist",
+      "rank": "Officer"
+    },
+    {
+      "code": "63H",
+      "name": "Track Vehicle Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63H",
+      "name": "Automotive Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63J",
+      "name": "Quartermaster Equipment Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63J",
+      "name": "Quartermaster and Chemical Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63K",
+      "name": "Pediatric Dentist",
+      "rank": "Officer"
+    },
+    {
+      "code": "63M",
+      "name": "Orthodontist",
+      "rank": "Officer"
+    },
+    {
+      "code": "63M",
+      "name": "Bradley Fighting Vehicle System Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63N",
+      "name": "Oral and Maxillofacial Surgeon",
+      "rank": "Officer"
+    },
+    {
+      "code": "63N",
+      "name": "M60A1/A3 Tank System Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63P",
+      "name": "Oral Pathologist",
+      "rank": "Officer"
+    },
+    {
+      "code": "63R",
+      "name": "Executive Dentist",
+      "rank": "Officer"
+    },
+    {
+      "code": "63R",
+      "name": "M60A2 Tank System Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63S",
+      "name": "Heavy Wheel Vehicle Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63T",
+      "name": "ITV/IFV/CFV System Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63T",
+      "name": "Bradley Fighting Vehicle System Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63W",
+      "name": "Wheel Vehicle Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63X",
+      "name": "Maintenance Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63Y",
+      "name": "Track Vehicle Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "63Z",
+      "name": "Mechanical Maintenance Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "640A",
+      "name": "Food Safety Officer",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "64A",
+      "name": "Field Veterinary Service",
+      "rank": "Officer"
+    },
+    {
+      "code": "64B",
+      "name": "Veterinary Preventive Medicine",
+      "rank": "Officer"
+    },
+    {
+      "code": "64C",
+      "name": "Veterinary Laboratory Animal Medicine",
+      "rank": "Officer"
+    },
+    {
+      "code": "64C",
+      "name": "Motor Transport Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "64D",
+      "name": "Veterinary Pathology",
+      "rank": "Officer"
+    },
+    {
+      "code": "64E",
+      "name": "Veterinary Comparative Medicine",
+      "rank": "Officer"
+    },
+    {
+      "code": "64F",
+      "name": "Veterinary Clinical Medicine",
+      "rank": "Officer"
+    },
+    {
+      "code": "64Z",
+      "name": "Senior Veterinarian (Immaterial)",
+      "rank": "Officer"
+    },
+    {
+      "code": "64Z",
+      "name": "Transportation Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "65A",
+      "name": "Occupational Therapy",
+      "rank": "Officer"
+    },
+    {
+      "code": "65B",
+      "name": "Physical Therapy",
+      "rank": "Officer"
+    },
+    {
+      "code": "65B",
+      "name": "Locomotive Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "65C",
+      "name": "Dietitian",
+      "rank": "Officer"
+    },
+    {
+      "code": "65D",
+      "name": "Physician Assistant",
+      "rank": "Officer"
+    },
+    {
+      "code": "65D",
+      "name": "Railway Car Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "65E",
+      "name": "Airbrake Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "65F",
+      "name": "Locomotive Electrician",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "65G",
+      "name": "Railway Section Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "65H",
+      "name": "Locomotive Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "65J",
+      "name": "Trainman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "65K",
+      "name": "Railway Movement Coordinator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "65X",
+      "name": "Specialist Allied Operations",
+      "rank": "Officer"
+    },
+    {
+      "code": "65Z",
+      "name": "Railway Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "66B",
+      "name": "Army Public Health Nurse",
+      "rank": "Officer"
+    },
+    {
+      "code": "66B",
+      "name": "Army Public Health Nurse",
+      "rank": "Officer"
+    },
+    {
+      "code": "66C",
+      "name": "Psychiatric/Mental Health Nurse",
+      "rank": "Officer"
+    },
+    {
+      "code": "66C",
+      "name": "Psychiatric/Behavioral Health Nurse",
+      "rank": "Officer"
+    },
+    {
+      "code": "66E",
+      "name": "Perioperative Nurse",
+      "rank": "Officer"
+    },
+    {
+      "code": "66E",
+      "name": "Perioperative Nurse",
+      "rank": "Officer"
+    },
+    {
+      "code": "66F",
+      "name": "Nurse Anesthetist",
+      "rank": "Officer"
+    },
+    {
+      "code": "66F",
+      "name": "Nurse Anesthetist",
+      "rank": "Officer"
+    },
+    {
+      "code": "66G",
+      "name": "Obstetric and Gynecologic Nurse",
+      "rank": "Officer"
+    },
+    {
+      "code": "66G",
+      "name": "Obstetric and Gynecologic Nurse",
+      "rank": "Officer"
+    },
+    {
+      "code": "66H",
+      "name": "Medical-Surgical Nurse",
+      "rank": "Officer"
+    },
+    {
+      "code": "66H",
+      "name": "Observation Airplane Technical Inspector",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "66H",
+      "name": "Medical-Surgical Nurse",
+      "rank": "Officer"
+    },
+    {
+      "code": "66J",
+      "name": "Aircraft Armament Technical Inspector",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "66N",
+      "name": "Operational Nursing",
+      "rank": "Officer"
+    },
+    {
+      "code": "66N",
+      "name": "Utility Helicopter Technical Inspector",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "66N",
+      "name": "Operational Nursing",
+      "rank": "Officer"
+    },
+    {
+      "code": "66P",
+      "name": "Family Nurse Practitioner",
+      "rank": "Officer"
+    },
+    {
+      "code": "66P",
+      "name": "Family Nurse Practitioner",
+      "rank": "Officer"
+    },
+    {
+      "code": "66R",
+      "name": "AH-64 Attack Helicopter Technical Inspector",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "66R",
+      "name": "Psychiatric/Behavioral Health Nurse Practitioner",
+      "rank": "Officer"
+    },
+    {
+      "code": "66S",
+      "name": "Scout Helicopter Technical Inspector",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "66T",
+      "name": "Tactical Transport Helicopter Technical Inspector",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "66U",
+      "name": "Medium Helicopter Technical Inspector",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "66V",
+      "name": "Observation/Scout Helicopter Technical Inspector",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "66X",
+      "name": "Heavy Lift Helicopter Technical Inspector",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "66Y",
+      "name": "AH-1 Attack Helicopter Technical Inspector",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "670A",
+      "name": "Health Services Maintenance Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "67A",
+      "name": "Health Services",
+      "rank": "Officer"
+    },
+    {
+      "code": "67B",
+      "name": "Laboratory Sciences",
+      "rank": "Officer"
+    },
+    {
+      "code": "67B",
+      "name": "O-1/U-6 Airplane Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "67C",
+      "name": "Preventive Medicine Sciences",
+      "rank": "Officer"
+    },
+    {
+      "code": "67C",
+      "name": "U-1A Airplane Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "67D",
+      "name": "Behavioral Sciences",
+      "rank": "Officer"
+    },
+    {
+      "code": "67E",
+      "name": "Pharmacy",
+      "rank": "Officer"
+    },
+    {
+      "code": "67F",
+      "name": "Optometry",
+      "rank": "Officer"
+    },
+    {
+      "code": "67F",
+      "name": "Optometry",
+      "rank": "Officer"
+    },
+    {
+      "code": "67F",
+      "name": "Airplane Technical Inspector",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "67G",
+      "name": "Podiatry",
+      "rank": "Officer"
+    },
+    {
+      "code": "67G",
+      "name": "U-8/U-21 Airplane Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "67G",
+      "name": "Utility Airplane Repairer (RC)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "67H",
+      "name": "Observation Airplane Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "67H",
+      "name": "OV-1 Airplane Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "67J",
+      "name": "Aeromedical Evacuation",
+      "rank": "Officer"
+    },
+    {
+      "code": "67N",
+      "name": "UH-1 Helicopter Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "67R",
+      "name": "AH-64 Attack Helicopter Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "67S",
+      "name": "OH-58D Helicopter Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "67T",
+      "name": "UH-60 Helicopter Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "67U",
+      "name": "CH-47 Helicopter Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "67V",
+      "name": "OH-6/OH-58 Helicopter Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "67W",
+      "name": "Helicopter Technical Inspector",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "67X",
+      "name": "CH-54 Helicopter Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "67Y",
+      "name": "AH-1G Helicopter Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "67Y",
+      "name": "AH-1 Attack Helicopter Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "67Z",
+      "name": "Aircraft Maintenance Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68A",
+      "name": "Biomedical Equipment Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68B",
+      "name": "Aircraft Powerplant Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68B",
+      "name": "Aircraft Turbine Engine Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68B",
+      "name": "Orthopedic Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68C",
+      "name": "Practical Nursing Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68D",
+      "name": "Aircraft Powertrain Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68D",
+      "name": "Operating Room Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68E",
+      "name": "Aircraft Rotor and Propeller Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68E",
+      "name": "Dental Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68F",
+      "name": "Physical Therapy Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68F",
+      "name": "Aircraft Electrician",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68G",
+      "name": "Patient Administration Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68G",
+      "name": "Airframe Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68G",
+      "name": "Aircraft Structural Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68H",
+      "name": "Aircraft Pneudraulics Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68H",
+      "name": "Optical Laboratory Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68H",
+      "name": "Aircraft Hydraulics Repairman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68J",
+      "name": "Aircraft Armament/Missile Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68J",
+      "name": "Medical Logistics Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68J",
+      "name": "Helicopter Missile Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68K",
+      "name": "Aircraft Components Repair Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68K",
+      "name": "Medical Laboratory Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68L",
+      "name": "Occupational Therapy Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68L",
+      "name": "Avionic Communications Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68M",
+      "name": "Helicopter Weapon System Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68M",
+      "name": "Nutrition Care Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68M",
+      "name": "Aircraft Weapon Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68N",
+      "name": "Avionic Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68N",
+      "name": "Cardiovascular Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68P",
+      "name": "Avionic Maintenance Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68P",
+      "name": "Radiology Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68Q",
+      "name": "Pharmacy Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68R",
+      "name": "Avionic Radar Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68R",
+      "name": "Veterinary Food Inspection Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68R",
+      "name": "Veterinary Food Inspection Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68S",
+      "name": "OH-58D Armament/Electrical/Avionics Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68S",
+      "name": "Preventive Medicine Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68T",
+      "name": "Animal Care Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68U",
+      "name": "Ear, Nose, and Throat (ENT) Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68V",
+      "name": "Respiratory Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68W",
+      "name": "Health Care Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68W",
+      "name": "Health Care Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68X",
+      "name": "Behavioral Health Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68X",
+      "name": "Mental Health Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68X",
+      "name": "AH-64A Armament/Electrical Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68Y",
+      "name": "Eye Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68Y",
+      "name": "AH-64D Armament/Electrical/Avionic Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "68Z",
+      "name": "Chief Medical NCO",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "70A",
+      "name": "Health Care Administration",
+      "rank": "Officer"
+    },
+    {
+      "code": "70B",
+      "name": "Health Services Administration",
+      "rank": "Officer"
+    },
+    {
+      "code": "70C",
+      "name": "Health Services Comptroller",
+      "rank": "Officer"
+    },
+    {
+      "code": "70D",
+      "name": "Health Services Systems Management",
+      "rank": "Officer"
+    },
+    {
+      "code": "70E",
+      "name": "Patient Administration",
+      "rank": "Officer"
+    },
+    {
+      "code": "70F",
+      "name": "Health Services Human Resources",
+      "rank": "Officer"
+    },
+    {
+      "code": "70H",
+      "name": "Health Services Plans, Ops, Intelligence, Security,& Training",
+      "rank": "Officer"
+    },
+    {
+      "code": "70K",
+      "name": "Health Services Materiel",
+      "rank": "Officer"
+    },
+    {
+      "code": "71A",
+      "name": "Microbiology",
+      "rank": "Officer"
+    },
+    {
+      "code": "71B",
+      "name": "Biochemistry",
+      "rank": "Officer"
+    },
+    {
+      "code": "71C",
+      "name": "Stenographer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "71C",
+      "name": "Executive Administrative Assistant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "71C",
+      "name": "Parasitology",
+      "rank": "Officer"
+    },
+    {
+      "code": "71D",
+      "name": "Legal Clerk",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "71D",
+      "name": "Legal Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "71D",
+      "name": "Immunology",
+      "rank": "Officer"
+    },
+    {
+      "code": "71E",
+      "name": "Court Reporter",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "71E",
+      "name": "Clinical Laboratory",
+      "rank": "Officer"
+    },
+    {
+      "code": "71F",
+      "name": "Postal Clerk",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "71F",
+      "name": "Research Psychology",
+      "rank": "Officer"
+    },
+    {
+      "code": "71G",
+      "name": "Patient Administration Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "71L",
+      "name": "Administrative Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "71N",
+      "name": "Traffic Management Coordinator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "71P",
+      "name": "Flight Operations Coordinator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "71Q",
+      "name": "Journalist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "71R",
+      "name": "Broadcast Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "71R",
+      "name": "Broadcast Journalist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "71S",
+      "name": "Attache Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "71S",
+      "name": "AttachÃ© Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "71U",
+      "name": "Card and Tape Writer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "72A",
+      "name": "Nuclear Medical Science",
+      "rank": "Officer"
+    },
+    {
+      "code": "72B",
+      "name": "Communications Center Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "72B",
+      "name": "Entomology",
+      "rank": "Officer"
+    },
+    {
+      "code": "72C",
+      "name": "Central Office Switchboard Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "72C",
+      "name": "Audiology",
+      "rank": "Officer"
+    },
+    {
+      "code": "72D",
+      "name": "Environmental Science and Engineering",
+      "rank": "Officer"
+    },
+    {
+      "code": "72E",
+      "name": "Telecommunications Center Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "72E",
+      "name": "Environmental Engineer",
+      "rank": "Officer"
+    },
+    {
+      "code": "72F",
+      "name": "Data Communications Terminal Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "72G",
+      "name": "Data Communications Switching Center Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "72H",
+      "name": "Central Office Operations Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "72H",
+      "name": "Central Office Operations Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "73A",
+      "name": "Social Work",
+      "rank": "Officer"
+    },
+    {
+      "code": "73B",
+      "name": "Clinical Psychology",
+      "rank": "Officer"
+    },
+    {
+      "code": "73C",
+      "name": "Finance Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "73D",
+      "name": "Accounting Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "73Z",
+      "name": "Finance Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "740A",
+      "name": "Chemical, Biological, Radiological and Nuclear (CBRN)",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "74A",
+      "name": "CBRN",
+      "rank": "Officer"
+    },
+    {
+      "code": "74B",
+      "name": "Chemical Operations and Training",
+      "rank": "Officer"
+    },
+    {
+      "code": "74B",
+      "name": "Information Systems Operator-Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "74C",
+      "name": "Record Telecommunications Operator/Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "74C",
+      "name": "Chemical Munitions and Materiel Management",
+      "rank": "Officer"
+    },
+    {
+      "code": "74D",
+      "name": "Chemical, Biological, Radiological and Nuclear (CBRN) Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "74D",
+      "name": "Information Systems Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "74E",
+      "name": "Computer Systems Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "74F",
+      "name": "Computer Programmer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "74F",
+      "name": "Programmer/Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "74G",
+      "name": "Telecommunications Computer Operator-Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "74Z",
+      "name": "Information Systems Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "75A",
+      "name": "Field Veterinary Service",
+      "rank": "Officer"
+    },
+    {
+      "code": "75B",
+      "name": "Personnel Administration Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "75B",
+      "name": "Veterinary Preventive Medicine",
+      "rank": "Officer"
+    },
+    {
+      "code": "75C",
+      "name": "Personnel Management Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "75C",
+      "name": "Veterinary Laboratory Animal Medicine",
+      "rank": "Officer"
+    },
+    {
+      "code": "75D",
+      "name": "Personnel Records Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "75D",
+      "name": "Veterinary Pathology",
+      "rank": "Officer"
+    },
+    {
+      "code": "75E",
+      "name": "Personnel Actions Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "75E",
+      "name": "Veterinary Pathology",
+      "rank": "Officer"
+    },
+    {
+      "code": "75E",
+      "name": "Veterinary Comparative Medicine",
+      "rank": "Officer"
+    },
+    {
+      "code": "75F",
+      "name": "Personnel Information System Management Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "75F",
+      "name": "Veterinary Clinical Medicine",
+      "rank": "Officer"
+    },
+    {
+      "code": "75H",
+      "name": "Personnel Services Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "75Z",
+      "name": "Personnel Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "76A",
+      "name": "Supplyman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "76C",
+      "name": "Equipment Records and Parts Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "76D",
+      "name": "Materiel Supply Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "76J",
+      "name": "Medical Supply Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "76J",
+      "name": "Medical Supplyman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "76N",
+      "name": "Procurement Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "76P",
+      "name": "Stock Control Supplyman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "76Q",
+      "name": "Special Purpose Materiel Supply Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "76R",
+      "name": "Weapons Material Supply Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "76S",
+      "name": "Vehicle Materiel Supply Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "76T",
+      "name": "Aircraft Materiel Supply Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "76U",
+      "name": "Communications Electronics (COMMEL) Materiel Supply Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "76V",
+      "name": "Storage Supplyman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "76W",
+      "name": "Petroleum Supply Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "76X",
+      "name": "Subsistence Supplyman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "76Y",
+      "name": "Unit Supply Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "76Z",
+      "name": "Senior Supply Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "77F",
+      "name": "Petroleum Supply Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "77L",
+      "name": "Petroleum Laboratory Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "77W",
+      "name": "Water Treatment Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "79D",
+      "name": "Reenlistment NCO",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "79R",
+      "name": "Recruiter",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "79T",
+      "name": "Recruiting and Retention NCO (Army National Guard)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "79V",
+      "name": "Army Reserve Career Counselor (Army Reserve)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "81A",
+      "name": "General Draftsman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "81B",
+      "name": "Construction Draftsman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "81B",
+      "name": "Technical Drafting Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "81C",
+      "name": "Cartographer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "81C",
+      "name": "Cartographic Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "81E",
+      "name": "Illustrator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "81L",
+      "name": "Lithographer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "81Q",
+      "name": "Terrain Intelligence Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "81Q",
+      "name": "Terrain Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "81T",
+      "name": "Topographic Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "81Z",
+      "name": "Topographic Engineering Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "82A",
+      "name": "Rodman and Tapeman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "82B",
+      "name": "Construction Surveyor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "82C",
+      "name": "Artillery Surveyor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "82D",
+      "name": "Topographic Surveyor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "82E",
+      "name": "Topographic Computer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "83D",
+      "name": "Process Photographer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "83E",
+      "name": "Platemaker",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "83E",
+      "name": "Photo and Layout Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "83F",
+      "name": "Offset Pressman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "83F",
+      "name": "Printing and Bindery Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "83Z",
+      "name": "Photolithography Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "84B",
+      "name": "Still Photographer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "84B",
+      "name": "Still Photographic Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "84C",
+      "name": "Motion Picture Photographer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "84D",
+      "name": "Audio Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "84E",
+      "name": "TV Cameraman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "84F",
+      "name": "TV Production Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "84G",
+      "name": "Photographic Laboratory Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "84T",
+      "name": "TV/Radio Broadcast Operations Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "84Z",
+      "name": "Public Affairs/Audio Visual Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "880A",
+      "name": "Marine Deck Officer",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "881A",
+      "name": "Marine Engineering Officer",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "882A",
+      "name": "Mobility Officer",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "88A",
+      "name": "Transportation, General",
+      "rank": "Officer"
+    },
+    {
+      "code": "88B",
+      "name": "Traffic Management",
+      "rank": "Officer"
+    },
+    {
+      "code": "88C",
+      "name": "Marine and Terminal Operations",
+      "rank": "Officer"
+    },
+    {
+      "code": "88D",
+      "name": "Motor/Rail Transportation",
+      "rank": "Officer"
+    },
+    {
+      "code": "88H",
+      "name": "Cargo Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "88K",
+      "name": "Watercraft Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "88L",
+      "name": "Watercraft Engineer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "88M",
+      "name": "Motor Transport Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "88N",
+      "name": "Transportation Management Coordinator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "88P",
+      "name": "Railway Equipment Repairer (RC)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "88Q",
+      "name": "Railway Car Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "88R",
+      "name": "Airbrake Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "88S",
+      "name": "Locomotive Electrician",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "88T",
+      "name": "Railway Section Repairer (RC)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "88U",
+      "name": "Railway Operations Crewmember (RC)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "88V",
+      "name": "Train Crew Member",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "88W",
+      "name": "Railway Movement Coordinator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "88X",
+      "name": "Railway Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "88Y",
+      "name": "Marine Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "88Z",
+      "name": "Transportation Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "890A",
+      "name": "Ammunition Warrant Officer",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "89A",
+      "name": "Ammunition Stock Control and Accounting Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "89B",
+      "name": "Ammunition Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "89D",
+      "name": "Explosive Ordnance Disposal Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "89E",
+      "name": "Explosive Ordnance Disposal",
+      "rank": "Officer"
+    },
+    {
+      "code": "90A",
+      "name": "Logistics",
+      "rank": "Officer"
+    },
+    {
+      "code": "910A",
+      "name": "Ammunition Warrant Officer",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "911A",
+      "name": "Nuclear Weapons Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "912A",
+      "name": "Land Combat Missile Systems Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "912A",
+      "name": "Land Combat Missile Systems Repair Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "913A",
+      "name": "Armament Systems Maintenance Warrant Officer",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "914A",
+      "name": "Allied Trades Warrant Officer",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "915A",
+      "name": "Automotive Maintenance Warrant Officer",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "915E",
+      "name": "Senior Automotive Maintenance Warrant Officer/Senior Ordnance",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "916A",
+      "name": "High-to-Medium Air Defense (HIMAD) Direct Support/General",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "917A",
+      "name": "Maneuver Forces Air Defense Systems (MFADS) Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "918A",
+      "name": "TMDE Maintenance Support Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "918B",
+      "name": "Electronic Systems Maintenance Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "918E",
+      "name": "Senior Electronics Maintenance Warrant Officer",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "919A",
+      "name": "Engineer Equipment Maintenance Warrant Officer",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "91A",
+      "name": "Ordnance, General",
+      "rank": "Officer"
+    },
+    {
+      "code": "91A",
+      "name": "Medical Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91B",
+      "name": "Medical Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91B",
+      "name": "Wheeled Vehicle Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91B",
+      "name": "Maintenance Management",
+      "rank": "Officer"
+    },
+    {
+      "code": "91C",
+      "name": "Practical Nurse",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91C",
+      "name": "Utilities Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91D",
+      "name": "Munitions Materiel Management",
+      "rank": "Officer"
+    },
+    {
+      "code": "91D",
+      "name": "Operating Room Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91D",
+      "name": "CID Special Agent",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91D",
+      "name": "Power Generation Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91E",
+      "name": "Dental Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91E",
+      "name": "Explosive Ordnance Disposal",
+      "rank": "Officer"
+    },
+    {
+      "code": "91E",
+      "name": "Allied Trades Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91F",
+      "name": "Psychiatric Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91F",
+      "name": "Small Arms/Artillery Repairer (Small Arms/Arty Rep)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91F",
+      "name": "Small Arms/Artillery Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91G",
+      "name": "Behavioral Science Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91G",
+      "name": "Patient Administration Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91G",
+      "name": "Fire Control Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91H",
+      "name": "Optical Laboratory Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91H",
+      "name": "Track Vehicle Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91J",
+      "name": "Physical Therapy Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91J",
+      "name": "Quartermaster and Chemical Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91J",
+      "name": "Medical Logistics Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91K",
+      "name": "Medical Laboratory Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91K",
+      "name": "Armament Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91L",
+      "name": "Construction Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91M",
+      "name": "Hospital Food Service Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91M",
+      "name": "Bradley Fighting Vehicle System Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91M",
+      "name": "Nutrition Care Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91N",
+      "name": "Cardiac Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91P",
+      "name": "Radiology Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91P",
+      "name": "Self Propelled Artillery Systems Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91P",
+      "name": "Artillery Mechanic",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91Q",
+      "name": "Pharmacy Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91R",
+      "name": "Veterinary Food Inspection Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91S",
+      "name": "Preventive Medicine Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91S",
+      "name": "Stryker Systems Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91T",
+      "name": "Animal Care Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91U",
+      "name": "Ear, Nose, & Throat (ENT) Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91V",
+      "name": "Respiratory Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91W",
+      "name": "Metal Worker",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91W",
+      "name": "Health Care Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91X",
+      "name": "Maintenance Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91X",
+      "name": "Maintenance Supervisor (Maint Supv)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91X",
+      "name": "Mental Health Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91Y",
+      "name": "Eye Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91Z",
+      "name": "Medical Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91Z",
+      "name": "Chief Medical NCO",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "91Z",
+      "name": "Senior Maintenance Supervisor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "920A",
+      "name": "Property Accounting Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "920B",
+      "name": "Supply Systems Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "921A",
+      "name": "Airdrop Systems Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "922A",
+      "name": "Food Service Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "923A",
+      "name": "Petroleum Systems Technician",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "92A",
+      "name": "Automated Logistical Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "92A",
+      "name": "Quartermaster, General",
+      "rank": "Officer"
+    },
+    {
+      "code": "92B",
+      "name": "Medical Laboratory Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "92C",
+      "name": "Petroleum Laboratory Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "92D",
+      "name": "Aerial Delivery and Materiel",
+      "rank": "Officer"
+    },
+    {
+      "code": "92E",
+      "name": "Cytology Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "92F",
+      "name": "Petroleum and Water",
+      "rank": "Officer"
+    },
+    {
+      "code": "92F",
+      "name": "Petroleum Supply Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "92G",
+      "name": "Food Service Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "92L",
+      "name": "Petroleum Laboratory Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "92M",
+      "name": "Mortuary Affairs Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "92R",
+      "name": "Parachute Rigger",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "92S",
+      "name": "Shower/Laundry and Clothing Repair Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "92W",
+      "name": "Water Treatment Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "92Y",
+      "name": "Unit Supply Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "92Z",
+      "name": "Senior Noncommissioned Logistician",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "93B",
+      "name": "Aeroscout Observer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "93C",
+      "name": "Air Traffic Control (ATC) Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "93D",
+      "name": "Air Traffic Control Systems, Subsystems and Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "93E",
+      "name": "Meteorological Observer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "93F",
+      "name": "Ballistic Meteorology Crewman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "93F",
+      "name": "Field Artillery Meteorological Crewmember",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "93H",
+      "name": "Air Traffic Control (ATC) Tower Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "93J",
+      "name": "ATC (Air Traffic Control) Radar Controller",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "93P",
+      "name": "Flight Operations Coordinator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "93P",
+      "name": "Aviation Operations Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "948B",
+      "name": "Electronic Systems Maintenance Warrant Officer",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "948D",
+      "name": "Electronic Missile Systems Maintenance Warrant Officer",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "948E",
+      "name": "Senior Electronics Maintenance Warrant Officer",
+      "rank": "Warrant Officer"
+    },
+    {
+      "code": "94A",
+      "name": "Land Combat Electronic Missile System Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94B",
+      "name": "Food Service Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94D",
+      "name": "Air Traffic Control Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94E",
+      "name": "Radio and Communications Security (COMSEC) Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94F",
+      "name": "Hospital Food Service Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94F",
+      "name": "Computer Detection Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94H",
+      "name": "Test, Measurement, and Diagnostic Equipment Support Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94K",
+      "name": "Apache Attack Helicopter Systems Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94L",
+      "name": "Avionic Communications Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94M",
+      "name": "Radar Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94P",
+      "name": "Multiple Launch Rocket System (MLRS) Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94R",
+      "name": "Avionic and Survivability Equipment Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94S",
+      "name": "Patriot System Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94T",
+      "name": "Avenger System Repairer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94V",
+      "name": "Electronic and Missile Systems Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94W",
+      "name": "Electronic Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94X",
+      "name": "Senior Missile Systems Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94Y",
+      "name": "Integrated Family of Test Equipment Operator/Maintainer",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "94Z",
+      "name": "Senior Electronic Maintenance Chief",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "95B",
+      "name": "Military Policeman",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "95C",
+      "name": "Correctional Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "95D",
+      "name": "Assistant Special Agent",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "95D",
+      "name": "CID Special Agent",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "96B",
+      "name": "Intelligence Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "96D",
+      "name": "Image Interpreter",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "96D",
+      "name": "Imagery Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "96F",
+      "name": "Psychological Operations Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "96H",
+      "name": "Imagery Ground Station Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "96H",
+      "name": "Common Ground Station (CGS) Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "96R",
+      "name": "Ground Surveillance Systems Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "96U",
+      "name": "Unmanned Aerial Vehicle Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "96Z",
+      "name": "Intelligence Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "97A",
+      "name": "Contracting and Industrial Management Officer",
+      "rank": "Officer"
+    },
+    {
+      "code": "97B",
+      "name": "Counterintelligence Agent",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "97C",
+      "name": "Area Intelligence Specialist",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "97D",
+      "name": "Military Intelligence Coordinator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "97E",
+      "name": "Interrogator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "97E",
+      "name": "Human Intelligence Collector",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "97G",
+      "name": "Multi-Discipline Counter-Intelligence (MDCI) Operator/Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "97L",
+      "name": "Translator/Interpreter (Reserve Components)",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "97Z",
+      "name": "Counterintelligence/Human Intelligence Senior Sergeant",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "98C",
+      "name": "EW/Signal Intelligence Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "98C",
+      "name": "Signals Intelligence Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "98D",
+      "name": "Emitter Locator/Identifier",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "98G",
+      "name": "EW/Signal Intelligence Voice Interceptor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "98G",
+      "name": "Cryptologic Communications Interceptor/Locator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "98H",
+      "name": "Communications Interceptor/Locator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "98J",
+      "name": "EW/Signal Intelligence Non-communications Interceptor",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "98J",
+      "name": "Electronic Intelligence Interceptor/Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "98K",
+      "name": "Non-Morse Interceptor/Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "98K",
+      "name": "Signals Collection/Identification Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "98P",
+      "name": "Multi-Sensor Operator",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "98Y",
+      "name": "Signals Collector/Analyst",
+      "rank": "Enlisted"
+    },
+    {
+      "code": "98Z",
+      "name": "EW/Signal Intelligence Chief",
+      "rank": "Enlisted"
+    }
+  ],
+  "count": 1276
+}

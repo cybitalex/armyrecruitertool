@@ -15,6 +15,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { askAI, createProspectingSystemPrompt, type AIMessage } from "./llm";
+import { suggestMOS } from "./mos-suggest";
 import {
   searchNearbyLocations,
   searchNearbyEvents,
@@ -3237,6 +3238,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         message:
           error instanceof Error ? error.message : "Failed to export recruits",
+      });
+    }
+  });
+
+  // MOS SUGGESTION ENDPOINT
+  
+  // Get AI-powered MOS suggestions based on interest description
+  app.post("/api/mos/suggest", async (req, res) => {
+    try {
+      const { interestDescription } = req.body;
+      
+      if (!interestDescription || typeof interestDescription !== 'string') {
+        return res.status(400).json({ error: "Interest description is required" });
+      }
+
+      console.log(`🎯 MOS suggestion request for: "${interestDescription}"`);
+      
+      const suggestions = await suggestMOS(interestDescription);
+      
+      console.log(`✅ Found ${suggestions.length} MOS suggestions`);
+      
+      res.json({ 
+        suggestions,
+        count: suggestions.length 
+      });
+    } catch (error) {
+      console.error("❌ Error suggesting MOS:", error);
+      res.status(500).json({
+        error: "Failed to suggest MOS",
+        message: error instanceof Error ? error.message : "Unknown error"
       });
     }
   });
