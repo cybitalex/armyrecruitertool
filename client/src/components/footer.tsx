@@ -48,7 +48,7 @@ export function Footer() {
         <div className="w-full px-3 md:px-6 py-1.5 flex items-center justify-between">
           <div className="flex-1 text-left">
             <span className="font-mono text-[10px] md:text-xs text-white/90 uppercase tracking-wide">
-              Army Recruiting Tool | CyBit Devs
+              Army Recruiter Tool | CyBit Devs
             </span>
           </div>
           <div className="flex-1 text-center">
