@@ -737,7 +737,7 @@ function DashboardContent() {
 
         {/* QR Scan Analytics Dialog */}
         <Dialog open={showQRAnalytics} onOpenChange={setShowQRAnalytics}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full mx-2 sm:mx-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden w-[95vw] sm:w-full mx-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
                 <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -748,100 +748,101 @@ function DashboardContent() {
               </DialogDescription>
             </DialogHeader>
             
-            {qrAnalyticsLoading ? (
-              <div className="text-center py-8 text-gray-500">Loading analytics...</div>
-            ) : qrAnalyticsData ? (
-              <div className="space-y-4 sm:space-y-6">
-                {/* Overall Stats */}
-                <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                  <Card>
-                    <CardHeader className="pb-2 px-2 sm:px-6">
-                      <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Total Scans</CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-2 sm:px-6 pb-2 sm:pb-6">
-                      <div className="text-lg sm:text-2xl font-bold text-blue-600">
-                        {qrAnalyticsData.totalScans}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="pb-2 px-2 sm:px-6">
-                      <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Converted</CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-2 sm:px-6 pb-2 sm:pb-6">
-                      <div className="text-lg sm:text-2xl font-bold text-green-600">
-                        {qrAnalyticsData.totalConverted}
-                      </div>
-                      {qrAnalyticsData.totalConverted > 0 && (
-                        <p className="text-[10px] sm:text-xs text-gray-500 mt-1 hidden sm:block">
-                          Includes applications and surveys
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="pb-2 px-2 sm:px-6">
-                      <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Conversion Rate</CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-2 sm:px-6 pb-2 sm:pb-6">
-                      <div className="text-lg sm:text-2xl font-bold text-purple-600">
-                        {qrAnalyticsData.overallConversionRate}%
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+            <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+              {qrAnalyticsLoading ? (
+                <div className="text-center py-8 text-gray-500">Loading analytics...</div>
+              ) : qrAnalyticsData ? (
+                <div className="space-y-4 sm:space-y-6">
+                  {/* Overall Stats */}
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                    <Card>
+                      <CardHeader className="pb-2 px-2 sm:px-6">
+                        <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Total Scans</CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-2 sm:px-6 pb-2 sm:pb-6">
+                        <div className="text-lg sm:text-2xl font-bold text-blue-600">
+                          {qrAnalyticsData.totalScans}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="pb-2 px-2 sm:px-6">
+                        <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Converted</CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-2 sm:px-6 pb-2 sm:pb-6">
+                        <div className="text-lg sm:text-2xl font-bold text-green-600">
+                          {qrAnalyticsData.totalConverted}
+                        </div>
+                        {qrAnalyticsData.totalConverted > 0 && (
+                          <p className="text-[10px] sm:text-xs text-gray-500 mt-1 hidden sm:block">
+                            Includes applications and surveys
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="pb-2 px-2 sm:px-6">
+                        <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Conversion Rate</CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-2 sm:px-6 pb-2 sm:pb-6">
+                        <div className="text-lg sm:text-2xl font-bold text-purple-600">
+                          {qrAnalyticsData.overallConversionRate}%
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
 
-                {/* Location Breakdown */}
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Scans by Location</h3>
-                  {qrAnalyticsData.locations.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500 text-sm">
-                      No QR code scans recorded yet
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto -mx-2 sm:mx-0">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="text-xs sm:text-sm">Location</TableHead>
-                            <TableHead className="text-right text-xs sm:text-sm">Scans</TableHead>
-                            <TableHead className="text-right text-xs sm:text-sm">Converted</TableHead>
-                            <TableHead className="text-right text-xs sm:text-sm">Rate</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {qrAnalyticsData.locations.map((location) => (
-                            <TableRow key={location.locationLabel}>
-                              <TableCell className="font-medium text-xs sm:text-sm">
-                                <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-                                  {location.locationLabel === 'Default QR' ? (
-                                    <QrCode className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                                  ) : (
-                                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500 flex-shrink-0" />
-                                  )}
-                                  <span className="truncate">{location.locationLabel}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right font-semibold text-xs sm:text-sm">
-                                {location.totalScans}
-                              </TableCell>
-                              <TableCell className="text-right text-xs sm:text-sm">
-                                <span className="text-green-600 font-semibold">
-                                  {location.convertedScans}
-                                </span>
-                              </TableCell>
-                              <TableCell className="text-right text-xs sm:text-sm">
-                                <Badge variant={location.conversionRate >= 50 ? "default" : location.conversionRate >= 25 ? "secondary" : "outline"} className="text-[10px] sm:text-xs">
-                                  {location.conversionRate}%
-                                </Badge>
-                              </TableCell>
+                  {/* Location Breakdown */}
+                  <div className="w-full">
+                    <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Scans by Location</h3>
+                    {qrAnalyticsData.locations.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500 text-sm">
+                        No QR code scans recorded yet
+                      </div>
+                    ) : (
+                      <div className="w-full overflow-x-auto">
+                        <Table className="w-full">
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="text-xs sm:text-sm min-w-[120px]">Location</TableHead>
+                              <TableHead className="text-right text-xs sm:text-sm whitespace-nowrap">Scans</TableHead>
+                              <TableHead className="text-right text-xs sm:text-sm whitespace-nowrap">Converted</TableHead>
+                              <TableHead className="text-right text-xs sm:text-sm whitespace-nowrap">Rate</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </div>
+                          </TableHeader>
+                          <TableBody>
+                            {qrAnalyticsData.locations.map((location) => (
+                              <TableRow key={location.locationLabel}>
+                                <TableCell className="font-medium text-xs sm:text-sm">
+                                  <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+                                    {location.locationLabel === 'Default QR' ? (
+                                      <QrCode className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
+                                    ) : (
+                                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500 flex-shrink-0" />
+                                    )}
+                                    <span className="truncate">{location.locationLabel}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right font-semibold text-xs sm:text-sm whitespace-nowrap">
+                                  {location.totalScans}
+                                </TableCell>
+                                <TableCell className="text-right text-xs sm:text-sm whitespace-nowrap">
+                                  <span className="text-green-600 font-semibold">
+                                    {location.convertedScans}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-right text-xs sm:text-sm whitespace-nowrap">
+                                  <Badge variant={location.conversionRate >= 50 ? "default" : location.conversionRate >= 25 ? "secondary" : "outline"} className="text-[10px] sm:text-xs">
+                                    {location.conversionRate}%
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </div>
 
                 {/* Recent Scans */}
                 {qrAnalyticsData.locations.some(loc => loc.scans.length > 0) && (
@@ -884,6 +885,7 @@ function DashboardContent() {
             ) : (
               <div className="text-center py-8 text-gray-500">No analytics data available</div>
             )}
+            </div>
           </DialogContent>
         </Dialog>
       </main>

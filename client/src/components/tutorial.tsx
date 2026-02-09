@@ -439,7 +439,15 @@ export function Tutorial({ open, onOpenChange, page = "general" }: TutorialProps
   const shouldShowBothTutorials = isStationCommander && page === 'general';
   
   // Get content based on current page or active tab
-  let content = tutorialContent[page] || tutorialContent.general;
+  // For regular recruiters, NEVER show station-commander content
+  let content;
+  if (page === 'station-commander' && !isStationCommander) {
+    // Regular recruiter trying to access SC tutorial - redirect to general
+    content = tutorialContent.general;
+  } else {
+    content = tutorialContent[page] || tutorialContent.general;
+  }
+  
   let currentStep = currentStepRecruiter;
   let setCurrentStep = setCurrentStepRecruiter;
   
