@@ -151,11 +151,11 @@ export function Header() {
 
       <div className="max-w-7xl mx-auto px-3 md:px-4 h-16 md:h-20 flex items-center justify-between gap-2 md:gap-4">
         <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-          {/* USAREC Recruiting Logo */}
+          {/* USAREC Badge Logo */}
           <div className="relative h-12 w-12 md:h-16 md:w-16 flex items-center justify-center flex-shrink-0 bg-transparent">
             <img
-              src="/logos/recruiting_logo_transparent_fixed_smooth.png"
-              alt="USAREC Recruiting"
+              src="/logos/usarec-badge.svg"
+              alt="USAREC Badge"
               className="w-full h-full object-contain drop-shadow-lg"
             />
           </div>
