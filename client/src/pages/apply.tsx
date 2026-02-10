@@ -236,6 +236,78 @@ export default function ApplyPage() {
           </Card>
         )}
 
+        {/* Army Benefits Section */}
+        <Card className="mb-6 bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-xl font-bold text-green-900 text-center flex items-center justify-center gap-2">
+              <span className="text-2xl">🇺🇸</span>
+              Why Join the U.S. Army?
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Education Benefits */}
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl flex-shrink-0">🎓</span>
+                  <div>
+                    <h4 className="font-bold text-green-900 mb-1">Education Benefits</h4>
+                    <p className="text-sm text-gray-700">
+                      Up to $75,000 for college through the GI Bill®, plus tuition assistance while serving
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Healthcare */}
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl flex-shrink-0">🏥</span>
+                  <div>
+                    <h4 className="font-bold text-green-900 mb-1">Healthcare Coverage</h4>
+                    <p className="text-sm text-gray-700">
+                      Free medical and dental care for you and your family with TRICARE coverage
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Career Training */}
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl flex-shrink-0">💼</span>
+                  <div>
+                    <h4 className="font-bold text-green-900 mb-1">Career Training</h4>
+                    <p className="text-sm text-gray-700">
+                      Over 150 career paths with paid training and certifications valued at thousands
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Financial Security */}
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl flex-shrink-0">💰</span>
+                  <div>
+                    <h4 className="font-bold text-green-900 mb-1">Financial Security</h4>
+                    <p className="text-sm text-gray-700">
+                      Competitive salary, housing allowance, 30 days paid vacation, and retirement benefits
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Call to Action */}
+            <div className="mt-4 text-center">
+              <p className="text-sm font-semibold text-green-900">
+                ⬇️ Fill out the form below to learn more and start your journey
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold text-green-800">

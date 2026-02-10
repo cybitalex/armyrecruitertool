@@ -156,9 +156,9 @@ function StationCommanderDashboardContent() {
       const data = await stationCommander.getRecruitersWithStats();
       return data;
     },
-    staleTime: 15 * 1000, // Data fresh for 15 seconds
+    staleTime: 5 * 1000, // Data fresh for 5 seconds
     gcTime: 2 * 60 * 1000, // Cache for 2 minutes
-    refetchInterval: 30000, // Auto-refresh every 30 seconds
+    refetchInterval: 10000, // Auto-refresh every 10 seconds
     refetchOnWindowFocus: true,
     retry: 1,
   });
@@ -221,10 +221,14 @@ function StationCommanderDashboardContent() {
   });
 
   useEffect(() => {
-    if (activeTab === "applicants" && recruitsList.length === 0) {
+    if (activeTab === "applicants") {
+      // Always load recruits when switching to applicants tab
       loadRecruits();
     } else if (activeTab === "surveys" && surveyResponses.length === 0) {
       loadSurveys();
+    } else if (activeTab === "overview") {
+      // Refresh overview stats when switching to overview tab
+      refetchRecruiters();
     }
   }, [activeTab]);
 
@@ -321,7 +325,7 @@ function StationCommanderDashboardContent() {
   };
 
   // Helper function to filter items by date
-  const filterByDate = <T extends { createdAt?: Date | string }>(items: T[]): T[] => {
+  const filterByDate = <T extends { createdAt?: Date | string; submittedAt?: Date | string }>(items: T[]): T[] => {
     if (dateFilter === 'allTime') return items;
     
     const now = new Date();
@@ -340,11 +344,30 @@ function StationCommanderDashboardContent() {
       endDate = new Date(year, month, 0, 23, 59, 59);
     }
     
-    return items.filter(item => {
-      if (!item.createdAt) return false;
-      const itemDate = new Date(item.createdAt);
-      return itemDate >= startDate && itemDate <= endDate;
+    console.log(`🔍 Date Filter Debug:`, {
+      dateFilter,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      totalItems: items.length
     });
+    
+    const filtered = items.filter(item => {
+      // Use submittedAt for recruits, createdAt for surveys
+      const dateField = item.submittedAt || item.createdAt;
+      if (!dateField) {
+        console.log(`⚠️ Item has no date field:`, item);
+        return false;
+      }
+      const itemDate = new Date(dateField);
+      const passes = itemDate >= startDate && itemDate <= endDate;
+      if (!passes) {
+        console.log(`❌ Item filtered out - Date: ${itemDate.toISOString()}, Field: ${item.submittedAt ? 'submittedAt' : 'createdAt'}, Item:`, item);
+      }
+      return passes;
+    });
+    
+    console.log(`✅ Filtered ${filtered.length} of ${items.length} items`);
+    return filtered;
   };
   
   // Get period label for display
@@ -640,10 +663,21 @@ function StationCommanderDashboardContent() {
         {/* Station Totals */}
         {stationTotals && (
           <>
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="text-sm sm:text-base">Station Totals - {getPeriodLabel()}</span>
-            </h2>
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="text-sm sm:text-base">Station Totals - {getPeriodLabel()}</span>
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetchRecruiters()}
+                disabled={loading}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Refresh
+              </Button>
+            </div>
             <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8">
               <Card>
                 <CardHeader className="pb-2 px-2 sm:px-6 pt-3 sm:pt-6">
@@ -1049,14 +1083,25 @@ function StationCommanderDashboardContent() {
           {/* Leads Tab */}
           <TabsContent value="applicants">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  All Leads
-                </CardTitle>
-                <CardDescription>
-                  View all leads from your station
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    All Leads
+                  </CardTitle>
+                  <CardDescription>
+                    View all leads from your station
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadRecruits}
+                  disabled={recruitsLoading}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Refresh
+                </Button>
               </CardHeader>
               <CardContent>
                 {recruitsLoading ? (
@@ -1067,6 +1112,7 @@ function StationCommanderDashboardContent() {
                   <div className="text-center py-8 text-gray-500">
                     <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />
                     <p>No leads found for {getPeriodLabel()}</p>
+                    <p className="text-xs mt-2">Total recruits loaded: {recruitsList.length}</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
