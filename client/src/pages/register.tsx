@@ -22,12 +22,21 @@ import {
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 import { ARMY_RANKS, ACCOUNT_TYPES } from "@shared/constants";
-import type { Station } from "@shared/schema";
+import { IS_SORB } from "@/lib/sorb-config";
 import {
   SearchableSelect,
   type SearchableSelectOption,
 } from "../components/ui/searchable-select";
 import { MilEmailNotice } from "../components/mil-email-notice";
+
+type RegisterStationOption = {
+  stationCode: string;
+  name: string;
+  city?: string | null;
+  state?: string | null;
+  base?: string;
+  company?: string;
+};
 
 export default function RegisterPage() {
   const [, setLocation] = useLocation();
@@ -46,19 +55,28 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [stations, setStations] = useState<Station[]>([]);
+  const [stations, setStations] = useState<RegisterStationOption[]>([]);
+  const [stationsLoading, setStationsLoading] = useState(true);
+  const [stationsError, setStationsError] = useState(false);
 
   useEffect(() => {
-    // Load stations from API
     const loadStations = async () => {
+      setStationsLoading(true);
+      setStationsError(false);
       try {
-        const response = await fetch("/api/stations");
+        const endpoint = IS_SORB ? "/api/sorb/stations" : "/api/stations";
+        const response = await fetch(endpoint);
         if (response.ok) {
           const data = await response.json();
           setStations(data);
+        } else {
+          setStationsError(true);
         }
       } catch (err) {
         console.error("Failed to load stations:", err);
+        setStationsError(true);
+      } finally {
+        setStationsLoading(false);
       }
     };
     loadStations();
@@ -171,12 +189,38 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
+        <CardHeader className="text-center space-y-3">
+          {/* Logo row */}
+          <div className="flex items-center justify-center gap-4">
+            <img
+              src="/logos/usarec-badge.svg"
+              alt="USAREC"
+              className="h-14 w-14 object-contain"
+              onError={(e) => { (e.target as HTMLImageElement).src = "/logos/usarec-badge.png"; }}
+            />
+            {IS_SORB && (
+              <>
+                <div className="h-10 w-px bg-gray-300" />
+                <img
+                  src="/logos/ARSOF_RGB.png"
+                  alt="ARSOF"
+                  className="h-14 object-contain"
+                />
+              </>
+            )}
+          </div>
+
+          <div className="bg-green-800 text-white text-xs font-bold tracking-widest py-1 px-3 rounded">
+            UNCLASSIFIED
+          </div>
+
           <CardTitle className="text-2xl font-bold text-green-800">
-            Army Recruiter Registration
+            {IS_SORB ? "SORB Recruiter Registration" : "Army Recruiter Registration"}
           </CardTitle>
           <CardDescription>
-            Create your recruiter account to get started
+            {IS_SORB
+              ? "Create your SORB recruiter account to get started"
+              : "Create your recruiter account to get started"}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -307,30 +351,53 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="stationCode">Recruiting Station *</Label>
-              {stations.length > 0 ? (
+              <Label htmlFor="stationCode">
+                {IS_SORB ? "SORB Base & Company *" : "Recruiting Station *"}
+              </Label>
+              {stationsLoading ? (
+                <div className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-500 animate-pulse">
+                  Loading stations…
+                </div>
+              ) : stationsError ? (
+                <div className="px-3 py-2 border border-red-300 bg-red-50 rounded-md text-sm text-red-600">
+                  Failed to load stations. Please refresh the page.
+                </div>
+              ) : stations.length === 0 ? (
+                <div className="px-3 py-2 border border-yellow-300 bg-yellow-50 rounded-md text-sm text-yellow-700">
+                  No stations found. Please refresh the page.
+                </div>
+              ) : (
                 <SearchableSelect
                   options={stations.map((station) => ({
                     value: station.stationCode,
-                    label: `${station.city}, ${station.state} (${station.stationCode})`,
-                    searchText: `${station.city} ${station.state} ${station.stationCode} ${station.name}`,
+                    label: IS_SORB
+                      ? `${station.base || station.city || station.name} — ${station.company || station.state || "General"}`
+                      : `${station.city}, ${station.state} (${station.stationCode})`,
+                    searchText: IS_SORB
+                      ? `${station.base || ""} ${station.company || ""} ${station.stationCode} ${station.name || ""}`
+                      : `${station.city || ""} ${station.state || ""} ${station.stationCode} ${station.name || ""}`,
                   }))}
                   value={formData.stationCode}
                   onValueChange={(value) =>
                     setFormData({ ...formData, stationCode: value })
                   }
-                  placeholder="Search by city, state, or code..."
-                  searchPlaceholder="Type to search stations..."
+                  placeholder={
+                    IS_SORB
+                      ? "Search by base or company..."
+                      : "Search by city, state, or code..."
+                  }
+                  searchPlaceholder={
+                    IS_SORB
+                      ? "Type to search bases and companies..."
+                      : "Type to search stations..."
+                  }
                   emptyText="No stations found"
                 />
-              ) : (
-                <div className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-500">
-                  Loading stations...
-                </div>
               )}
               <p className="text-xs text-gray-600">
-                Type to search for your recruiting station by city, state, or
-                station code
+                {IS_SORB
+                  ? "Type to search your SORB assignment by base, company, or station code"
+                  : "Type to search for your recruiting station by city, state, or station code"}
               </p>
             </div>
 

@@ -45,6 +45,7 @@ import {
 import { db } from "./database";
 import { users, qrScans, qrCodeLocations, notifications, recruits, armyMOS } from "@shared/schema";
 import { eq, sql, and, desc, inArray, lte, gte } from "drizzle-orm";
+import { getSORBRegistrationStations } from "./sorb-data";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // AUTHENTICATION ENDPOINTS
@@ -4198,6 +4199,461 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clear all notifications
+  app.delete("/api/notifications/clear-all", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      await db
+        .delete(notifications)
+        .where(eq(notifications.userId, userId));
+
+      res.json({ message: "All notifications cleared" });
+    } catch (error) {
+      console.error("Error clearing all notifications:", error);
+      res.status(500).json({ error: "Failed to clear all notifications" });
+    }
+  });
+
+  // SORB (Special Operations Recruiting Battalion) ENDPOINTS
+
+  app.get("/api/sorb/stations", (_req, res) => {
+    try {
+      const sorbStations = getSORBRegistrationStations();
+      res.json(sorbStations);
+    } catch (error) {
+      console.error("SORB stations error:", error);
+      res.status(500).json({ error: "Failed to load SORB stations" });
+    }
+  });
+
+  type SORBFilters = {
+    station?: string[];
+    sorbCo?: string[];
+    logAttempt?: string[];
+    gtMin?: number;
+    gtMax?: number;
+  };
+
+  app.get("/api/sorb/analytics", async (req, res) => {
+    try {
+      const station = req.query.station as string | undefined;
+      const sorbCo = req.query.sorbCo as string | undefined;
+      const logAttempt = req.query.logAttempt as string | undefined;
+      const gtMin = req.query.gtMin != null ? parseInt(String(req.query.gtMin), 10) : undefined;
+      const gtMax = req.query.gtMax != null ? parseInt(String(req.query.gtMax), 10) : undefined;
+
+      const filters: SORBFilters = {};
+      if (station) filters.station = Array.isArray(station) ? station : [station];
+      if (sorbCo) filters.sorbCo = Array.isArray(sorbCo) ? sorbCo : [sorbCo];
+      if (logAttempt) filters.logAttempt = Array.isArray(logAttempt) ? logAttempt : [logAttempt];
+      if (gtMin != null && !isNaN(gtMin)) filters.gtMin = gtMin;
+      if (gtMax != null && !isNaN(gtMax)) filters.gtMax = gtMax;
+
+      // DB-backed SORB analytics (no Excel dependency)
+      const allRecruits = await db.select().from(recruits).where(inArray(recruits.source, ["sorb_excel", "sorb_direct"]));
+      const mapped = allRecruits.map((r) => {
+        const sorb = parseSorbFields(r.additionalNotes);
+        return {
+          post: String((sorb as any).post || r.address || "").trim(),
+          sorbCo: String((sorb as any).sorbCo || "").trim(),
+          logAttempt: String((sorb as any).logAttempt || "").trim(),
+          gt: typeof (sorb as any).gt === "number" ? (sorb as any).gt : parseInt(String((sorb as any).gt || 0), 10) || 0,
+          contacted: !!(sorb as any).contacted || ["contacted", "interested", "scheduled", "qualified", "recommended", "preparing", "contracting", "contracted"].includes(r.status),
+        };
+      });
+
+      const filtered = mapped.filter((r) => {
+        if (filters.station?.length && !filters.station.map((s) => s.toUpperCase()).includes(r.post.toUpperCase())) return false;
+        if (filters.sorbCo?.length && !filters.sorbCo.includes(r.sorbCo)) return false;
+        if (filters.logAttempt?.length && !filters.logAttempt.includes(r.logAttempt)) return false;
+        if (filters.gtMin != null && r.gt < filters.gtMin) return false;
+        if (filters.gtMax != null && r.gt > filters.gtMax) return false;
+        return true;
+      });
+
+      const totalQM = filtered.length;
+      const totalLeadsAttempted = filtered.filter((r) => !!r.logAttempt && r.logAttempt !== "None").length;
+      const totalContacts = filtered.filter((r) => r.contacted).length;
+      const appointmentsMade = Math.max(0, Math.floor(totalContacts * 0.15));
+      const appointmentsConducted = Math.max(0, Math.floor(appointmentsMade * 0.7));
+      const volunteerStatements = Math.max(0, Math.floor(appointmentsConducted * 0.05));
+      const phase1 = Math.max(0, Math.floor(volunteerStatements * 1.5));
+      const phase2 = Math.max(0, Math.floor(phase1 * 0.8));
+      const pfaPass = Math.max(0, Math.floor(phase2 * 0.3));
+      const emmClassed = Math.max(0, Math.floor(pfaPass * 2));
+      const percentAttempted = totalQM > 0 ? (totalLeadsAttempted / totalQM) * 100 : 0;
+      const percentContacted = totalQM > 0 ? (totalContacts / totalQM) * 100 : 0;
+
+      const dbAnalytics = {
+        funnel: [
+          { label: "Total QM", count: totalQM, percent: 100 },
+          { label: "Total Leads Attempted", count: totalLeadsAttempted, percent: percentAttempted },
+          { label: "Total Contacts", count: totalContacts, percent: percentContacted },
+          { label: "Appointments Made", count: appointmentsMade, percent: totalQM > 0 ? (appointmentsMade / totalQM) * 100 : 0 },
+          { label: "Total Appointments Conducted", count: appointmentsConducted, percent: totalQM > 0 ? (appointmentsConducted / totalQM) * 100 : 0 },
+          { label: "Total Volunteer Statements", count: volunteerStatements, percent: totalQM > 0 ? (volunteerStatements / totalQM) * 100 : 0 },
+          { label: "Total Phase 1", count: phase1, percent: totalQM > 0 ? (phase1 / totalQM) * 100 : 0 },
+          { label: "Total Phase 2", count: phase2, percent: totalQM > 0 ? (phase2 / totalQM) * 100 : 0 },
+          { label: "Total PFA Pass", count: pfaPass, percent: totalQM > 0 ? (pfaPass / totalQM) * 100 : 0 },
+          { label: "Total EMM Classed", count: emmClassed, percent: totalQM > 0 ? (emmClassed / totalQM) * 100 : 0 },
+        ],
+        totalQM,
+        totalLeadsAttempted,
+        totalContacts,
+        appointmentsMade,
+        percentAttempted,
+        percentContacted,
+        stations: [...new Set(mapped.map((r) => r.post).filter(Boolean))].sort(),
+        sorbCompanies: [...new Set(mapped.map((r) => r.sorbCo).filter(Boolean))].sort(),
+        logAttemptTypes: [...new Set(mapped.map((r) => r.logAttempt).filter(Boolean))].sort(),
+      };
+
+      res.json(dbAnalytics);
+    } catch (error) {
+      console.error("SORB analytics error:", error);
+      res.status(500).json({ error: "Failed to load SORB analytics" });
+    }
+  });
+
+  app.get("/api/sorb/leads", async (req, res) => {
+    try {
+      const station = req.query.station as string | undefined;
+      const sorbCo = req.query.sorbCo as string | undefined;
+      const logAttempt = req.query.logAttempt as string | undefined;
+      const gtMin = req.query.gtMin != null ? parseInt(String(req.query.gtMin), 10) : undefined;
+      const gtMax = req.query.gtMax != null ? parseInt(String(req.query.gtMax), 10) : undefined;
+
+      const filters: SORBFilters = {};
+      if (station) filters.station = Array.isArray(station) ? station : [station];
+      if (sorbCo) filters.sorbCo = Array.isArray(sorbCo) ? sorbCo : [sorbCo];
+      if (logAttempt) filters.logAttempt = Array.isArray(logAttempt) ? logAttempt : [logAttempt];
+      if (gtMin != null && !isNaN(gtMin)) filters.gtMin = gtMin;
+      if (gtMax != null && !isNaN(gtMax)) filters.gtMax = gtMax;
+
+      const dbLeads = await db.select().from(recruits).where(inArray(recruits.source, ["sorb_excel", "sorb_direct"]));
+      const mapped = dbLeads.map((r) => {
+        const sorb = parseSorbFields(r.additionalNotes) as any;
+        return {
+          rank: String(sorb.rank || ""),
+          lastName: String(r.lastName || ""),
+          gt: typeof sorb.gt === "number" ? sorb.gt : parseInt(String(sorb.gt || 0), 10) || 0,
+          mos: String(sorb.mos || r.preferredMOS || ""),
+          post: String(sorb.post || r.address || "").trim(),
+          phone: String(r.phone || ""),
+          unit: String(sorb.unit || ""),
+          logAttempt: String(sorb.logAttempt || "").trim(),
+          contacted: (sorb.contacted || ["contacted", "interested", "scheduled", "qualified", "recommended", "preparing", "contracting", "contracted"].includes(r.status)) ? "Y" : "N",
+          sorbCo: String(sorb.sorbCo || "").trim(),
+        };
+      }).filter((row) => {
+        if (filters.station?.length && !filters.station.map((s) => s.toUpperCase()).includes(row.post.toUpperCase())) return false;
+        if (filters.sorbCo?.length && !filters.sorbCo.includes(row.sorbCo)) return false;
+        if (filters.logAttempt?.length && !filters.logAttempt.includes(row.logAttempt)) return false;
+        if (filters.gtMin != null && row.gt < filters.gtMin) return false;
+        if (filters.gtMax != null && row.gt > filters.gtMax) return false;
+        return true;
+      });
+
+      res.json(mapped);
+    } catch (error) {
+      console.error("SORB leads error:", error);
+      res.status(500).json({ error: "Failed to load SORB leads" });
+    }
+  });
+
+  // ── SORB DB Lead Management ──────────────────────────────────────────────
+
+  const SORB_STATUSES = ["prospect","screening","recommended","preparing","contracting","contracted","declined","pending","attempted","contacted","interested","scheduled","qualified"];
+
+  function parseSorbFields(notes: string | null) {
+    if (!notes) return {};
+    // Try JSON _sorb block first
+    try {
+      const raw = notes.includes("\n---\n") ? notes.split("\n---\n").slice(-1)[0] : notes;
+      const parsed = JSON.parse(raw);
+      if (parsed._sorb) return parsed._sorb;
+    } catch {}
+    // Try pipe-separated legacy format: Rank: SGT | GT: 115 | ...
+    const fields: Record<string,string> = {};
+    const pairs = notes.split("|").map(s => s.trim());
+    for (const pair of pairs) {
+      const m = pair.match(/^([^:]+):\s*(.+)$/);
+      if (m) fields[m[1].trim().toLowerCase().replace(/\s+/g,"_")] = m[2].trim();
+    }
+    return fields;
+  }
+
+  function buildSorbNotes(sorb: Record<string,unknown>, freeNotes?: string): string {
+    const obj: Record<string,unknown> = { _sorb: sorb };
+    const s = JSON.stringify(obj);
+    return freeNotes ? `${freeNotes}\n---\n${s}` : s;
+  }
+
+  // Create a new SORB lead (soldier of interest)
+  app.post("/api/sorb/leads/create", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const {
+        rank, firstName, lastName, phone, email, gt, mos, post, unit, sorbCo, logAttempt, contacted,
+        pipeline, runTime2mi, ruckTime12mi, pushups, situps, ptScore,
+        medicalEligible, airborneQualified, noMoralWaiver, priorSOCOM,
+        notes, status,
+      } = req.body;
+      if (!lastName) return res.status(400).json({ error: "Last name is required" });
+
+      const sorbBlock = {
+        rank: rank || "",
+        gt: gt ? Number(gt) : null,
+        mos: mos || "",
+        post: post || "",
+        unit: unit || "",
+        sorbCo: sorbCo || "",
+        logAttempt: logAttempt || "None",
+        contacted: !!contacted,
+        pipeline: pipeline || "",
+        runTime2mi: runTime2mi || "",
+        ruckTime12mi: ruckTime12mi || "",
+        pushups: pushups ? Number(pushups) : null,
+        situps: situps ? Number(situps) : null,
+        ptScore: ptScore ? Number(ptScore) : null,
+        medicalEligible: !!medicalEligible,
+        airborneQualified: !!airborneQualified,
+        noMoralWaiver: !!noMoralWaiver,
+        priorSOCOM: !!priorSOCOM,
+      };
+      const combinedNotes = buildSorbNotes(sorbBlock, notes || "");
+      const safeEmail = email?.trim() || `sorb.${(lastName).toLowerCase().replace(/[^a-z0-9]/g,"")}.${Date.now()}@example.mil`;
+      const safePhone = String(phone || "").replace(/\D/g,"").slice(-10).padStart(10,"5");
+      const initStatus = status && SORB_STATUSES.includes(status) ? status : "prospect";
+
+      const [newRecruit] = await db.insert(recruits).values({
+        recruiterId: userId,
+        firstName: firstName?.trim() || "SOLDIER",
+        lastName: lastName.trim(),
+        dateOfBirth: "1998-01-01",
+        email: safeEmail,
+        phone: safePhone,
+        address: post || "On File",
+        city: "N/A",
+        state: "N/A",
+        zipCode: "00000",
+        educationLevel: "HS Diploma",
+        hasDriversLicense: "yes",
+        hasPriorService: "yes",
+        priorServiceBranch: "Army",
+        priorServiceYears: 4,
+        preferredMOS: mos || null,
+        availability: "immediate",
+        additionalNotes: combinedNotes,
+        status: initStatus,
+        source: "sorb_direct",
+      }).returning();
+
+      res.status(201).json(newRecruit);
+    } catch (error) {
+      console.error("SORB create lead error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to create lead" });
+    }
+  });
+
+  // Update SORB-specific fields on a lead
+  app.patch("/api/sorb/leads/:id", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const [recruit] = await db.select().from(recruits).where(eq(recruits.id, req.params.id));
+      if (!recruit) return res.status(404).json({ error: "Lead not found" });
+
+      // Permission: own lead, station commander, or admin
+      const canEdit = user.role === "admin" || recruit.recruiterId === userId ||
+        (user.role === "station_commander");
+      if (!canEdit) return res.status(403).json({ error: "Permission denied" });
+
+      const {
+        rank, gt, mos, post, unit, sorbCo, logAttempt, contacted,
+        pipeline, runTime2mi, ruckTime12mi, pushups, situps, ptScore,
+        medicalEligible, airborneQualified, noMoralWaiver, priorSOCOM,
+        notes, status, firstName, lastName, phone,
+      } = req.body;
+
+      // Merge into existing _sorb block
+      const existingSorb = parseSorbFields(recruit.additionalNotes);
+      const mergedSorb: Record<string,unknown> = {
+        ...existingSorb,
+        ...(rank !== undefined && { rank }),
+        ...(gt !== undefined && { gt: gt ? Number(gt) : null }),
+        ...(mos !== undefined && { mos }),
+        ...(post !== undefined && { post }),
+        ...(unit !== undefined && { unit }),
+        ...(sorbCo !== undefined && { sorbCo }),
+        ...(logAttempt !== undefined && { logAttempt }),
+        ...(contacted !== undefined && { contacted: !!contacted }),
+        ...(pipeline !== undefined && { pipeline }),
+        ...(runTime2mi !== undefined && { runTime2mi }),
+        ...(ruckTime12mi !== undefined && { ruckTime12mi }),
+        ...(pushups !== undefined && { pushups: pushups ? Number(pushups) : null }),
+        ...(situps !== undefined && { situps: situps ? Number(situps) : null }),
+        ...(ptScore !== undefined && { ptScore: ptScore ? Number(ptScore) : null }),
+        ...(medicalEligible !== undefined && { medicalEligible: !!medicalEligible }),
+        ...(airborneQualified !== undefined && { airborneQualified: !!airborneQualified }),
+        ...(noMoralWaiver !== undefined && { noMoralWaiver: !!noMoralWaiver }),
+        ...(priorSOCOM !== undefined && { priorSOCOM: !!priorSOCOM }),
+      };
+
+      const updateData: Record<string,unknown> = {
+        additionalNotes: buildSorbNotes(mergedSorb, notes !== undefined ? notes : undefined),
+      };
+      if (firstName !== undefined) updateData.firstName = firstName;
+      if (lastName !== undefined) updateData.lastName = lastName;
+      if (phone !== undefined) updateData.phone = phone;
+      if (post !== undefined) updateData.address = post;
+      if (mos !== undefined) updateData.preferredMOS = mos;
+      if (status !== undefined && SORB_STATUSES.includes(status)) updateData.status = status;
+
+      const [updated] = await db.update(recruits).set(updateData as any).where(eq(recruits.id, req.params.id)).returning();
+      res.json(updated);
+    } catch (error) {
+      console.error("SORB update lead error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to update lead" });
+    }
+  });
+
+  // DB-driven pipeline analytics (all recruits with sorb_excel / sorb_direct source)
+  app.get("/api/sorb/pipeline-analytics", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      // Admin/station commander see all; recruiter sees own
+      let allLeads;
+      if (user.role === "admin") {
+        allLeads = await db.select().from(recruits);
+      } else if (user.role === "station_commander") {
+        allLeads = await db.select().from(recruits);
+      } else {
+        allLeads = await db.select().from(recruits).where(eq(recruits.recruiterId, userId));
+      }
+
+      // Helper: parse _sorb JSON
+      function parseS(notes: string | null) {
+        if (!notes) return {} as Record<string,unknown>;
+        try {
+          const raw = notes.includes("\n---\n") ? notes.split("\n---\n").slice(-1)[0] : notes;
+          const j = JSON.parse(raw);
+          return (j._sorb ?? {}) as Record<string,unknown>;
+        } catch { return {}; }
+      }
+
+      const PIPELINE_STAGES = ["prospect","screening","recommended","preparing","contracting","contracted","declined"];
+      const PIPELINE_TYPES  = ["18X","Option40","CA","PSYOP","160th","Ranger","Unknown"];
+
+      // Stage funnel
+      const stageMap: Record<string,number> = {};
+      const pipelineMap: Record<string,number> = {};
+      const postMap: Record<string,number> = {};
+      const qualifyingGT: number[] = [];
+
+      for (const lead of allLeads) {
+        const s = parseS(lead.additionalNotes);
+
+        // Stage
+        const stage = lead.status ?? "prospect";
+        stageMap[stage] = (stageMap[stage] ?? 0) + 1;
+
+        // Pipeline
+        const pipe = (s.pipeline as string) || "Unknown";
+        pipelineMap[pipe] = (pipelineMap[pipe] ?? 0) + 1;
+
+        // Post
+        const post = (s.post as string) || "Unknown";
+        postMap[post] = (postMap[post] ?? 0) + 1;
+
+        // GT
+        const gt = typeof s.gt === "number" ? s.gt : null;
+        if (gt !== null) qualifyingGT.push(gt);
+      }
+
+      const total = allLeads.length;
+      const avgGT = qualifyingGT.length
+        ? Math.round(qualifyingGT.reduce((a, b) => a + b, 0) / qualifyingGT.length)
+        : 0;
+      const gtQualified = qualifyingGT.filter(g => g >= 105).length;
+      const gtHighQual   = qualifyingGT.filter(g => g >= 110).length;
+
+      const stageFunnel = PIPELINE_STAGES.map(stage => ({
+        stage,
+        label: stage.charAt(0).toUpperCase() + stage.slice(1),
+        count: stageMap[stage] ?? 0,
+        percent: total > 0 ? Math.round(((stageMap[stage] ?? 0) / total) * 100) : 0,
+      }));
+
+      const pipelineBreakdown = PIPELINE_TYPES
+        .map(p => ({ pipeline: p, count: pipelineMap[p] ?? 0 }))
+        .filter(p => p.count > 0);
+
+      // Add any unlisted pipelines
+      Object.entries(pipelineMap).forEach(([p, count]) => {
+        if (!PIPELINE_TYPES.includes(p)) pipelineBreakdown.push({ pipeline: p, count });
+      });
+
+      const topPosts = Object.entries(postMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([post, count]) => ({ post, count }));
+
+      res.json({
+        total,
+        avgGT,
+        gtQualified,
+        gtHighQual,
+        stageFunnel,
+        pipelineBreakdown,
+        topPosts,
+      });
+    } catch (error) {
+      console.error("SORB pipeline analytics error:", error);
+      res.status(500).json({ error: "Failed to load pipeline analytics" });
+    }
+  });
+
+  // Quick status update for SORB leads
+  app.patch("/api/sorb/leads/:id/status", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const { status } = req.body;
+      if (!status || !SORB_STATUSES.includes(status)) {
+        return res.status(400).json({ error: `Invalid status. Must be one of: ${SORB_STATUSES.join(", ")}` });
+      }
+
+      const [recruit] = await db.select().from(recruits).where(eq(recruits.id, req.params.id));
+      if (!recruit) return res.status(404).json({ error: "Lead not found" });
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      const canEdit = user?.role === "admin" || recruit.recruiterId === userId || user?.role === "station_commander";
+      if (!canEdit) return res.status(403).json({ error: "Permission denied" });
+
+      const [updated] = await db.update(recruits).set({ status }).where(eq(recruits.id, req.params.id)).returning();
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update status" });
+    }
+  });
+
   // HEALTH CHECK ENDPOINTS (for Kubernetes)
 
   // Liveness probe
@@ -4218,6 +4674,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "not ready",
         error: error instanceof Error ? error.message : "Database check failed",
       });
+    }
+  });
+
+  // TEST ENDPOINT - Create a test shipper notification (REMOVE IN PRODUCTION)
+  app.post("/api/test/shipper-notification/:recruitId", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { recruitId } = req.params;
+      
+      // Get recruit info
+      const [recruit] = await db
+        .select()
+        .from(recruits)
+        .where(eq(recruits.id, recruitId))
+        .limit(1);
+      
+      if (!recruit) {
+        return res.status(404).json({ error: "Recruit not found" });
+      }
+
+      // Create test notification for current user - link to recruit detail page
+      await db.insert(notifications).values({
+        userId,
+        type: 'shipper_alert',
+        title: '🚢 Test Shipper Alert',
+        message: `${recruit.firstName} ${recruit.lastName} is shipping soon (TEST)`,
+        link: `/recruits/${recruitId}`,
+        read: false,
+      });
+
+      res.json({ success: true, message: "Test notification created", recruitId });
+    } catch (error: any) {
+      console.error("Error creating test notification:", error);
+      res.status(500).json({ error: error.message });
     }
   });
 

@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "../../../../cybit-k8s"
+		},
+		{
+			"path": "../../.."
+		},
+		{
+			"path": "../../../../USAREC-Survey-Tool"
+		},
+		{
+			"path": "../../../../abadiq_new"
+		}
+	],
+	"settings": {}
+}

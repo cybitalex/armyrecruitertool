@@ -9,6 +9,7 @@ import {
 } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { CheckCircle2, XCircle, Home } from "lucide-react";
+import { IS_SORB } from "@/lib/sorb-config";
 
 export default function ApprovalSuccess() {
   const [location] = useLocation();
@@ -63,11 +64,11 @@ export default function ApprovalSuccess() {
 
           <div className="pt-4">
             <Button
-              onClick={() => (window.location.href = "https://armyrecruitertool.duckdns.org")}
+              onClick={() => (window.location.href = "/")}
               className="bg-green-700 hover:bg-green-800"
             >
               <Home className="w-4 h-4 mr-2" />
-              Go to Army Recruiter Tool
+              {IS_SORB ? "Go to SORB Army Recruiter Tool" : "Go to Army Recruiter Tool"}
             </Button>
           </div>
 

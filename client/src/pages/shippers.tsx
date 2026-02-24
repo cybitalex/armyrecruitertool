@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth, ProtectedRoute } from "@/lib/auth-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -86,7 +86,7 @@ function ShippersPageContent() {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const [selectedShipper, setSelectedShipper] = useState<Shipper | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [addShipperDialogOpen, setAddShipperDialogOpen] = useState(false);
@@ -121,6 +121,19 @@ function ShippersPageContent() {
     ),
     enabled: addShipperDialogOpen,
   });
+
+  // Auto-fill MOS when selecting an applicant in Add Shipper dialog
+  useEffect(() => {
+    if (selectedApplicantId && qualifiedApplicants.length > 0) {
+      const selectedApplicant = qualifiedApplicants.find(a => a.id === selectedApplicantId);
+      if (selectedApplicant?.preferredMOS) {
+        setEditFormData(prev => ({
+          ...prev,
+          actualMOS: selectedApplicant.preferredMOS || ""
+        }));
+      }
+    }
+  }, [selectedApplicantId, qualifiedApplicants]);
 
   // Helper to get MOS details
   const getMOSDetails = (mosCode: string | null): MOSDetails | null => {
@@ -185,7 +198,8 @@ function ShippersPageContent() {
     setEditFormData({
       shipDate: shipper.shipDate || "",
       component: shipper.component || "",
-      actualMOS: shipper.actualMOS || "",
+      // Pre-fill actualMOS with preferredMOS if actualMOS is empty
+      actualMOS: shipper.actualMOS || shipper.preferredMOS || "",
     });
     setEditDialogOpen(true);
   };
@@ -638,28 +652,34 @@ function ShippersPageContent() {
                   required
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose an applicant" />
+                    <SelectValue placeholder="Choose an applicant">
+                      {selectedApplicantId &&
+                        (() => {
+                          const a = qualifiedApplicants.find((x) => x.id === selectedApplicantId);
+                          return a ? `${a.firstName} ${a.lastName}` : null;
+                        })()}
+                    </SelectValue>
                   </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
+                  <SelectContent className="max-h-[300px] max-w-[500px]">
                     {qualifiedApplicants.length === 0 ? (
                       <div className="p-4 text-center text-gray-500 text-sm">
                         No qualified applicants available. All applicants either have ship dates or are not in "lead" status.
                       </div>
                     ) : (
                       qualifiedApplicants.map((applicant) => (
-                        <SelectItem key={applicant.id} value={applicant.id}>
-                          <div className="flex flex-col py-1">
-                            <span className="font-semibold">
+                        <SelectItem key={applicant.id} value={applicant.id} className="cursor-pointer">
+                          <div className="flex flex-col py-1 gap-0.5 min-w-0">
+                            <span className="font-semibold truncate">
                               {applicant.firstName} {applicant.lastName}
                             </span>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 truncate">
                               {applicant.email} • {applicant.phone}
                             </span>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 truncate">
                               Recruiter: {applicant.recruiterRank} {applicant.recruiterName}
                             </span>
                             {applicant.preferredMOS && (
-                              <span className="text-xs text-blue-600">
+                              <span className="text-xs text-blue-600 font-medium">
                                 Preferred MOS: {applicant.preferredMOS}
                               </span>
                             )}

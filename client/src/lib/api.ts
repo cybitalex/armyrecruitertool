@@ -313,6 +313,65 @@ export const locationQRCodes = {
   },
 };
 
+// SORB (Special Operations Recruiting Battalion) API
+export const sorb = {
+  getAnalytics: async (filters?: {
+    station?: string[];
+    sorbCo?: string[];
+    logAttempt?: string[];
+    gtMin?: number;
+    gtMax?: number;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.station?.length) filters.station.forEach((s) => params.append("station", s));
+    if (filters?.sorbCo?.length) filters.sorbCo.forEach((c) => params.append("sorbCo", c));
+    if (filters?.logAttempt?.length) filters.logAttempt.forEach((a) => params.append("logAttempt", a));
+    if (filters?.gtMin != null) params.set("gtMin", String(filters.gtMin));
+    if (filters?.gtMax != null) params.set("gtMax", String(filters.gtMax));
+    const qs = params.toString();
+    return apiCall<{
+      funnel: Array<{ label: string; count: number; percent: number }>;
+      totalQM: number;
+      totalLeadsAttempted: number;
+      totalContacts: number;
+      appointmentsMade: number;
+      percentAttempted: number;
+      percentContacted: number;
+      stations: string[];
+      sorbCompanies: string[];
+      logAttemptTypes: string[];
+    }>(`/sorb/analytics${qs ? `?${qs}` : ""}`);
+  },
+
+  getLeads: async (filters?: {
+    station?: string[];
+    sorbCo?: string[];
+    logAttempt?: string[];
+    gtMin?: number;
+    gtMax?: number;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.station?.length) filters.station.forEach((s) => params.append("station", s));
+    if (filters?.sorbCo?.length) filters.sorbCo.forEach((c) => params.append("sorbCo", c));
+    if (filters?.logAttempt?.length) filters.logAttempt.forEach((a) => params.append("logAttempt", a));
+    if (filters?.gtMin != null) params.set("gtMin", String(filters.gtMin));
+    if (filters?.gtMax != null) params.set("gtMax", String(filters.gtMax));
+    const qs = params.toString();
+    return apiCall<Array<{
+      rank: string;
+      lastName: string;
+      gt: number;
+      mos: string;
+      post: string;
+      phone: string;
+      unit: string;
+      logAttempt: string;
+      contacted: "Y" | "N";
+      sorbCo: string;
+    }>>(`/sorb/leads${qs ? `?${qs}` : ""}`);
+  },
+};
+
 // QR Scan Analytics API
 export const qrScanAnalytics = {
   getAnalytics: async () => {

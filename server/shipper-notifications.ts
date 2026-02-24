@@ -93,13 +93,13 @@ export async function checkUpcomingShippers() {
         
         // Send notifications to all relevant users
         for (const user of stationUsers) {
-          // Create in-app notification
+          // Create in-app notification linking to recruit detail page
           await db.insert(notifications).values({
             userId: user.id,
             type: 'shipper_alert',
             title: '🚢 Upcoming Shipper Alert',
             message,
-            link: '/shippers',
+            link: `/recruits/${shipper.recruitId}`,
             read: false,
           });
           

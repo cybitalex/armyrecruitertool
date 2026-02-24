@@ -7,6 +7,7 @@ import { Label } from "../components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { IS_SORB } from "@/lib/sorb-config";
 
 export default function LoginPage() {
   const [, setLocation] = useLocation();
@@ -41,7 +42,7 @@ export default function LoginPage() {
       await login(email, password);
       // Wait a moment for auth state to update before redirecting
       await new Promise(resolve => setTimeout(resolve, 100));
-      setLocation("/dashboard");
+      setLocation("/");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Login failed";
       
@@ -60,12 +61,39 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
+        <CardHeader className="text-center space-y-3">
+          {/* Logo row */}
+          <div className="flex items-center justify-center gap-4">
+            <img
+              src="/logos/usarec-badge.svg"
+              alt="USAREC"
+              className="h-14 w-14 object-contain"
+              onError={(e) => { (e.target as HTMLImageElement).src = "/logos/usarec-badge.png"; }}
+            />
+            {IS_SORB && (
+              <>
+                <div className="h-10 w-px bg-gray-300" />
+                <img
+                  src="/logos/ARSOF_RGB.png"
+                  alt="ARSOF"
+                  className="h-14 object-contain"
+                />
+              </>
+            )}
+          </div>
+
+          {/* DoD classification banner */}
+          <div className="bg-green-800 text-white text-xs font-bold tracking-widest py-1 px-3 rounded">
+            UNCLASSIFIED
+          </div>
+
           <CardTitle className="text-2xl font-bold text-green-800">
-            Army Recruiter Tool
+            {IS_SORB ? "SORB Army Recruiter Tool" : "Army Recruiter Tool"}
           </CardTitle>
           <CardDescription>
-            Sign in to access your recruiter dashboard
+            {IS_SORB
+              ? "Special Operations Recruiting Battalion — sign in to access your dashboard"
+              : "Sign in to access your recruiter dashboard"}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>

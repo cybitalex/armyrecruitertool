@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "../components/ui/alert";
 import { CheckCircle2, AlertCircle, User as UserIcon } from "lucide-react";
 import type { User } from "@shared/schema";
 import { ARMY_RANKS } from "@shared/constants";
+import { IS_SORB } from "../lib/sorb-config";
 
 export default function ApplyPage() {
   const [location] = useLocation();
@@ -136,13 +137,16 @@ export default function ApplyPage() {
             <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
             <CardTitle className="text-2xl">Application Submitted! 🎖️</CardTitle>
             <CardDescription>
-              Thank you for your interest in joining the U.S. Army
+              {IS_SORB
+                ? "Thank you for your interest in U.S. Army Special Operations pipelines"
+                : "Thank you for your interest in joining the U.S. Army"}
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-sm text-gray-600">
-              Your application has been successfully submitted. A recruiter will contact 
-              you soon to discuss next steps.
+              {IS_SORB
+                ? "Your interest profile has been submitted. A recruiter will follow up to discuss screening, readiness, and potential pipeline fit."
+                : "Your application has been successfully submitted. A recruiter will contact you soon to discuss next steps."}
             </p>
             {recruiterInfo && (
               <div className="bg-green-50 p-4 rounded-lg border border-green-200 text-left">
@@ -236,63 +240,75 @@ export default function ApplyPage() {
           </Card>
         )}
 
-        {/* Army Benefits Section */}
+        {/* Benefits Section */}
         <Card className="mb-6 bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300">
           <CardHeader className="pb-3">
             <CardTitle className="text-xl font-bold text-green-900 text-center flex items-center justify-center gap-2">
               <span className="text-2xl">🇺🇸</span>
-              Why Join the U.S. Army?
+              {IS_SORB ? "Why Pursue a Special Operations Pipeline?" : "Why Join the U.S. Army?"}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Education Benefits */}
               <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200">
                 <div className="flex items-start gap-3">
-                  <span className="text-2xl flex-shrink-0">🎓</span>
+                  <span className="text-2xl flex-shrink-0">{IS_SORB ? "🎯" : "🎓"}</span>
                   <div>
-                    <h4 className="font-bold text-green-900 mb-1">Education Benefits</h4>
+                    <h4 className="font-bold text-green-900 mb-1">
+                      {IS_SORB ? "Mission-Focused Career Paths" : "Education Benefits"}
+                    </h4>
                     <p className="text-sm text-gray-700">
-                      Up to $75,000 for college through the GI Bill®, plus tuition assistance while serving
+                      {IS_SORB
+                        ? "Explore pathways like 18X, Option 40, Civil Affairs, PSYOP, and other Special Operations opportunities."
+                        : "Up to $75,000 for college through the GI Bill®, plus tuition assistance while serving"}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Healthcare */}
               <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200">
                 <div className="flex items-start gap-3">
-                  <span className="text-2xl flex-shrink-0">🏥</span>
+                  <span className="text-2xl flex-shrink-0">{IS_SORB ? "🧭" : "🏥"}</span>
                   <div>
-                    <h4 className="font-bold text-green-900 mb-1">Healthcare Coverage</h4>
+                    <h4 className="font-bold text-green-900 mb-1">
+                      {IS_SORB ? "Structured Screening & Guidance" : "Healthcare Coverage"}
+                    </h4>
                     <p className="text-sm text-gray-700">
-                      Free medical and dental care for you and your family with TRICARE coverage
+                      {IS_SORB
+                        ? "Work with recruiters who assess GT, readiness, and qualifications to match you to the right pipeline."
+                        : "Free medical and dental care for you and your family with TRICARE coverage"}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Career Training */}
               <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200">
                 <div className="flex items-start gap-3">
-                  <span className="text-2xl flex-shrink-0">💼</span>
+                  <span className="text-2xl flex-shrink-0">{IS_SORB ? "🏋️" : "💼"}</span>
                   <div>
-                    <h4 className="font-bold text-green-900 mb-1">Career Training</h4>
+                    <h4 className="font-bold text-green-900 mb-1">
+                      {IS_SORB ? "Preparation & Mentorship" : "Career Training"}
+                    </h4>
                     <p className="text-sm text-gray-700">
-                      Over 150 career paths with paid training and certifications valued at thousands
+                      {IS_SORB
+                        ? "Track physical readiness and receive mentorship on rucking, endurance, and selection preparation."
+                        : "Over 150 career paths with paid training and certifications valued at thousands"}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Financial Security */}
               <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200">
                 <div className="flex items-start gap-3">
-                  <span className="text-2xl flex-shrink-0">💰</span>
+                  <span className="text-2xl flex-shrink-0">{IS_SORB ? "🤝" : "💰"}</span>
                   <div>
-                    <h4 className="font-bold text-green-900 mb-1">Financial Security</h4>
+                    <h4 className="font-bold text-green-900 mb-1">
+                      {IS_SORB ? "Quality Over Volume" : "Financial Security"}
+                    </h4>
                     <p className="text-sm text-gray-700">
-                      Competitive salary, housing allowance, 30 days paid vacation, and retirement benefits
+                      {IS_SORB
+                        ? "SORB focuses on identifying and preparing high-potential candidates for Special Operations success."
+                        : "Competitive salary, housing allowance, 30 days paid vacation, and retirement benefits"}
                     </p>
                   </div>
                 </div>
@@ -302,7 +318,9 @@ export default function ApplyPage() {
             {/* Call to Action */}
             <div className="mt-4 text-center">
               <p className="text-sm font-semibold text-green-900">
-                ⬇️ Fill out the form below to learn more and start your journey
+                {IS_SORB
+                  ? "⬇️ Complete this form to start your Special Operations screening conversation"
+                  : "⬇️ Fill out the form below to learn more and start your journey"}
               </p>
             </div>
           </CardContent>
@@ -311,12 +329,16 @@ export default function ApplyPage() {
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold text-green-800">
-              U.S. Army Interest Form
+              {IS_SORB ? "SORB Interest Form" : "U.S. Army Interest Form"}
             </CardTitle>
             <CardDescription className="text-base">
-              {recruiterCode
-                ? "🎯 This application is linked to your recruiter"
-                : "Complete this form to express your interest in joining the Army"}
+              {IS_SORB
+                ? (recruiterCode
+                    ? "🎯 This form is linked to your SORB recruiter"
+                    : "Complete this form to express interest in Special Operations pathways")
+                : (recruiterCode
+                    ? "🎯 This application is linked to your recruiter"
+                    : "Complete this form to express your interest in joining the Army")}
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
@@ -487,43 +509,47 @@ export default function ApplyPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="hasPriorService">Prior Military Service *</Label>
-                  <Select
-                    value={formData.hasPriorService}
-                    onValueChange={(value) => setFormData({ ...formData, hasPriorService: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no">No</SelectItem>
-                      <SelectItem value="yes">Yes</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {!IS_SORB && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="hasPriorService">Prior Military Service *</Label>
+                      <Select
+                        value={formData.hasPriorService}
+                        onValueChange={(value) => setFormData({ ...formData, hasPriorService: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no">No</SelectItem>
+                          <SelectItem value="yes">Yes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                {formData.hasPriorService === "yes" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="priorServiceBranch">Branch</Label>
-                      <Input
-                        id="priorServiceBranch"
-                        value={formData.priorServiceBranch}
-                        onChange={(e) => setFormData({ ...formData, priorServiceBranch: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="priorServiceYears">Years Served</Label>
-                      <Input
-                        id="priorServiceYears"
-                        type="number"
-                        min="0"
-                        value={formData.priorServiceYears}
-                        onChange={(e) => setFormData({ ...formData, priorServiceYears: e.target.value })}
-                      />
-                    </div>
-                  </div>
+                    {formData.hasPriorService === "yes" && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="priorServiceBranch">Branch</Label>
+                          <Input
+                            id="priorServiceBranch"
+                            value={formData.priorServiceBranch}
+                            onChange={(e) => setFormData({ ...formData, priorServiceBranch: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="priorServiceYears">Years Served</Label>
+                          <Input
+                            id="priorServiceYears"
+                            type="number"
+                            min="0"
+                            value={formData.priorServiceYears}
+                            onChange={(e) => setFormData({ ...formData, priorServiceYears: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -535,7 +561,7 @@ export default function ApplyPage() {
                   <Label htmlFor="preferredMOS">Preferred MOS (Military Occupational Specialty)</Label>
                   <Input
                     id="preferredMOS"
-                    placeholder="e.g., Infantry, Medical, Intelligence"
+                    placeholder={IS_SORB ? "e.g., 11B, 68W, 35F" : "e.g., Infantry, Medical, Intelligence"}
                     value={formData.preferredMOS}
                     onChange={(e) => setFormData({ ...formData, preferredMOS: e.target.value })}
                   />
@@ -581,8 +607,10 @@ export default function ApplyPage() {
               </div>
 
               <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-sm text-yellow-800">
-                <strong>Important:</strong> This form does not constitute enlistment. 
-                It is for expressing interest and initial screening purposes only.
+                <strong>Important:</strong>{" "}
+                {IS_SORB
+                  ? "This form does not guarantee selection. It is used for interest capture, initial screening, and recruiter follow-up for Special Operations pathways."
+                  : "This form does not constitute enlistment. It is for expressing interest and initial screening purposes only."}
               </div>
 
               <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded">
@@ -598,7 +626,9 @@ export default function ApplyPage() {
                 className="w-full bg-green-700 hover:bg-green-800 py-6 text-lg"
                 disabled={loading}
               >
-                {loading ? "Submitting Application..." : "Submit Application"}
+                {loading
+                  ? (IS_SORB ? "Submitting Interest Form..." : "Submitting Application...")
+                  : (IS_SORB ? "Submit SORB Interest Form" : "Submit Application")}
               </Button>
             </div>
           </form>

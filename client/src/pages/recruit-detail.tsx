@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Calendar, Mail, MapPin, Phone, User, FileText, Save, Edit } from "lucide-react";
+import { ArrowLeft, Calendar, Mail, MapPin, Phone, User, FileText, Save, Edit, Ship } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,8 +43,14 @@ export default function RecruitDetail() {
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showShippingDialog, setShowShippingDialog] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [isAddingNote, setIsAddingNote] = useState(false);
+  const [shippingFormData, setShippingFormData] = useState({
+    shipDate: "",
+    component: "",
+    actualMOS: "",
+  });
   const [editFormData, setEditFormData] = useState({
     firstName: "",
     middleName: "",
@@ -164,6 +170,28 @@ export default function RecruitDetail() {
     onError: (error: Error) => {
       toast({
         title: "Delete Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateShippingInfoMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("PATCH", `/api/recruits/${params?.id}/shipping`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/recruits", params?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shippers"] });
+      toast({
+        title: "Shipping Info Updated",
+        description: "The recruit's shipping information has been updated successfully.",
+      });
+      setShowShippingDialog(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -312,6 +340,23 @@ export default function RecruitDetail() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">
+              {(recruit as any).shipDate && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShippingFormData({
+                      shipDate: (recruit as any).shipDate || "",
+                      component: (recruit as any).component || "",
+                      actualMOS: (recruit as any).actualMOS || (recruit as any).preferredMOS || "",
+                    });
+                    setShowShippingDialog(true);
+                  }}
+                  className="bg-green-50 hover:bg-green-100 border-green-300"
+                >
+                  <Ship className="w-4 h-4 mr-2" />
+                  Edit Shipping
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={handleEditClick}
@@ -1057,6 +1102,103 @@ export default function RecruitDetail() {
               <Button type="submit" disabled={updateRecruitInfoMutation.isPending}>
                 {updateRecruitInfoMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Shipping Info Dialog */}
+      <Dialog open={showShippingDialog} onOpenChange={setShowShippingDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Shipping Information</DialogTitle>
+            <DialogDescription>
+              Update the recruit's shipping details
+            </DialogDescription>
+          </DialogHeader>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              updateShippingInfoMutation.mutate(shippingFormData);
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="shipDate">Ship Date *</Label>
+              <Input
+                id="shipDate"
+                type="date"
+                value={shippingFormData.shipDate}
+                onChange={(e) =>
+                  setShippingFormData({ ...shippingFormData, shipDate: e.target.value })
+                }
+                onClick={(e) => e.currentTarget.showPicker?.()}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="component">Component</Label>
+              <Select
+                value={shippingFormData.component}
+                onValueChange={(value) =>
+                  setShippingFormData({ ...shippingFormData, component: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select component" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="reserve">Reserve</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="actualMOS">Assigned MOS</Label>
+              <Input
+                id="actualMOS"
+                type="text"
+                value={shippingFormData.actualMOS}
+                onChange={(e) =>
+                  setShippingFormData({ ...shippingFormData, actualMOS: e.target.value })
+                }
+                placeholder="e.g., 11B, 68W"
+              />
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between gap-2">
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => {
+                  if (confirm("Remove shipping information? This will mark the recruit as not shipping.")) {
+                    updateShippingInfoMutation.mutate({
+                      shipDate: null,
+                      component: null,
+                      actualMOS: null,
+                    });
+                  }
+                }}
+                disabled={updateShippingInfoMutation.isPending}
+                className="sm:mr-auto"
+              >
+                Mark as Not Shipping
+              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowShippingDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateShippingInfoMutation.isPending}>
+                  {updateShippingInfoMutation.isPending ? "Updating..." : "Update"}
+                </Button>
+              </div>
             </div>
           </form>
         </DialogContent>

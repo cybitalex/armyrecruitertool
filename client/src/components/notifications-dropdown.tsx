@@ -83,12 +83,37 @@ export function NotificationsDropdown({
     },
   });
 
+  // Clear all notifications
+  const clearAllMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/notifications/clear-all', {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to clear notifications');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count'] });
+      toast({
+        title: "Success",
+        description: "All notifications cleared",
+      });
+    },
+  });
+
   const handleNotificationClick = (notification: Notification) => {
+    console.log('Clicked notification:', notification);
+    console.log('Notification link:', notification.link);
+    console.log('Notification type:', notification.type);
+    
     if (!notification.read) {
       markAsReadMutation.mutate(notification.id);
     }
     if (notification.link) {
-      navigate(notification.link);
+      // Use full href navigation to preserve query parameters
+      window.location.href = notification.link;
       setOpen(false);
     }
   };
@@ -129,21 +154,34 @@ export function NotificationsDropdown({
       >
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="font-semibold text-lg">Notifications</h3>
-          {notifications.length > 0 && notifications.some(n => !n.read) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => markAllAsReadMutation.mutate()}
-              disabled={markAllAsReadMutation.isPending}
-              className="text-xs"
-            >
-              <CheckCheck className="w-3 h-3 mr-1" />
-              Mark all read
-            </Button>
-          )}
+          <div className="flex gap-1">
+            {notifications.length > 0 && notifications.some(n => !n.read) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => markAllAsReadMutation.mutate()}
+                disabled={markAllAsReadMutation.isPending}
+                className="text-xs"
+              >
+                <CheckCheck className="w-3 h-3 mr-1" />
+                Mark all read
+              </Button>
+            )}
+            {notifications.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => clearAllMutation.mutate()}
+                disabled={clearAllMutation.isPending}
+                className="text-xs text-red-600 hover:text-red-700"
+              >
+                Clear all
+              </Button>
+            )}
+          </div>
         </div>
 
-        <ScrollArea className="max-h-[400px]">
+        <ScrollArea className="max-h-[400px] overflow-y-auto">
           {isLoading ? (
             <div className="p-8 text-center text-gray-500">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>

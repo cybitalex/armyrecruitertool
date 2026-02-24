@@ -4,13 +4,6 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
-import {
   Card,
   CardContent,
   CardDescription,
@@ -522,23 +515,15 @@ function ProfileContent() {
               {/* Rank Dropdown */}
               <div className="space-y-2">
                 <Label htmlFor="rank">Rank</Label>
-                <Select
+                <SearchableSelect
+                  options={ARMY_RANKS.map((r) => ({ value: r.value, label: r.label }))}
                   value={formData.rank}
                   onValueChange={(value) =>
                     setFormData((prev) => ({ ...prev, rank: value }))
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your rank" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ARMY_RANKS.map((rank) => (
-                      <SelectItem key={rank.value} value={rank.value}>
-                        {rank.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Select your rank"
+                  searchPlaceholder="Search ranks (e.g., Captain, CW2, SGT)..."
+                />
               </div>
 
               {/* Unit */}
