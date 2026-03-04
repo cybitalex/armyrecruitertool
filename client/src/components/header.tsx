@@ -104,7 +104,7 @@ export function Header() {
         <div className="w-full px-3 md:px-6 py-1.5 flex items-center justify-between">
           <div className="flex-1 text-left">
             <span className="font-mono text-[10px] md:text-xs text-white/90 uppercase tracking-wide">
-              Army Recruiter Tool | CyBit Devs
+              CyBit Devs | Pilot Platform
             </span>
           </div>
           <div className="flex-1 text-center">
@@ -114,7 +114,7 @@ export function Header() {
           </div>
           <div className="flex-1 text-right">
             <span className="font-mono text-[10px] md:text-xs text-white/90 uppercase tracking-wide">
-              FPCON NORMAL
+              EVAL USE ONLY
             </span>
           </div>
         </div>

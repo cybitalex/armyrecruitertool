@@ -1,10 +1,11 @@
 /**
  * Army Recruiter Tool - Client Application
- * 
- * Copyright © 2025 Alex Moran. All Rights Reserved.
- * 
+ * Pilot / Evaluation Platform — Not an official U.S. Army or USAREC system.
+ *
+ * Copyright © 2025 CyBit Devs. All Rights Reserved.
+ *
  * PROPRIETARY AND CONFIDENTIAL
- * Unauthorized copying, distribution, or use is strictly prohibited.
+ * Privately developed and operated. Unauthorized copying, distribution, or use is strictly prohibited.
  */
 
 import { Switch, Route, useLocation } from "wouter";
