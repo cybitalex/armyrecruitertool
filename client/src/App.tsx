@@ -1,19 +1,22 @@
 /**
  * Army Recruiter Tool - Client Application
- * 
- * Copyright © 2025 Alex Moran. All Rights Reserved.
- * 
+ * Pilot / Evaluation Platform — Not an official U.S. Army or USAREC system.
+ *
+ * Copyright © 2025 CyBit Devs. All Rights Reserved.
+ *
  * PROPRIETARY AND CONFIDENTIAL
- * Unauthorized copying, distribution, or use is strictly prohibited.
+ * Privately developed and operated. Unauthorized copying, distribution, or use is strictly prohibited.
  */
 
 import { Switch, Route, useLocation } from "wouter";
+import { useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth-context";
 import { Header } from "@/components/header";
+import { IS_SORB } from "@/lib/sorb-config";
 import { Footer } from "@/components/footer";
 import { VerificationWarning } from "@/components/verification-warning";
 
@@ -33,10 +36,14 @@ import ProspectingMap from "@/pages/prospecting-map";
 import AdminRequests from "@/pages/admin-requests";
 import StationCommanderDashboard from "@/pages/station-commander-dashboard";
 import ShippersPage from "@/pages/shippers";
+import SORBAnalyticsPage from "@/pages/sorb-analytics";
+import SORBDashboard from "@/pages/sorb-dashboard";
+import SORBIntakePage from "@/pages/sorb-intake";
 
 // Public pages
 import ApplyPage from "@/pages/apply";
 import SurveyPage from "@/pages/survey";
+import SweepstakesPage from "@/pages/sweepstakes";
 import NotFound from "@/pages/not-found";
 import ProfilePage from "@/pages/profile";
 import ApprovalSuccess from "@/pages/approval-success";
@@ -52,11 +59,14 @@ function Router() {
       <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/apply" component={ApplyPage} />
       <Route path="/survey" component={SurveyPage} />
+      <Route path="/sweepstakes" component={SweepstakesPage} />
       <Route path="/approval-success" component={ApprovalSuccess} />
       
       {/* Protected routes */}
-      <Route path="/" component={Dashboard} />
-      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/" component={IS_SORB ? SORBDashboard : Dashboard} />
+      <Route path="/dashboard" component={IS_SORB ? SORBDashboard : Dashboard} />
+      <Route path="/analytics" component={SORBAnalyticsPage} />
+      <Route path="/sorb-intake" component={SORBIntakePage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/my-qr" component={MyQRCode} />
       <Route path="/prospecting" component={ProspectingMap} />
@@ -69,7 +79,7 @@ function Router() {
       
       {/* Station Commander routes */}
       <Route path="/station-commander" component={StationCommanderDashboard} />
-      <Route path="/shippers" component={ShippersPage} />
+      {!IS_SORB && <Route path="/shippers" component={ShippersPage} />}
       
       {/* 404 */}
       <Route component={NotFound} />
@@ -79,6 +89,10 @@ function Router() {
 
 function AppContent() {
   const [location] = useLocation();
+
+  useEffect(() => {
+    document.title = IS_SORB ? "SORB Army Recruiter Tool" : "Army Recruiter Tool";
+  }, []);
   
   // Pages with their own full layout (no header/footer)
   // Only public/auth pages - all protected routes use global header
@@ -89,6 +103,7 @@ function AppContent() {
     "/forgot-password",
     "/reset-password",
     "/apply",
+    "/sweepstakes",
     "/approval-success",
   ];
   
@@ -96,10 +111,10 @@ function AppContent() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-army-green flex flex-col">
+      <div className="min-h-screen w-full bg-army-green flex flex-col overflow-x-hidden">
         {showLayout && <Header />}
         {showLayout && <VerificationWarning />}
-        <div className="flex-1">
+        <div className="flex-1 w-full">
           <Router />
         </div>
         {showLayout && <Footer />}
