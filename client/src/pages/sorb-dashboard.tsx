@@ -457,10 +457,6 @@ function EditDrawer({ recruit, onClose }: { recruit: Recruit & { _sorb: SorbFiel
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-2 pt-5">
-            <input type="checkbox" id="contacted_e" {...chk("contacted")} className="h-4 w-4 rounded" />
-            <Label htmlFor="contacted_e" className="text-sm">Contacted</Label>
-          </div>
         </div>
       </div>
 

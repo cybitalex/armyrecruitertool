@@ -3,17 +3,19 @@
  * Quality-based filtering pipeline: Prospect → Screening → Recommended → Preparing → Contracting
  */
 import { useState, useMemo } from "react";
+import * as XLSX from "xlsx";
 import { useQuery } from "@tanstack/react-query";
 import { sorb } from "@/lib/api";
 import { ProtectedRoute } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip,
   PieChart, Pie, Legend,
 } from "recharts";
-import { Filter, Users, TrendingUp, Award, QrCode } from "lucide-react";
+import { Filter, Users, TrendingUp, Award, QrCode, Download } from "lucide-react";
 
 // ── Station display map ─────────────────────────────────────────────────────
 const STATION_DISPLAY: Record<string, string> = {
@@ -124,15 +126,133 @@ function SORBAnalyticsContent() {
 
   const formatNum = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
 
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExportWorkbook() {
+    try {
+      setExporting(true);
+
+      // Build query string from current filters so Excel export matches on-screen data
+      const params = new URLSearchParams();
+      if (excelFilters) {
+        if (excelFilters.station) {
+          excelFilters.station.forEach((s) => params.append("station", s));
+        }
+        if (excelFilters.sorbCo) {
+          excelFilters.sorbCo.forEach((c) => params.append("sorbCo", c));
+        }
+        if (excelFilters.logAttempt) {
+          excelFilters.logAttempt.forEach((a) => params.append("logAttempt", a));
+        }
+        if (typeof excelFilters.gtMin === "number") {
+          params.set("gtMin", String(excelFilters.gtMin));
+        }
+        if (typeof excelFilters.gtMax === "number") {
+          params.set("gtMax", String(excelFilters.gtMax));
+        }
+      }
+
+      const leadsRes = await fetch(`/api/sorb/leads${params.toString() ? `?${params.toString()}` : ""}`, {
+        credentials: "include",
+      });
+      if (!leadsRes.ok) {
+        throw new Error("Failed to load SORB leads for export");
+      }
+      const leads: Array<{
+        rank: string;
+        lastName: string;
+        gt: number;
+        mos: string;
+        post: string;
+        phone: string;
+        unit: string;
+        logAttempt: string;
+        contacted: string;
+        sorbCo: string;
+      }> = await leadsRes.json();
+
+      // Ensure we have analytics data for summary sheets
+      const funnel = excelData?.funnel ?? [];
+      const stageFunnel = pipelineData?.stageFunnel ?? [];
+      const pipelineBreakdown = pipelineData?.pipelineBreakdown ?? [];
+
+      const wb = XLSX.utils.book_new();
+
+      // Sheet 1: QM Leads (close to original TEST DATA.xlsx columns, plus a few extras)
+      const leadsHeader = [
+        "RANK",
+        "LAST NAME",
+        "GT",
+        "MOS",
+        "POST",
+        "PHONE",
+        "UNIT",
+        "Log Attempt",
+        "Contacted",
+        "SORB CO",
+      ];
+      const leadsRows = leads.map((row) => [
+        row.rank,
+        row.lastName,
+        row.gt,
+        row.mos,
+        row.post,
+        row.phone,
+        row.unit,
+        row.logAttempt,
+        row.contacted,
+        row.sorbCo,
+      ]);
+      const leadsSheet = XLSX.utils.aoa_to_sheet([leadsHeader, ...leadsRows]);
+      XLSX.utils.book_append_sheet(wb, leadsSheet, "QM_Leads");
+
+      // Sheet 2: QM Funnel summary (for quickly rebuilding funnel charts)
+      const funnelHeader = ["Stage", "Count", "Percent"];
+      const funnelRows = funnel.map((s) => [s.label, s.count, s.percent]);
+      const funnelSheet = XLSX.utils.aoa_to_sheet([funnelHeader, ...funnelRows]);
+      XLSX.utils.book_append_sheet(wb, funnelSheet, "QM_Funnel_Summary");
+
+      // Sheet 3: Pipeline stages (DB-backed live pipeline)
+      const stageHeader = ["Stage", "Label", "Count", "Percent"];
+      const stageRows = stageFunnel.map((s) => [s.stage, s.label, s.count, s.percent]);
+      const stageSheet = XLSX.utils.aoa_to_sheet([stageHeader, ...stageRows]);
+      XLSX.utils.book_append_sheet(wb, stageSheet, "Pipeline_Stages");
+
+      // Sheet 4: Pipeline program breakdown
+      const pipelineHeader = ["Pipeline", "Count"];
+      const pipelineRows = pipelineBreakdown.map((p) => [p.pipeline, p.count]);
+      const pipelineSheet = XLSX.utils.aoa_to_sheet([pipelineHeader, ...pipelineRows]);
+      XLSX.utils.book_append_sheet(wb, pipelineSheet, "Pipeline_Programs");
+
+      const today = new Date().toISOString().split("T")[0];
+      const filename = `SORB_Analytics_${today}.xlsx`;
+      XLSX.writeFile(wb, filename);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to export SORB analytics workbook");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Page header */}
       <div className="bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">SORB Analytics</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            U.S. Army Special Operations Recruiting Battalion — Quality-based pipeline tracking
-          </p>
+        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">SORB Analytics</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              U.S. Army Special Operations Recruiting Battalion — quality-based pipeline tracking from the live database
+            </p>
+          </div>
+          <Button
+            onClick={handleExportWorkbook}
+            disabled={exporting}
+            className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white px-3 py-2 text-sm"
+          >
+            <Download className="w-4 h-4" />
+            {exporting ? "Exporting…" : "Export Analytics to Excel"}
+          </Button>
         </div>
       </div>
 
@@ -316,16 +436,16 @@ function SORBAnalyticsContent() {
           </Card>
         </div>
 
-        {/* ── Excel Raw Data Funnel + Filters ─────────────────────── */}
+        {/* ── QM Baseline Funnel + Filters (DB-backed) ────────────── */}
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Filters sidebar */}
           <div className="lg:w-56 flex-shrink-0 space-y-3">
             <Card className="border shadow-sm">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Filter className="w-4 h-4" /> Excel Data Filters
+                  <Filter className="w-4 h-4" /> QM Data Filters
                 </CardTitle>
-                <p className="text-xs text-gray-400">Filters QM data from uploaded spreadsheet</p>
+                <p className="text-xs text-gray-400">Filter the QM baseline stored in the app&apos;s database</p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -374,12 +494,12 @@ function SORBAnalyticsContent() {
             </Card>
           </div>
 
-          {/* Excel funnel chart */}
+          {/* QM funnel chart */}
           <div className="flex-1 space-y-4">
             <Card className="border shadow-sm">
               <CardHeader>
-                <CardTitle className="text-base">QM Data Overview (Excel Import)</CardTitle>
-                <p className="text-xs text-gray-500">Total QM pool from uploaded spreadsheet data</p>
+                <CardTitle className="text-base">QM Data Overview (Baseline)</CardTitle>
+                <p className="text-xs text-gray-500">Total QM pool from current SORB leads in the database</p>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-3 gap-3 mb-4">
