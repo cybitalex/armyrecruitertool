@@ -1,9 +1,29 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// Prevent multiple simultaneous redirects when session expires
+let redirectingToLogin = false;
+
+function handleSessionExpired() {
+  if (!redirectingToLogin) {
+    redirectingToLogin = true;
+    window.location.href = "/login?timeout=true";
+  }
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
+    if (res.status === 401) {
+      handleSessionExpired();
+      throw new Error("Session expired");
+    }
     const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    // Parse JSON error bodies so the UI never shows raw JSON
+    try {
+      const json = JSON.parse(text);
+      throw new Error(`${res.status}: ${json.error ?? json.message ?? text}`);
+    } catch {
+      throw new Error(`${res.status}: ${text}`);
+    }
   }
 }
 
@@ -45,7 +65,12 @@ export const getQueryFn: <T>(options: {
       credentials: "include",
     });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+    if (res.status === 401) {
+      if (unauthorizedBehavior === "returnNull") {
+        return null;
+      }
+      // Session expired — redirect gracefully instead of showing raw JSON
+      handleSessionExpired();
       return null;
     }
 
