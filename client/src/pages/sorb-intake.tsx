@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, ArrowLeft, UserPlus, Shield, Activity, Star } from "lucide-react";
-import { PIPELINE_CONFIG, calcReadiness } from "./sorb-dashboard";
+import { PIPELINE_CONFIG, calcReadiness, CONTACT_METHODS, CONTACT_OUTCOMES } from "./sorb-dashboard";
 
 const RANKS = ["PFC","SPC","CPL","SGT","SSG","SFC","MSG","1SG","SGM","WO1","CW2","CW3","CW4","CW5","2LT","1LT","CPT","MAJ"];
 const SORB_BASES = [
@@ -34,7 +34,7 @@ const empty = {
   rank: "", firstName: "", lastName: "", phone: "", email: "",
   gt: "", mos: "", post: "", unit: "", sorbCo: "",
   pipeline: "",
-  logAttempt: "None", contacted: false, status: "prospect",
+  logAttempt: "None", logOutcome: "No Answer", contacted: false, status: "prospect",
   runTime2mi: "", ruckTime12mi: "", pushups: "", situps: "", ptScore: "",
   medicalEligible: false, airborneQualified: false, noMoralWaiver: false, priorSOCOM: false,
   notes: "",
@@ -366,11 +366,12 @@ function SORBIntakeContent() {
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs uppercase tracking-wide text-gray-500">Log Attempt</Label>
+                  <Label className="text-xs uppercase tracking-wide text-gray-500">Initial Attempt Method</Label>
                   <Select value={form.logAttempt} onValueChange={set("logAttempt")}>
                     <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {["None","Email","Text","Phone Call","In Person"].map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                      <SelectItem value="None">None yet</SelectItem>
+                      {CONTACT_METHODS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -387,6 +388,17 @@ function SORBIntakeContent() {
                   </Select>
                 </div>
               </div>
+              {form.logAttempt !== "None" && (
+                <div>
+                  <Label className="text-xs uppercase tracking-wide text-gray-500">Initial Attempt Outcome</Label>
+                  <Select value={form.logOutcome} onValueChange={set("logOutcome")}>
+                    <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CONTACT_OUTCOMES.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input type="checkbox" {...chk("contacted")} className="h-4 w-4 rounded text-green-700" />
                 Confirmed successful contact with soldier

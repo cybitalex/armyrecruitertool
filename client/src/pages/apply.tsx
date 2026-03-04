@@ -43,10 +43,6 @@ export default function ApplyPage() {
     dateOfBirth: "",
     email: "",
     phone: "",
-    address: "",
-    city: "",
-    state: "",
-    zipCode: "",
     educationLevel: "",
     hasDriversLicense: "yes",
     hasPriorService: "no",
@@ -135,23 +131,23 @@ export default function ApplyPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
-            <CardTitle className="text-2xl">Application Submitted! 🎖️</CardTitle>
+            <CardTitle className="text-2xl">Form Submitted! 🎖️</CardTitle>
             <CardDescription>
               {IS_SORB
                 ? "Thank you for your interest in U.S. Army Special Operations pipelines"
-                : "Thank you for your interest in joining the U.S. Army"}
+                : "Thank you for your interest in learning more about the U.S. Army"}
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-sm text-gray-600">
               {IS_SORB
                 ? "Your interest profile has been submitted. A recruiter will follow up to discuss screening, readiness, and potential pipeline fit."
-                : "Your application has been successfully submitted. A recruiter will contact you soon to discuss next steps."}
+                : "Your information has been successfully submitted. A recruiter will reach out to you soon to answer any questions and share more details."}
             </p>
             {recruiterInfo && (
               <div className="bg-green-50 p-4 rounded-lg border border-green-200 text-left">
                 <p className="text-sm font-semibold text-green-800 mb-2">
-                  ✅ Your application has been submitted to:
+                  ✅ Your form has been submitted to:
                 </p>
                 <div className="text-sm text-green-700 space-y-1">
                   <p className="font-medium">{recruiterInfo.fullName}</p>
@@ -169,14 +165,14 @@ export default function ApplyPage() {
                   )}
                 </div>
                 <p className="text-xs text-green-600 mt-2">
-                  They will be in touch with you shortly.
+                  They will be in touch with you shortly to answer your questions.
                 </p>
               </div>
             )}
             {recruiterCode && !recruiterInfo && (
               <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                 <p className="text-sm text-green-800">
-                  ✅ Your application has been linked to your recruiter
+                  ✅ Your form has been linked to your recruiter
                 </p>
               </div>
             )}
@@ -245,7 +241,7 @@ export default function ApplyPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-xl font-bold text-green-900 text-center flex items-center justify-center gap-2">
               <span className="text-2xl">🇺🇸</span>
-              {IS_SORB ? "Why Pursue a Special Operations Pipeline?" : "Why Join the U.S. Army?"}
+              {IS_SORB ? "Why Pursue a Special Operations Pipeline?" : "Discover What the U.S. Army Has to Offer"}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -260,7 +256,7 @@ export default function ApplyPage() {
                     <p className="text-sm text-gray-700">
                       {IS_SORB
                         ? "Explore pathways like 18X, Option 40, Civil Affairs, PSYOP, and other Special Operations opportunities."
-                        : "Up to $75,000 for college through the GI Bill®, plus tuition assistance while serving"}
+                        : "Over $250,000 in education value through the Post-9/11 GI Bill® — covers 100% tuition, housing allowance, and book stipend. Active duty soldiers also receive up to $4,500/year in Tuition Assistance while serving."}
                     </p>
                   </div>
                 </div>
@@ -276,7 +272,7 @@ export default function ApplyPage() {
                     <p className="text-sm text-gray-700">
                       {IS_SORB
                         ? "Work with recruiters who assess GT, readiness, and qualifications to match you to the right pipeline."
-                        : "Free medical and dental care for you and your family with TRICARE coverage"}
+                        : "Comprehensive medical, dental, and vision coverage through TRICARE for you and your family — at little to no cost while on active duty."}
                     </p>
                   </div>
                 </div>
@@ -287,12 +283,12 @@ export default function ApplyPage() {
                   <span className="text-2xl flex-shrink-0">{IS_SORB ? "🏋️" : "💼"}</span>
                   <div>
                     <h4 className="font-bold text-green-900 mb-1">
-                      {IS_SORB ? "Preparation & Mentorship" : "Career Training"}
+                      {IS_SORB ? "Preparation & Mentorship" : "Career Training & Skills"}
                     </h4>
                     <p className="text-sm text-gray-700">
                       {IS_SORB
                         ? "Track physical readiness and receive mentorship on rucking, endurance, and selection preparation."
-                        : "Over 150 career paths with paid training and certifications valued at thousands"}
+                        : "Over 150+ career fields with fully paid training and industry-recognized certifications in technology, healthcare, engineering, aviation, and more."}
                     </p>
                   </div>
                 </div>
@@ -303,16 +299,44 @@ export default function ApplyPage() {
                   <span className="text-2xl flex-shrink-0">{IS_SORB ? "🤝" : "💰"}</span>
                   <div>
                     <h4 className="font-bold text-green-900 mb-1">
-                      {IS_SORB ? "Quality Over Volume" : "Financial Security"}
+                      {IS_SORB ? "Quality Over Volume" : "Pay & Financial Benefits"}
                     </h4>
                     <p className="text-sm text-gray-700">
                       {IS_SORB
                         ? "SORB focuses on identifying and preparing high-potential candidates for Special Operations success."
-                        : "Competitive salary, housing allowance, 30 days paid vacation, and retirement benefits"}
+                        : "Competitive base pay, tax-free housing (BAH) and food (BAS) allowances, 30 days paid vacation, enlistment bonuses up to $50,000, and a federal pension after 20 years."}
                     </p>
                   </div>
                 </div>
               </div>
+
+              {!IS_SORB && (
+                <>
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl flex-shrink-0">📚</span>
+                      <div>
+                        <h4 className="font-bold text-green-900 mb-1">Student Loan Repayment</h4>
+                        <p className="text-sm text-gray-700">
+                          Army Reserve members may qualify for up to $65,000 in Student Loan Repayment (SLRP). Active duty soldiers may also be eligible through special programs.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl flex-shrink-0">🛡️</span>
+                      <div>
+                        <h4 className="font-bold text-green-900 mb-1">Army Reserve Benefits</h4>
+                        <p className="text-sm text-gray-700">
+                          Serve one weekend/month and two weeks/year while keeping your civilian career. Benefits include drill pay, TRICARE Reserve Select, retirement points, and access to military bases and commissaries.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Call to Action */}
@@ -320,7 +344,7 @@ export default function ApplyPage() {
               <p className="text-sm font-semibold text-green-900">
                 {IS_SORB
                   ? "⬇️ Complete this form to start your Special Operations screening conversation"
-                  : "⬇️ Fill out the form below to learn more and start your journey"}
+                  : "⬇️ Fill out the form below to learn more — no commitment required"}
               </p>
             </div>
           </CardContent>
@@ -337,8 +361,8 @@ export default function ApplyPage() {
                     ? "🎯 This form is linked to your SORB recruiter"
                     : "Complete this form to express interest in Special Operations pathways")
                 : (recruiterCode
-                    ? "🎯 This application is linked to your recruiter"
-                    : "Complete this form to express your interest in joining the Army")}
+                    ? "🎯 This form is linked to your recruiter"
+                    : "Complete this form to learn more about opportunities in the Army")}
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
@@ -416,54 +440,6 @@ export default function ApplyPage() {
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   />
-                </div>
-              </div>
-
-              {/* Address */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">Address</h3>
-
-                <div className="space-y-2">
-                  <Label htmlFor="address">Street Address *</Label>
-                  <Input
-                    id="address"
-                    required
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="city">City *</Label>
-                    <Input
-                      id="city"
-                      required
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="state">State *</Label>
-                    <Input
-                      id="state"
-                      required
-                      maxLength={2}
-                      placeholder="CA"
-                      value={formData.state}
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value.toUpperCase() })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="zipCode">ZIP Code *</Label>
-                    <Input
-                      id="zipCode"
-                      required
-                      maxLength={5}
-                      value={formData.zipCode}
-                      onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
-                    />
-                  </div>
                 </div>
               </div>
 
@@ -610,7 +586,7 @@ export default function ApplyPage() {
                 <strong>Important:</strong>{" "}
                 {IS_SORB
                   ? "This form does not guarantee selection. It is used for interest capture, initial screening, and recruiter follow-up for Special Operations pathways."
-                  : "This form does not constitute enlistment. It is for expressing interest and initial screening purposes only."}
+                  : "Submitting this form does not constitute enlistment or any commitment. It is simply a way to express interest and connect with a recruiter to learn more."}
               </div>
 
               <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded">
@@ -627,8 +603,8 @@ export default function ApplyPage() {
                 disabled={loading}
               >
                 {loading
-                  ? (IS_SORB ? "Submitting Interest Form..." : "Submitting Application...")
-                  : (IS_SORB ? "Submit SORB Interest Form" : "Submit Application")}
+                  ? (IS_SORB ? "Submitting Interest Form..." : "Submitting...")
+                  : (IS_SORB ? "Submit SORB Interest Form" : "Submit Interest Form")}
               </Button>
             </div>
           </form>

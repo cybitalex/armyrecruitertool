@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -21,8 +22,71 @@ import { qrScanAnalytics } from "@/lib/api";
 import {
   Users, TrendingUp, Plus, Search, X, Edit2, Save,
   Shield, Star, Activity, QrCode, Zap, ArrowUpRight,
+  Phone, MessageSquare, Mail, UserCheck, Mic, Share2,
+  PhoneOff, CheckCircle2, AlertCircle, Clock, History,
 } from "lucide-react";
 import type { Recruit } from "@shared/schema";
+
+// ── Contact log types & constants ────────────────────────────────────────────
+
+export interface ContactEntry {
+  id: string;
+  date: string; // ISO string
+  method: string;
+  outcome: string;
+  notes?: string;
+  byName?: string;
+}
+
+export const CONTACT_METHODS = [
+  "Phone Call", "Text", "Email", "In Person", "Voicemail", "Social Media",
+] as const;
+
+export const CONTACT_OUTCOMES = [
+  "No Answer",
+  "Left Voicemail",
+  "Text Sent",
+  "Spoke — Interested",
+  "Spoke — Not Interested",
+  "Spoke — Follow-up Set",
+  "Spoke — Callback Requested",
+  "In Person Contact",
+  "Declined",
+] as const;
+
+const METHOD_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
+  "Phone Call":    Phone,
+  "Text":          MessageSquare,
+  "Email":         Mail,
+  "In Person":     UserCheck,
+  "Voicemail":     Mic,
+  "Social Media":  Share2,
+};
+
+const OUTCOME_COLOR: Record<string, string> = {
+  "Spoke — Interested":        "text-green-700",
+  "Spoke — Follow-up Set":     "text-green-700",
+  "Spoke — Callback Requested":"text-blue-600",
+  "Spoke — Not Interested":    "text-orange-600",
+  "In Person Contact":         "text-green-700",
+  "Declined":                  "text-red-600",
+  "No Answer":                 "text-gray-500",
+  "Left Voicemail":            "text-gray-500",
+  "Text Sent":                 "text-gray-500",
+};
+
+function relativeDate(iso: string): string {
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return d.toLocaleDateString();
+}
 
 // ── SORB field types ────────────────────────────────────────────────────────
 
@@ -46,6 +110,7 @@ export interface SorbFields {
   noMoralWaiver?: boolean;
   priorSOCOM?: boolean;
   readinessScore?: number;
+  contactLog?: ContactEntry[];
 }
 
 export function parseSorb(notes: string | null | undefined): SorbFields {
@@ -53,7 +118,13 @@ export function parseSorb(notes: string | null | undefined): SorbFields {
   try {
     const raw = notes.includes("\n---\n") ? notes.split("\n---\n").slice(-1)[0] : notes;
     const j = JSON.parse(raw);
-    if (j._sorb) return j._sorb as SorbFields;
+    if (j._sorb) {
+      const s = j._sorb as SorbFields;
+      return {
+        ...s,
+        contactLog: Array.isArray(s.contactLog) ? s.contactLog : [],
+      };
+    }
   } catch {}
   const fields: Record<string, string> = {};
   notes.split("|").forEach((pair) => {
@@ -69,6 +140,7 @@ export function parseSorb(notes: string | null | undefined): SorbFields {
     sorbCo: fields["sorb_co"] || fields["sorb co"],
     logAttempt: fields["log_attempt"] || fields["log attempt"],
     contacted: fields["contacted"] === "Y",
+    contactLog: [],
   };
 }
 
@@ -205,6 +277,12 @@ function EditDrawer({ recruit, onClose }: { recruit: Recruit & { _sorb: SorbFiel
   const s = recruit._sorb;
   const freeNotes = getFreeNotes(recruit.additionalNotes);
 
+  // Contact history state
+  const [contactLog, setContactLog] = useState<ContactEntry[]>(s.contactLog ?? []);
+  const [newMethod, setNewMethod] = useState("");
+  const [newOutcome, setNewOutcome] = useState("");
+  const [newNotes, setNewNotes] = useState("");
+
   const [form, setForm] = useState({
     firstName: recruit.firstName,
     lastName: recruit.lastName,
@@ -216,7 +294,6 @@ function EditDrawer({ recruit, onClose }: { recruit: Recruit & { _sorb: SorbFiel
     post: s.post ?? "",
     unit: s.unit ?? "",
     sorbCo: s.sorbCo ?? "",
-    logAttempt: s.logAttempt ?? "None",
     contacted: s.contacted ?? false,
     pipeline: s.pipeline ?? "",
     runTime2mi: s.runTime2mi ?? "",
@@ -252,6 +329,27 @@ function EditDrawer({ recruit, onClose }: { recruit: Recruit & { _sorb: SorbFiel
       qc.invalidateQueries({ queryKey: ["/api/sorb/pipeline-analytics"] });
       toast({ title: "Lead updated" });
       onClose();
+    },
+    onError: (e: Error) => toast({ variant: "destructive", title: "Error", description: e.message }),
+  });
+
+  const logMut = useMutation({
+    mutationFn: async ({ method, outcome, notes }: { method: string; outcome: string; notes: string }) => {
+      const res = await fetch(`/api/sorb/leads/${recruit.id}/contact-log`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ method, outcome, notes: notes || undefined }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Failed");
+      return res.json() as Promise<{ entry: ContactEntry }>;
+    },
+    onSuccess: (data) => {
+      setContactLog(prev => [...prev, data.entry]);
+      setNewMethod("");
+      setNewOutcome("");
+      setNewNotes("");
+      qc.invalidateQueries({ queryKey: ["/api/recruits"] });
+      toast({ title: "Contact attempt logged" });
     },
     onError: (e: Error) => toast({ variant: "destructive", title: "Error", description: e.message }),
   });
@@ -359,19 +457,89 @@ function EditDrawer({ recruit, onClose }: { recruit: Recruit & { _sorb: SorbFiel
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label className="text-xs text-gray-500">Log Attempt</Label>
-            <Select value={form.logAttempt} onValueChange={setField("logAttempt")}>
-              <SelectTrigger className="h-8 mt-1"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {["None","Email","Text","Phone Call","In Person"].map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
           <div className="flex items-center gap-2 pt-5">
             <input type="checkbox" id="contacted_e" {...chk("contacted")} className="h-4 w-4 rounded" />
             <Label htmlFor="contacted_e" className="text-sm">Contacted</Label>
           </div>
+        </div>
+      </div>
+
+      {/* Contact History */}
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <History className="w-3.5 h-3.5 text-gray-500" />
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Contact History</p>
+          <span className="text-xs text-gray-400 ml-auto">{contactLog.length} {contactLog.length === 1 ? "entry" : "entries"}</span>
+        </div>
+
+        {/* Existing entries (newest first) */}
+        {contactLog.length > 0 ? (
+          <div className="space-y-1.5 mb-3 max-h-44 overflow-y-auto pr-1">
+            {[...contactLog].reverse().map((entry) => {
+              const Icon = METHOD_ICON[entry.method] ?? Phone;
+              const outcomeColor = OUTCOME_COLOR[entry.outcome] ?? "text-gray-500";
+              return (
+                <div key={entry.id} className="flex gap-2.5 p-2 bg-gray-50 rounded-md border text-xs">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <Icon className="w-3.5 h-3.5 text-gray-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-gray-800">{entry.method}</span>
+                      <span className="text-gray-400 text-[10px] flex-shrink-0">{relativeDate(entry.date)}</span>
+                    </div>
+                    <span className={`font-medium ${outcomeColor}`}>{entry.outcome}</span>
+                    {entry.notes && <p className="text-gray-500 mt-0.5 truncate">{entry.notes}</p>}
+                    {entry.byName && <p className="text-gray-400 text-[10px] mt-0.5">{entry.byName}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-xs text-gray-400 mb-3 italic">No contact attempts logged yet.</p>
+        )}
+
+        {/* Log new attempt */}
+        <div className="p-2.5 border border-dashed rounded-md bg-white space-y-2">
+          <p className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+            <Clock className="w-3 h-3" /> Log New Attempt
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-[10px] text-gray-500 uppercase tracking-wide">Method</Label>
+              <Select value={newMethod} onValueChange={setNewMethod}>
+                <SelectTrigger className="h-8 mt-0.5 text-xs"><SelectValue placeholder="Select method" /></SelectTrigger>
+                <SelectContent>
+                  {CONTACT_METHODS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-[10px] text-gray-500 uppercase tracking-wide">Outcome</Label>
+              <Select value={newOutcome} onValueChange={setNewOutcome}>
+                <SelectTrigger className="h-8 mt-0.5 text-xs"><SelectValue placeholder="Select outcome" /></SelectTrigger>
+                <SelectContent>
+                  {CONTACT_OUTCOMES.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <Textarea
+            className="h-16 text-xs resize-none"
+            placeholder="Notes (optional) — e.g. 'Called at 1600, left voicemail'"
+            value={newNotes}
+            onChange={(e) => setNewNotes(e.target.value)}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full border-green-700 text-green-700 hover:bg-green-50 text-xs"
+            onClick={() => logMut.mutate({ method: newMethod, outcome: newOutcome, notes: newNotes })}
+            disabled={!newMethod || !newOutcome || logMut.isPending}
+          >
+            {logMut.isPending ? "Logging…" : "Log Attempt"}
+          </Button>
         </div>
       </div>
 
@@ -656,6 +824,19 @@ function SORBDashboardContent() {
                             {lead.firstName !== "SOLDIER" && (
                               <span className="text-xs text-gray-400 block">{lead.firstName}</span>
                             )}
+                            {(() => {
+                              const log = s.contactLog;
+                              if (!log || log.length === 0) return null;
+                              const last = log[log.length - 1];
+                              const Icon = METHOD_ICON[last.method] ?? Phone;
+                              const outcomeColor = OUTCOME_COLOR[last.outcome] ?? "text-gray-400";
+                              return (
+                                <span className={`inline-flex items-center gap-0.5 text-[10px] ${outcomeColor} mt-0.5`}>
+                                  <Icon className="w-2.5 h-2.5" />
+                                  {last.method} · {relativeDate(last.date)}
+                                </span>
+                              );
+                            })()}
                           </div>
                         </TableCell>
                         <TableCell className="text-center text-sm">

@@ -55,8 +55,10 @@ function DashboardContent() {
         qrScanTracking: response.qrScanTracking || {
           totalScans: 0,
           totalSurveyScans: 0,
+          totalSweepstakesScans: 0,
           applicationsFromScans: 0,
           surveysFromScans: 0,
+          sweepstakesFromScans: 0,
           totalConverted: 0,
           conversionRate: 0,
         },
@@ -180,6 +182,19 @@ function DashboardContent() {
     }
   };
 
+  const formatApproxLocation = (scan: {
+    approxLocation?: {
+      city: string | null;
+      region: string | null;
+      country: string | null;
+    };
+  }) => {
+    const city = scan.approxLocation?.city;
+    const region = scan.approxLocation?.region;
+    const country = scan.approxLocation?.country;
+    return [city, region, country].filter(Boolean).join(", ");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Page Title Section */}
@@ -278,9 +293,10 @@ function DashboardContent() {
                         ({statsData?.qrScanTracking?.conversionRate}%)
                       </span>
                     )}
-                    {(statsData?.qrScanTracking?.surveysFromScans || 0) > 0 && (
+                    {((statsData?.qrScanTracking?.surveysFromScans || 0) > 0 ||
+                      (statsData?.qrScanTracking?.sweepstakesFromScans || 0) > 0) && (
                       <span className="block text-[11px] text-gray-500 mt-1">
-                        {statsData?.qrScanTracking?.applicationsFromScans || 0} apps • {statsData?.qrScanTracking?.surveysFromScans || 0} surveys
+                        {statsData?.qrScanTracking?.applicationsFromScans || 0} apps • {statsData?.qrScanTracking?.surveysFromScans || 0} surveys • {statsData?.qrScanTracking?.sweepstakesFromScans || 0} sweepstakes
                       </span>
                     )}
                   </>
@@ -877,8 +893,13 @@ function DashboardContent() {
                                 </Badge>
                               )}
                             </div>
-                            <div className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap">
-                              {format(new Date(scan.scannedAt), "MMM d, h:mm a")}
+                            <div className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap text-left sm:text-right">
+                              {formatApproxLocation(scan) && (
+                                <div className="text-blue-700 truncate max-w-[220px] sm:max-w-none">
+                                  {formatApproxLocation(scan)}
+                                </div>
+                              )}
+                              <div>{format(new Date(scan.scannedAt), "MMM d, h:mm a")}</div>
                             </div>
                           </div>
                         ))

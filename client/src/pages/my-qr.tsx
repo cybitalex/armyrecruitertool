@@ -55,9 +55,11 @@ function MyQRCodeContent() {
   const { toast } = useToast();
   const [qrCodeImage, setQrCodeImage] = useState("");
   const [surveyQrCodeImage, setSurveyQrCodeImage] = useState("");
+  const [sweepstakesQrCodeImage, setSweepstakesQrCodeImage] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [isVRSRecruiter, setIsVRSRecruiter] = useState(false);
 
   // Location QR codes state
   const [locationQRCodesList, setLocationQRCodesList] = useState<
@@ -69,18 +71,45 @@ function MyQRCodeContent() {
   const [loadingLocationQRs, setLoadingLocationQRs] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newLocationLabel, setNewLocationLabel] = useState("");
-  const [newQRType, setNewQRType] = useState<"application" | "survey">(
+  const [newQRType, setNewQRType] = useState<"application" | "survey" | "sweepstakes">(
     "application"
   );
   const [creating, setCreating] = useState(false);
 
   const qrUrl = `${window.location.origin}/apply?r=${user?.qrCode}`;
   const surveyUrl = `${window.location.origin}/survey?r=${user?.qrCode}`;
+  const sweepstakesUrl = `${window.location.origin}/sweepstakes?r=${user?.qrCode}`;
 
   useEffect(() => {
     loadQRCodes();
+  }, [isVRSRecruiter]);
+
+  useEffect(() => {
     loadLocationQRCodes();
   }, []);
+
+  useEffect(() => {
+    const loadStationType = async () => {
+      if (!user?.stationId) {
+        setIsVRSRecruiter(false);
+        return;
+      }
+      try {
+        const response = await fetch(`/api/stations/${user.stationId}`, {
+          credentials: "include",
+        });
+        if (!response.ok) {
+          setIsVRSRecruiter(false);
+          return;
+        }
+        const station = await response.json();
+        setIsVRSRecruiter(station?.stationCode === "VRS");
+      } catch {
+        setIsVRSRecruiter(false);
+      }
+    };
+    loadStationType();
+  }, [user?.stationId]);
 
   const loadQRCodes = async () => {
     try {
@@ -90,6 +119,17 @@ function MyQRCodeContent() {
       ]);
       setQrCodeImage(qrCode);
       setSurveyQrCodeImage(survey.qrCode);
+
+      if (isVRSRecruiter) {
+        try {
+          const sweepstakes = await auth.getSweepstakesQRCode();
+          setSweepstakesQrCodeImage(sweepstakes.qrCode);
+        } catch {
+          setSweepstakesQrCodeImage("");
+        }
+      } else {
+        setSweepstakesQrCodeImage("");
+      }
     } catch (err) {
       setError("Failed to load QR codes");
     } finally {
@@ -272,7 +312,7 @@ function MyQRCodeContent() {
                 Recruiter QR Code
               </CardTitle>
               <CardDescription className="text-xs sm:text-sm mt-1">
-                Applicants scan this to start the full interest/application form
+                Prospects scan this to complete the interest form and learn more
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center px-4 sm:px-6 pb-4 sm:pb-6">
@@ -369,6 +409,64 @@ function MyQRCodeContent() {
               </div>
             </CardContent>
           </Card>
+
+          {isVRSRecruiter && (
+            <Card>
+              <CardHeader className="text-center px-4 sm:px-6 pt-4 sm:pt-6">
+                <CardTitle className="text-lg sm:text-xl">
+                  VRS Sweepstakes QR Code
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm mt-1">
+                  Use for Virtual Recruiting Station campaigns (3D glasses giveaway)
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center px-4 sm:px-6 pb-4 sm:pb-6">
+                {loading ? (
+                  <div className="w-48 h-48 sm:w-64 sm:h-64 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
+                    <p className="text-gray-500 text-sm">Loading QR Code...</p>
+                  </div>
+                ) : (
+                  <div className="bg-white p-3 sm:p-4 rounded-lg border-2 sm:border-4 border-green-700">
+                    <img
+                      src={sweepstakesQrCodeImage}
+                      alt="VRS Sweepstakes QR Code"
+                      className="w-48 h-48 sm:w-64 sm:h-64"
+                    />
+                  </div>
+                )}
+
+                <div className="mt-4 sm:mt-6 w-full space-y-2 sm:space-y-3">
+                  <Button
+                    onClick={() => {
+                      const link = document.createElement("a");
+                      link.href = sweepstakesQrCodeImage;
+                      link.download = `army-recruiter-vrs-sweepstakes-${user?.fullName
+                        ?.replace(/\s+/g, "-")
+                        .toLowerCase()}.png`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                    className="w-full bg-green-700 hover:bg-green-800 text-sm sm:text-base"
+                    disabled={loading || !sweepstakesQrCodeImage}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Sweepstakes QR
+                  </Button>
+
+                  <Button
+                    onClick={() => copyLink(sweepstakesUrl)}
+                    variant="outline"
+                    className="w-full text-sm sm:text-base"
+                    disabled={loading}
+                  >
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Copy Sweepstakes Link
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Instructions */}
           <div className="space-y-4 sm:space-y-6 md:col-span-2">
@@ -484,6 +582,30 @@ function MyQRCodeContent() {
                       </Button>
                     </div>
                   </div>
+
+                  {isVRSRecruiter && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700 mb-1">
+                        VRS Sweepstakes
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={sweepstakesUrl}
+                          readOnly
+                          className="flex-1 px-3 py-2 border rounded text-sm bg-gray-50"
+                        />
+                        <Button
+                          onClick={() => copyLink(sweepstakesUrl)}
+                          variant="outline"
+                          className="flex-shrink-0"
+                        >
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copy
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -571,7 +693,7 @@ function MyQRCodeContent() {
                           <Select
                             value={newQRType}
                             onValueChange={(v) =>
-                              setNewQRType(v as "application" | "survey")
+                              setNewQRType(v as "application" | "survey" | "sweepstakes")
                             }
                           >
                             <SelectTrigger>
@@ -584,6 +706,11 @@ function MyQRCodeContent() {
                               <SelectItem value="survey">
                                 Survey Form
                               </SelectItem>
+                              {isVRSRecruiter && (
+                                <SelectItem value="sweepstakes">
+                                  VRS Sweepstakes
+                                </SelectItem>
+                              )}
                             </SelectContent>
                           </Select>
                         </div>
@@ -638,7 +765,11 @@ function MyQRCodeContent() {
                     {locationQRCodesList.map((locationQR) => {
                       const qrImage = locationQRImages[locationQR.id];
                       const qrUrl = `${window.location.origin}/${
-                        locationQR.qrType === "application" ? "apply" : "survey"
+                        locationQR.qrType === "application"
+                          ? "apply"
+                          : locationQR.qrType === "survey"
+                            ? "survey"
+                            : "sweepstakes"
                       }?r=${locationQR.qrCode}`;
 
                       return (
@@ -652,7 +783,9 @@ function MyQRCodeContent() {
                                 <CardDescription className="text-xs mt-1">
                                   {locationQR.qrType === "application"
                                     ? "Application"
-                                    : "Survey"}{" "}
+                                    : locationQR.qrType === "survey"
+                                      ? "Survey"
+                                      : "Sweepstakes"}{" "}
                                   QR Code
                                 </CardDescription>
                               </div>

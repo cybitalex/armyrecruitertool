@@ -161,6 +161,13 @@ export const qrScans = pgTable("qr_scans", {
   ), // If set, this scan was from a location-based QR
   scanType: text("scan_type").notNull().default("application"), // "application" or "survey"
   ipAddress: text("ip_address"), // Track scan IP for analytics
+  scanCountry: text("scan_country"), // Approximate country from IP geolocation
+  scanRegion: text("scan_region"), // Approximate state/region from IP geolocation
+  scanCity: text("scan_city"), // Approximate city from IP geolocation
+  scanLatitude: text("scan_latitude"), // Approximate latitude from IP geolocation
+  scanLongitude: text("scan_longitude"), // Approximate longitude from IP geolocation
+  scanTimezone: text("scan_timezone"), // Approximate timezone from IP geolocation
+  scanIsp: text("scan_isp"), // Approximate ISP/network from IP geolocation
   userAgent: text("user_agent"), // Browser/device info
   referrer: text("referrer"), // Where they came from
   convertedToApplication: boolean("converted_to_application").default(false), // Did they submit?

@@ -80,6 +80,10 @@ export const auth = {
     return apiCall<{ qrCode: string }>("/auth/qr-code-survey");
   },
 
+  getSweepstakesQRCode: async () => {
+    return apiCall<{ qrCode: string }>("/auth/qr-code-sweepstakes");
+  },
+
   forgotPassword: async (email: string) => {
     return apiCall<{ message: string }>("/auth/forgot-password", {
       method: "POST",
@@ -145,6 +149,16 @@ export const stats = {
       totalRecruits: number;
       qrCodeScans: number;
       directEntries: number;
+      qrScanTracking: {
+        totalScans: number;
+        totalSurveyScans: number;
+        totalSweepstakesScans: number;
+        applicationsFromScans: number;
+        surveysFromScans: number;
+        sweepstakesFromScans: number;
+        totalConverted: number;
+        conversionRate: number;
+      };
       recentRecruits: Recruit[];
     }>("/recruiter/stats");
   },
@@ -276,7 +290,7 @@ export const stationCommander = {
 
 // Location QR Codes API
 export const locationQRCodes = {
-  create: async (data: { locationLabel: string; qrType: 'application' | 'survey' }) => {
+  create: async (data: { locationLabel: string; qrType: "application" | "survey" | "sweepstakes" }) => {
     return apiCall<{
       id: string;
       locationLabel: string;
@@ -388,12 +402,40 @@ export const qrScanAnalytics = {
           converted: boolean;
           conversionType: string | null;
           ipAddress: string | null;
+          approxLocation: {
+            country: string | null;
+            region: string | null;
+            city: string | null;
+            latitude: string | null;
+            longitude: string | null;
+            timezone: string | null;
+            isp: string | null;
+          };
         }>;
       }>;
       totalScans: number;
       totalConverted: number;
       overallConversionRate: number;
     }>("/qr-scans/analytics");
+  },
+};
+
+export const sweepstakes = {
+  submit: async (data: {
+    recruiterCode: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    interest?: string;
+  }) => {
+    return apiCall<{ success: boolean; recruitId: string; message: string }>(
+      "/sweepstakes",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    );
   },
 };
 

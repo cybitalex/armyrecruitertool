@@ -30,6 +30,7 @@ import {
   generateQRCodeImage,
   resendVerificationEmail,
   generateSurveyQRCodeImage,
+  generateSweepstakesQRCodeImage,
   requestPasswordReset,
   resetPassword as resetPasswordHandler,
   sendApplicantConfirmationEmail,
@@ -46,6 +47,108 @@ import { db } from "./database";
 import { users, qrScans, qrCodeLocations, notifications, recruits, armyMOS } from "@shared/schema";
 import { eq, sql, and, desc, inArray, lte, gte } from "drizzle-orm";
 import { getSORBRegistrationStations } from "./sorb-data";
+
+type ApproxScanLocation = {
+  country: string | null;
+  region: string | null;
+  city: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  timezone: string | null;
+  isp: string | null;
+};
+
+function extractClientIp(req: any): string | null {
+  const forwardedFor = req.headers["x-forwarded-for"];
+  const forwardedIp =
+    typeof forwardedFor === "string" && forwardedFor.length > 0
+      ? forwardedFor.split(",")[0]?.trim()
+      : null;
+  const ip = forwardedIp || req.ip || req.socket?.remoteAddress || null;
+  if (!ip) return null;
+  return ip.startsWith("::ffff:") ? ip.replace("::ffff:", "") : ip;
+}
+
+function isPrivateOrLocalIp(ip: string): boolean {
+  return (
+    ip === "127.0.0.1" ||
+    ip === "::1" ||
+    ip === "localhost" ||
+    ip.startsWith("10.") ||
+    ip.startsWith("192.168.") ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(ip) ||
+    ip.startsWith("169.254.") ||
+    ip.startsWith("fc") ||
+    ip.startsWith("fd") ||
+    ip.startsWith("fe80:")
+  );
+}
+
+async function lookupApproxLocationByIp(
+  ipAddress: string | null
+): Promise<ApproxScanLocation> {
+  const emptyLocation: ApproxScanLocation = {
+    country: null,
+    region: null,
+    city: null,
+    latitude: null,
+    longitude: null,
+    timezone: null,
+    isp: null,
+  };
+
+  if (!ipAddress || isPrivateOrLocalIp(ipAddress)) {
+    return emptyLocation;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 1500);
+
+  try {
+    const response = await fetch(
+      `http://ip-api.com/json/${encodeURIComponent(
+        ipAddress
+      )}?fields=status,country,regionName,city,lat,lon,timezone,isp`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      return emptyLocation;
+    }
+
+    const payload = (await response.json()) as {
+      status?: string;
+      country?: string;
+      regionName?: string;
+      city?: string;
+      lat?: number;
+      lon?: number;
+      timezone?: string;
+      isp?: string;
+    };
+
+    if (payload.status !== "success") {
+      return emptyLocation;
+    }
+
+    return {
+      country: payload.country ?? null,
+      region: payload.regionName ?? null,
+      city: payload.city ?? null,
+      latitude:
+        typeof payload.lat === "number" ? payload.lat.toString() : null,
+      longitude:
+        typeof payload.lon === "number" ? payload.lon.toString() : null,
+      timezone: payload.timezone ?? null,
+      isp: payload.isp ?? null,
+    };
+  } catch {
+    return emptyLocation;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // AUTHENTICATION ENDPOINTS
@@ -259,6 +362,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all stations (public endpoint for registration)
   app.get("/api/stations", async (req, res) => {
     try {
+      // Keep VRS available even if the service started before the station seed was added.
+      await db.execute(sql`
+        insert into stations (name, station_code, city, state, address, zip_code)
+        values ('Virtual Recruiting Station', 'VRS', 'Virtual', 'Online', 'Virtual Recruiting Station', '00000')
+        on conflict (station_code) do nothing
+      `);
+
       const allStations = await db
         .select()
         .from(stations)
@@ -1435,6 +1545,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
+  async function isVRSRecruiter(userId: string): Promise<boolean> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user?.stationId) return false;
+    const [station] = await db
+      .select()
+      .from(stations)
+      .where(eq(stations.id, user.stationId));
+    return station?.stationCode === "VRS";
+  }
+
   // Get recruiter's QR code (application form)
   app.get("/api/auth/qr-code", async (req, res) => {
     try {
@@ -1482,6 +1602,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get recruiter's VRS sweepstakes QR code
+  app.get("/api/auth/qr-code-sweepstakes", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const canUseSweepstakes = await isVRSRecruiter(userId);
+      if (!canUseSweepstakes) {
+        return res
+          .status(403)
+          .json({ error: "Sweepstakes QR is only available for VRS recruiters" });
+      }
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user || !user.qrCode) {
+        return res.status(404).json({ error: "QR code not found" });
+      }
+
+      const qrCodeImage = await generateSweepstakesQRCodeImage(user.qrCode);
+      res.json({ qrCode: qrCodeImage });
+    } catch (error) {
+      console.error("❌ Failed to generate sweepstakes QR code:", error);
+      res.status(500).json({ error: "Failed to fetch sweepstakes QR code" });
+    }
+  });
+
   // Create a location-based QR code
   app.post("/api/qr-codes/location", async (req, res) => {
     try {
@@ -1497,10 +1646,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Location label is required" });
       }
 
-      if (!["application", "survey"].includes(qrType)) {
+      if (!["application", "survey", "sweepstakes"].includes(qrType)) {
         return res
           .status(400)
-          .json({ error: "QR type must be 'application' or 'survey'" });
+          .json({
+            error: "QR type must be 'application', 'survey', or 'sweepstakes'",
+          });
+      }
+
+      if (qrType === "sweepstakes") {
+        const canUseSweepstakes = await isVRSRecruiter(userId);
+        if (!canUseSweepstakes) {
+          return res.status(403).json({
+            error: "Sweepstakes QR is only available for VRS recruiters",
+          });
+        }
       }
 
       // Generate unique QR code identifier
@@ -1519,10 +1679,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .returning();
 
       // Generate QR code image
-      const qrCodeImage =
-        qrType === "application"
-          ? await generateQRCodeImage(qrCodeId)
-          : await generateSurveyQRCodeImage(qrCodeId);
+      const qrCodeImage = await (qrType === "application"
+        ? generateQRCodeImage(qrCodeId)
+        : qrType === "survey"
+          ? generateSurveyQRCodeImage(qrCodeId)
+          : generateSweepstakesQRCodeImage(qrCodeId));
 
       res.json({
         id: locationQR.id,
@@ -1584,10 +1745,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate QR code image
-      const qrCodeImage =
-        locationQR.qrType === "application"
-          ? await generateQRCodeImage(locationQR.qrCode)
-          : await generateSurveyQRCodeImage(locationQR.qrCode);
+      const qrCodeImage = await (locationQR.qrType === "application"
+        ? generateQRCodeImage(locationQR.qrCode)
+        : locationQR.qrType === "survey"
+          ? generateSurveyQRCodeImage(locationQR.qrCode)
+          : generateSweepstakesQRCodeImage(locationQR.qrCode));
 
       res.json({ qrCode: qrCodeImage });
     } catch (error) {
@@ -1695,6 +1857,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             converted: boolean;
             conversionType: string | null;
             ipAddress: string | null;
+            approxLocation: {
+              country: string | null;
+              region: string | null;
+              city: string | null;
+              latitude: string | null;
+              longitude: string | null;
+              timezone: string | null;
+              isp: string | null;
+            };
           }>;
         }
       > = {};
@@ -1739,12 +1910,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           scanType: scan.scanType,
           scannedAt: scan.scannedAt,
           converted,
-          conversionType: converted
-            ? scan.scanType === "survey"
-              ? "survey"
-              : "application"
-            : null,
+          conversionType: converted ? scan.scanType : null,
           ipAddress: scan.ipAddress,
+          approxLocation: {
+            country: scan.scanCountry,
+            region: scan.scanRegion,
+            city: scan.scanCity,
+            latitude: scan.scanLatitude,
+            longitude: scan.scanLongitude,
+            timezone: scan.scanTimezone,
+            isp: scan.scanIsp,
+          },
         });
       });
 
@@ -1975,6 +2151,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const totalSurveyScans = allQrScans.filter(
           (s) => s.scanType === "survey"
         ).length;
+        const totalSweepstakesScans = allQrScans.filter(
+          (s) => s.scanType === "sweepstakes"
+        ).length;
         const applicationScanConversions = allQrScans.filter(
           (s) => s.scanType === "application" && s.convertedToApplication
         ).length;
@@ -1994,8 +2173,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           qrScanTracking: {
             totalScans: totalQrScans,
             totalSurveyScans,
+            totalSweepstakesScans,
             applicationsFromScans: applicationScanConversions,
             surveysFromScans: surveyScanConversions,
+            sweepstakesFromScans: allQrScans.filter(
+              (s) => s.scanType === "sweepstakes" && s.convertedToApplication
+            ).length,
             totalConverted: totalConvertedScans,
             conversionRate: qrConversionRate,
           },
@@ -2022,8 +2205,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             directEntries: acc.directEntries + s.allTime.directEntries,
             totalQrScans: acc.totalQrScans + s.qrScanTracking.totalScans,
             totalSurveyScans: acc.totalSurveyScans + s.qrScanTracking.totalSurveyScans,
+            totalSweepstakesScans:
+              acc.totalSweepstakesScans + s.qrScanTracking.totalSweepstakesScans,
             applicationsFromScans: acc.applicationsFromScans + s.qrScanTracking.applicationsFromScans,
             surveysFromScans: acc.surveysFromScans + s.qrScanTracking.surveysFromScans,
+            sweepstakesFromScans:
+              acc.sweepstakesFromScans + s.qrScanTracking.sweepstakesFromScans,
             totalConverted: acc.totalConverted + s.qrScanTracking.totalConverted,
           }),
           {
@@ -2032,8 +2219,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             directEntries: 0,
             totalQrScans: 0,
             totalSurveyScans: 0,
+            totalSweepstakesScans: 0,
             applicationsFromScans: 0,
             surveysFromScans: 0,
+            sweepstakesFromScans: 0,
             totalConverted: 0,
           }
         );
@@ -2050,8 +2239,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           qrScanTracking: {
             totalScans: aggregated.totalQrScans,
             totalSurveyScans: aggregated.totalSurveyScans,
+            totalSweepstakesScans: aggregated.totalSweepstakesScans,
             applicationsFromScans: aggregated.applicationsFromScans,
             surveysFromScans: aggregated.surveysFromScans,
+            sweepstakesFromScans: aggregated.sweepstakesFromScans,
             totalConverted: aggregated.totalConverted,
             conversionRate: qrConversionRate,
           },
@@ -2289,6 +2480,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/qr-scan", async (req, res) => {
     try {
       const { qrCode, scanType = "application" } = req.body;
+      const requestedScanType =
+        typeof scanType === "string" ? scanType : "application";
 
       if (!qrCode) {
         return res.status(400).json({ error: "QR code is required" });
@@ -2302,6 +2495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let recruiter;
       let locationQrCodeId = null;
+      let effectiveScanType: string = requestedScanType;
 
       if (locationQR) {
         // This is a location-based QR code
@@ -2309,6 +2503,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           where: eq(users.id, locationQR.recruiterId),
         });
         locationQrCodeId = locationQR.id;
+        effectiveScanType = locationQR.qrType || requestedScanType;
         console.log(
           `📍 Location QR scan detected - Label: ${locationQR.locationLabel}, Type: ${locationQR.qrType}`
         );
@@ -2328,12 +2523,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ success: false, error: "QR code not found" });
       }
 
+      if (!["application", "survey", "sweepstakes"].includes(effectiveScanType)) {
+        return res.status(400).json({ error: "Invalid QR scan type" });
+      }
+
       // Capture request metadata
-      const ipAddress =
-        (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
-        req.ip ||
-        req.socket.remoteAddress ||
-        null;
+      const ipAddress = extractClientIp(req);
+      const approxLocation = await lookupApproxLocationByIp(ipAddress);
       const userAgent = req.headers["user-agent"] || null;
       const referrer =
         req.headers["referer"] || req.headers["referrer"] || null;
@@ -2345,8 +2541,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           recruiterId: recruiter.id,
           qrCode: qrCode,
           locationQrCodeId: locationQrCodeId,
-          scanType: scanType,
+          scanType: effectiveScanType,
           ipAddress: ipAddress,
+          scanCountry: approxLocation.country,
+          scanRegion: approxLocation.region,
+          scanCity: approxLocation.city,
+          scanLatitude: approxLocation.latitude,
+          scanLongitude: approxLocation.longitude,
+          scanTimezone: approxLocation.timezone,
+          scanIsp: approxLocation.isp,
           userAgent: userAgent,
           referrer: referrer,
           convertedToApplication: false, // Will be updated if they submit
@@ -2357,13 +2560,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? ` at "${locationQR.locationLabel}"`
         : " (default QR)";
       console.log(
-        `📱 QR Scan tracked - Recruiter: ${recruiter.fullName}, Type: ${scanType}${scanLocation}, Scan ID: ${scan.id}`
+        `📱 QR Scan tracked - Recruiter: ${recruiter.fullName}, Type: ${effectiveScanType}${scanLocation}, Scan ID: ${scan.id}`
       );
 
       res.json({
         success: true,
         scanId: scan.id,
         locationLabel: locationQR?.locationLabel || null,
+        approxLocation,
         message: "Scan tracked successfully",
       });
     } catch (error) {
@@ -2648,6 +2852,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message:
           error instanceof Error ? error.message : "Failed to create recruit",
       });
+    }
+  });
+
+  // Public VRS sweepstakes lead capture endpoint (3D glasses campaign)
+  app.post("/api/sweepstakes", async (req, res) => {
+    try {
+      const schema = z.object({
+        recruiterCode: z.string().min(1),
+        firstName: z.string().min(1),
+        lastName: z.string().min(1),
+        email: z.string().email(),
+        phone: z.string().min(7),
+        interest: z.string().optional(),
+      });
+      const payload = schema.parse(req.body);
+
+      // Resolve recruiter from either location QR or default recruiter QR
+      const [locationQR] = await db
+        .select()
+        .from(qrCodeLocations)
+        .where(eq(qrCodeLocations.qrCode, payload.recruiterCode));
+
+      let recruiter;
+      if (locationQR) {
+        recruiter = await db.query.users.findFirst({
+          where: eq(users.id, locationQR.recruiterId),
+        });
+      } else {
+        [recruiter] = await db
+          .select()
+          .from(users)
+          .where(eq(users.qrCode, payload.recruiterCode));
+      }
+
+      if (!recruiter) {
+        return res.status(404).json({ error: "Recruiter not found" });
+      }
+
+      const [station] = recruiter.stationId
+        ? await db.select().from(stations).where(eq(stations.id, recruiter.stationId))
+        : [];
+      if (station?.stationCode !== "VRS") {
+        return res
+          .status(403)
+          .json({ error: "Sweepstakes is only available for VRS recruiters" });
+      }
+
+      const recruit = await storage.createRecruit({
+        recruiterId: recruiter.id,
+        firstName: payload.firstName.trim(),
+        lastName: payload.lastName.trim(),
+        middleName: null,
+        dateOfBirth: "1990-01-01",
+        email: payload.email.trim().toLowerCase(),
+        phone: payload.phone.trim(),
+        address: "VRS Sweepstakes",
+        city: "N/A",
+        state: "N/A",
+        zipCode: "00000",
+        educationLevel: "unknown",
+        hasDriversLicense: "unknown",
+        hasPriorService: "unknown",
+        priorServiceBranch: null,
+        priorServiceYears: null,
+        preferredMOS: null,
+        availability: "sweepstakes",
+        additionalNotes:
+          `VRS Sweepstakes Entry (3D Glasses)` +
+          (payload.interest?.trim() ? `\nInterest: ${payload.interest.trim()}` : ""),
+        status: "prospect",
+        source: "qr_code",
+      });
+
+      // Mark latest unconverted sweepstakes scan as converted
+      const [latestSweepstakesScan] = await db
+        .select()
+        .from(qrScans)
+        .where(
+          and(
+            eq(qrScans.qrCode, payload.recruiterCode),
+            eq(qrScans.scanType, "sweepstakes"),
+            eq(qrScans.convertedToApplication, false)
+          )
+        )
+        .orderBy(desc(qrScans.scannedAt))
+        .limit(1);
+
+      if (latestSweepstakesScan) {
+        await db
+          .update(qrScans)
+          .set({
+            convertedToApplication: true,
+            applicationId: recruit.id,
+          })
+          .where(eq(qrScans.id, latestSweepstakesScan.id));
+      }
+
+      res.status(201).json({
+        success: true,
+        recruitId: recruit.id,
+        message: "Sweepstakes entry submitted",
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          error: "Validation failed",
+          details: error.errors,
+        });
+      }
+      console.error("❌ Failed to submit sweepstakes entry:", error);
+      res.status(500).json({ error: "Failed to submit sweepstakes entry" });
     }
   });
 
@@ -4400,12 +4715,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
       const {
-        rank, firstName, lastName, phone, email, gt, mos, post, unit, sorbCo, logAttempt, contacted,
+        rank, firstName, lastName, phone, email, gt, mos, post, unit, sorbCo, logAttempt, logOutcome, contacted,
         pipeline, runTime2mi, ruckTime12mi, pushups, situps, ptScore,
         medicalEligible, airborneQualified, noMoralWaiver, priorSOCOM,
         notes, status,
       } = req.body;
       if (!lastName) return res.status(400).json({ error: "Last name is required" });
+
+      // Build initial contact log entry if a method was logged at intake
+      const initialContactLog: Array<{id:string;date:string;method:string;outcome:string;notes?:string}> = [];
+      if (logAttempt && logAttempt !== "None") {
+        const outcome = logOutcome || (contacted ? "Spoke" : "No Answer");
+        initialContactLog.push({
+          id: `${Date.now()}-init`,
+          date: new Date().toISOString(),
+          method: logAttempt,
+          outcome,
+          notes: notes ? notes.trim() : undefined,
+        });
+      }
 
       const sorbBlock = {
         rank: rank || "",
@@ -4426,6 +4754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         airborneQualified: !!airborneQualified,
         noMoralWaiver: !!noMoralWaiver,
         priorSOCOM: !!priorSOCOM,
+        contactLog: initialContactLog,
       };
       const combinedNotes = buildSorbNotes(sorbBlock, notes || "");
       const safeEmail = email?.trim() || `sorb.${(lastName).toLowerCase().replace(/[^a-z0-9]/g,"")}.${Date.now()}@example.mil`;
@@ -4462,6 +4791,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Append a contact attempt to a SORB lead's contact log
+  app.post("/api/sorb/leads/:id/contact-log", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const { method, outcome, notes, date } = req.body;
+      if (!method || !outcome) return res.status(400).json({ error: "method and outcome are required" });
+
+      const VALID_METHODS = ["Phone Call","Text","Email","In Person","Voicemail","Social Media"];
+      if (!VALID_METHODS.includes(method)) return res.status(400).json({ error: "Invalid method" });
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const [recruit] = await db.select().from(recruits).where(eq(recruits.id, req.params.id));
+      if (!recruit) return res.status(404).json({ error: "Lead not found" });
+
+      const canEdit = user.role === "admin" || recruit.recruiterId === userId || user.role === "station_commander";
+      if (!canEdit) return res.status(403).json({ error: "Permission denied" });
+
+      const existingSorb = parseSorbFields(recruit.additionalNotes) as Record<string,unknown>;
+      const existingLog: Array<Record<string,unknown>> = Array.isArray(existingSorb.contactLog)
+        ? (existingSorb.contactLog as Array<Record<string,unknown>>)
+        : [];
+
+      const newEntry = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+        date: date || new Date().toISOString(),
+        method,
+        outcome,
+        notes: notes?.trim() || undefined,
+        byName: user.fullName,
+      };
+
+      const updatedLog = [...existingLog, newEntry];
+
+      // Derive contacted flag: any "Spoke" or "In Person" outcome sets it true
+      const spokeOutcomes = ["Spoke","Spoke — Interested","Spoke — Not Interested","Spoke — Follow-up Set","Spoke — Callback Requested","In Person Contact"];
+      const isContacted = updatedLog.some(e => spokeOutcomes.includes(String(e.outcome)));
+
+      const mergedSorb: Record<string,unknown> = {
+        ...existingSorb,
+        contactLog: updatedLog,
+        logAttempt: method, // keep legacy field updated to latest method
+        contacted: isContacted,
+      };
+
+      const freeNotes = recruit.additionalNotes?.includes("\n---\n")
+        ? recruit.additionalNotes.split("\n---\n")[0]
+        : (recruit.additionalNotes?.startsWith("{") ? "" : (recruit.additionalNotes ?? ""));
+
+      const [updated] = await db.update(recruits)
+        .set({ additionalNotes: buildSorbNotes(mergedSorb, freeNotes || undefined) } as any)
+        .where(eq(recruits.id, req.params.id))
+        .returning();
+
+      res.json({ entry: newEntry, lead: updated });
+    } catch (error) {
+      console.error("SORB contact log error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to log contact" });
+    }
+  });
+
   // Update SORB-specific fields on a lead
   app.patch("/api/sorb/leads/:id", async (req, res) => {
     try {
@@ -4486,8 +4879,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         notes, status, firstName, lastName, phone,
       } = req.body;
 
-      // Merge into existing _sorb block
-      const existingSorb = parseSorbFields(recruit.additionalNotes);
+      // Merge into existing _sorb block (contactLog is managed separately via /contact-log endpoint)
+      const existingSorb = parseSorbFields(recruit.additionalNotes) as Record<string,unknown>;
       const mergedSorb: Record<string,unknown> = {
         ...existingSorb,
         ...(rank !== undefined && { rank }),
@@ -4508,6 +4901,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...(airborneQualified !== undefined && { airborneQualified: !!airborneQualified }),
         ...(noMoralWaiver !== undefined && { noMoralWaiver: !!noMoralWaiver }),
         ...(priorSOCOM !== undefined && { priorSOCOM: !!priorSOCOM }),
+        // Preserve existing contactLog — do not overwrite from PATCH
+        contactLog: (existingSorb as any).contactLog ?? [],
       };
 
       const updateData: Record<string,unknown> = {

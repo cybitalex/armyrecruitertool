@@ -500,8 +500,10 @@ export class MemStorage implements IStorage {
     qrScanTracking: {
       totalScans: number;
       totalSurveyScans: number;
+      totalSweepstakesScans: number;
       applicationsFromScans: number;
       surveysFromScans: number;
+      sweepstakesFromScans: number;
       totalConverted: number;
       conversionRate: number;
     };
@@ -562,8 +564,10 @@ export class MemStorage implements IStorage {
         .select({
           totalScans: sql<number>`count(*)::int`,
           totalSurveyScans: sql<number>`count(*) filter (where ${qrScans.scanType} = 'survey')::int`,
+          totalSweepstakesScans: sql<number>`count(*) filter (where ${qrScans.scanType} = 'sweepstakes')::int`,
           applicationsFromScans: sql<number>`count(*) filter (where ${qrScans.scanType} = 'application' AND ${qrScans.convertedToApplication} = true)::int`,
           surveysFromScans: sql<number>`count(*) filter (where ${qrScans.scanType} = 'survey' AND ${qrScans.convertedToSurvey} = true)::int`,
+          sweepstakesFromScans: sql<number>`count(*) filter (where ${qrScans.scanType} = 'sweepstakes' AND ${qrScans.convertedToApplication} = true)::int`,
           totalConverted: sql<number>`count(*) filter (where (${qrScans.convertedToApplication} = true OR ${qrScans.convertedToSurvey} = true))::int`,
         })
         .from(qrScans)
@@ -586,8 +590,10 @@ export class MemStorage implements IStorage {
       const scanStats = qrScanStats[0] || {
         totalScans: 0,
         totalSurveyScans: 0,
+        totalSweepstakesScans: 0,
         applicationsFromScans: 0,
         surveysFromScans: 0,
+        sweepstakesFromScans: 0,
         totalConverted: 0,
       };
 
@@ -614,8 +620,10 @@ export class MemStorage implements IStorage {
         qrScanTracking: {
           totalScans: scanStats.totalScans,
           totalSurveyScans: scanStats.totalSurveyScans,
+          totalSweepstakesScans: scanStats.totalSweepstakesScans,
           applicationsFromScans: scanStats.applicationsFromScans,
           surveysFromScans: scanStats.surveysFromScans,
+          sweepstakesFromScans: scanStats.sweepstakesFromScans,
           totalConverted: scanStats.totalConverted,
           conversionRate,
         },
@@ -644,8 +652,10 @@ export class MemStorage implements IStorage {
         qrScanTracking: {
           totalScans: 0,
           totalSurveyScans: 0,
+          totalSweepstakesScans: 0,
           applicationsFromScans: 0,
           surveysFromScans: 0,
+          sweepstakesFromScans: 0,
           totalConverted: 0,
           conversionRate: 0,
         },

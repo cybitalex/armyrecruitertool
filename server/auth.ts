@@ -733,6 +733,29 @@ export async function generateSurveyQRCodeImage(qrCode: string): Promise<string>
   }
 }
 
+// Generate QR code image for VRS sweepstakes lead capture
+export async function generateSweepstakesQRCodeImage(qrCode: string): Promise<string> {
+  const url = `${process.env.APP_URL || 'https://armyrecruitertool.duckdns.org'}/sweepstakes?r=${qrCode}`;
+
+  try {
+    const qrCodeDataUrl = await QRCode.toDataURL(url, {
+      errorCorrectionLevel: 'H',
+      type: 'image/png',
+      width: 300,
+      margin: 2,
+      color: {
+        dark: '#006400',
+        light: '#FFFFFF',
+      },
+    });
+
+    return qrCodeDataUrl;
+  } catch (error) {
+    console.error('❌ Failed to generate sweepstakes QR code:', error);
+    throw new Error('Failed to generate sweepstakes QR code');
+  }
+}
+
 // Register new user
 export async function registerUser(data: {
   email: string;

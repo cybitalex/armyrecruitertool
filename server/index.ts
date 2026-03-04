@@ -18,6 +18,9 @@ import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { checkUpcomingShippers } from "./shipper-notifications";
+import { db } from "./database";
+import { stations } from "../shared/schema";
+import { sql } from "drizzle-orm";
 
 const app = express();
 
@@ -176,6 +179,13 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+
+  // Ensure the Virtual Recruiting Station exists for VRS workflows.
+  await db.execute(sql`
+    insert into stations (name, station_code, city, state, address, zip_code)
+    values ('Virtual Recruiting Station', 'VRS', 'Virtual', 'Online', 'Virtual Recruiting Station', '00000')
+    on conflict (station_code) do nothing
+  `);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
