@@ -115,6 +115,13 @@ export const insertRecruitSchema = createInsertSchema(recruits).omit({
   id: true,
   submittedAt: true,
   ipAddress: true,
+}).extend({
+  // Address fields were removed from the interest form; default to empty
+  // string so the NOT NULL DB constraint is satisfied without requiring them.
+  address: z.string().default(""),
+  city: z.string().default(""),
+  state: z.string().default(""),
+  zipCode: z.string().default(""),
 });
 
 export type InsertRecruit = z.infer<typeof insertRecruitSchema>;
