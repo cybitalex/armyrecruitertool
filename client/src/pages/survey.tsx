@@ -20,7 +20,6 @@ import { ARMY_RANKS } from "@shared/constants";
 export default function SurveyPage() {
   const [location] = useLocation();
   const [recruiterCode, setRecruiterCode] = useState("");
-
   const [recruiterInfo, setRecruiterInfo] = useState<Partial<User> | null>(null);
 
   const [formData, setFormData] = useState({
@@ -35,12 +34,9 @@ export default function SurveyPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  // Read recruiter code from the real browser query string so it works with URLs like
-  // https://armyrecruitertool.duckdns.org/survey?r=...
   useEffect(() => {
     try {
-      const search =
-        typeof window !== "undefined" ? window.location.search : "";
+      const search = typeof window !== "undefined" ? window.location.search : "";
       const params = new URLSearchParams(search);
       setRecruiterCode(params.get("r") || "");
     } catch {
@@ -48,32 +44,20 @@ export default function SurveyPage() {
     }
   }, [location]);
 
-  // Fetch recruiter info if QR code is present AND track the scan
   useEffect(() => {
     if (recruiterCode) {
-      // Track the QR scan (for analytics)
       fetch("/api/qr-scan", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ 
-          qrCode: recruiterCode,
-          scanType: "survey" 
-        }),
-      }).then(() => {
-        console.log("📱 Survey QR scan tracked");
-      }).catch((err) => {
-        console.error("Failed to track survey QR scan (non-critical):", err);
-      });
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qrCode: recruiterCode, scanType: "survey" }),
+      })
+        .then(() => console.log("📱 Survey QR scan tracked"))
+        .catch((err) => console.error("Failed to track survey QR scan (non-critical):", err));
 
-      // Fetch recruiter info to display on the form
       recruiterApi
         .getByQRCode(recruiterCode)
         .then((data) => setRecruiterInfo(data.recruiter))
-        .catch(() => {
-          setRecruiterInfo(null);
-        });
+        .catch(() => setRecruiterInfo(null));
     }
   }, [recruiterCode]);
 
@@ -141,17 +125,13 @@ export default function SurveyPage() {
                 </p>
                 <div className="text-sm text-green-700 space-y-1">
                   <p className="font-medium">{recruiterInfo.fullName}</p>
-                  {recruiterInfo.rank && (
-                    <p className="text-xs">{recruiterInfo.rank}</p>
-                  )}
-                  {recruiterInfo.unit && (
-                    <p className="text-xs">{recruiterInfo.unit}</p>
-                  )}
+                  {recruiterInfo.rank && <p className="text-xs">{recruiterInfo.rank}</p>}
+                  {recruiterInfo.unit && <p className="text-xs">{recruiterInfo.unit}</p>}
                 </div>
               </div>
             )}
             <p className="text-xs text-gray-500">
-              <strong>UNCLASSIFIED</strong> - Your contact information will only be
+              <strong>UNCLASSIFIED</strong> — Your contact information will only be
               used for Army recruiting follow-up.
             </p>
           </CardContent>
@@ -187,8 +167,6 @@ export default function SurveyPage() {
                   <p className="font-semibold text-green-900 mb-4">
                     Feedback will be sent to your recruiter:
                   </p>
-                  
-                  {/* Recruiter Photo */}
                   <div className="flex justify-center mb-4">
                     {recruiterInfo.profilePicture ? (
                       <img
@@ -202,13 +180,11 @@ export default function SurveyPage() {
                       </div>
                     )}
                   </div>
-                  
-                  {/* Recruiter Info */}
                   <div className="text-green-800 space-y-1">
                     <p className="text-lg font-bold">{recruiterInfo.fullName}</p>
                     {recruiterInfo.rank && (
                       <p className="text-sm font-medium">
-                        {ARMY_RANKS.find(r => r.value === recruiterInfo.rank)?.label || recruiterInfo.rank}
+                        {ARMY_RANKS.find((r) => r.value === recruiterInfo!.rank)?.label || recruiterInfo.rank}
                       </p>
                     )}
                     {recruiterInfo.unit && <p className="text-sm">{recruiterInfo.unit}</p>}
@@ -238,53 +214,40 @@ export default function SurveyPage() {
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-gray-500 text-center">
-                  1 = Poor, 5 = Excellent
-                </p>
+                <p className="text-xs text-gray-500 text-center">1 = Poor &nbsp;·&nbsp; 5 = Excellent</p>
               </div>
 
-              {/* Contact Info */}
+              {/* Contact Info (optional) */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Basic Contact Information
-                </h3>
+                <h3 className="text-lg font-semibold text-gray-900">Basic Contact Information</h3>
 
                 <div className="space-y-2">
-                  <Label htmlFor="name">Name *</Label>
+                  <Label htmlFor="name">Name (optional)</Label>
                   <Input
                     id="name"
-                    required
                     value={formData.name}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, name: e.target.value }))
-                    }
+                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
+                  <Label htmlFor="email">Email (optional)</Label>
                   <Input
                     id="email"
                     type="email"
-                    required
                     value={formData.email}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, email: e.target.value }))
-                    }
+                    onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number *</Label>
+                  <Label htmlFor="phone">Phone Number (optional)</Label>
                   <Input
                     id="phone"
                     type="tel"
-                    required
                     placeholder="555-123-4567"
                     value={formData.phone}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, phone: e.target.value }))
-                    }
+                    onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
                   />
                 </div>
               </div>
@@ -294,11 +257,9 @@ export default function SurveyPage() {
                 <Label htmlFor="feedback">Comments (optional)</Label>
                 <Textarea
                   id="feedback"
-                  placeholder="Anything you liked, didn’t like, or want to learn more about?"
+                  placeholder="Anything you liked, didn't like, or want to learn more about?"
                   value={formData.feedback}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, feedback: e.target.value }))
-                  }
+                  onChange={(e) => setFormData((prev) => ({ ...prev, feedback: e.target.value }))}
                 />
               </div>
 
@@ -308,7 +269,7 @@ export default function SurveyPage() {
               </div>
 
               <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded">
-                <strong>UNCLASSIFIED</strong> - Your information will be handled per Army
+                <strong>UNCLASSIFIED</strong> — Your information will be handled per Army
                 regulations and the Privacy Act of 1974. SSN is NOT collected.
               </div>
             </CardContent>
@@ -328,5 +289,3 @@ export default function SurveyPage() {
     </div>
   );
 }
-
-

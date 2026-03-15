@@ -80,6 +80,18 @@ export const auth = {
     return apiCall<{ qrCode: string }>("/auth/qr-code-survey");
   },
 
+  getSweepstakesQRCode: async () => {
+    return apiCall<{ qrCode: string }>("/auth/qr-code-sweepstakes");
+  },
+
+  getLifeGoalsQRCode: async () => {
+    return apiCall<{ qrCode: string }>("/auth/qr-code-life-goals");
+  },
+
+  getHighSchoolSurveyQRCode: async () => {
+    return apiCall<{ qrCode: string }>("/auth/qr-code-high-school-survey");
+  },
+
   forgotPassword: async (email: string) => {
     return apiCall<{ message: string }>("/auth/forgot-password", {
       method: "POST",

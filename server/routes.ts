@@ -14,7 +14,7 @@ import {
   stationChangeRequests,
 } from "@shared/schema";
 import { z } from "zod";
-import { askAI, createProspectingSystemPrompt, type AIMessage } from "./llm";
+import { askAI, createProspectingSystemPrompt, generateHighSchoolSurveyAISummary, type AIMessage } from "./llm";
 import { suggestMOS } from "./mos-suggest";
 import {
   searchNearbyLocations,
@@ -28,6 +28,9 @@ import {
   createSession,
   destroySession,
   generateQRCodeImage,
+  generateLifeGoalsQRCodeImage,
+  generateHighSchoolSurveyQRCodeImage,
+  generateSweepstakesQRCodeImage,
   resendVerificationEmail,
   generateSurveyQRCodeImage,
   requestPasswordReset,
@@ -35,6 +38,8 @@ import {
   sendApplicantConfirmationEmail,
   sendSurveyConfirmationEmail,
   sendRecruiterSurveyNotification,
+  sendHighSchoolSurveyResultsEmail,
+  sendHighSchoolSurveyRespondentConfirmation,
   sendRecruiterApplicationNotification,
   sendStationCommanderApprovalEmail,
   sendStationCommanderDenialEmail,
@@ -1481,6 +1486,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  async function isVRSRecruiter(userId: string): Promise<boolean> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user?.stationId) return false;
+    const [station] = await db
+      .select()
+      .from(stations)
+      .where(eq(stations.id, user.stationId));
+    return station?.stationCode === "VRS";
+  }
+
+  // Get recruiter's VRS sweepstakes QR code
+  app.get("/api/auth/qr-code-sweepstakes", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const canUseSweepstakes = await isVRSRecruiter(userId);
+      if (!canUseSweepstakes) {
+        return res
+          .status(403)
+          .json({ error: "Sweepstakes QR is only available for VRS recruiters" });
+      }
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user || !user.qrCode) {
+        return res.status(404).json({ error: "QR code not found" });
+      }
+
+      const qrCodeImage = await generateSweepstakesQRCodeImage(user.qrCode);
+      res.json({ qrCode: qrCodeImage });
+    } catch (error) {
+      console.error("❌ Failed to generate sweepstakes QR code:", error);
+      res.status(500).json({ error: "Failed to fetch sweepstakes QR code" });
+    }
+  });
+
+  // Get recruiter's life goals / Army interest survey QR code
+  app.get("/api/auth/qr-code-life-goals", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+
+      if (!user || !user.qrCode) {
+        return res.status(404).json({ error: "QR code not found" });
+      }
+
+      const qrCodeImage = await generateLifeGoalsQRCodeImage(user.qrCode);
+      res.json({ qrCode: qrCodeImage });
+    } catch (error) {
+      console.error("❌ Failed to generate life goals QR code:", error);
+      res.status(500).json({ error: "Failed to fetch life goals QR code" });
+    }
+  });
+
+  // Get recruiter's high school seniors survey QR code
+  app.get("/api/auth/qr-code-high-school-survey", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+
+      if (!user || !user.qrCode) {
+        return res.status(404).json({ error: "QR code not found" });
+      }
+
+      const qrCodeImage = await generateHighSchoolSurveyQRCodeImage(user.qrCode);
+      res.json({ qrCode: qrCodeImage });
+    } catch (error) {
+      console.error("❌ Failed to generate high school survey QR code:", error);
+      res.status(500).json({ error: "Failed to fetch high school survey QR code" });
+    }
+  });
+
   // Create a location-based QR code
   app.post("/api/qr-codes/location", async (req, res) => {
     try {
@@ -1968,19 +2058,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           (r) => r.source === "direct"
         ).length;
 
-        // Get QR scan tracking data
+        // Get QR scan tracking data (only count conversions where linked recruit/survey still exists)
         const allQrScans = await db.select().from(qrScans);
         const totalQrScans = allQrScans.length;
         const totalSurveyScans = allQrScans.filter(
           (s) => s.scanType === "survey"
         ).length;
-        const applicationScanConversions = allQrScans.filter(
-          (s) => s.scanType === "application" && s.convertedToApplication
+        const totalSweepstakesScans = allQrScans.filter(
+          (s) => s.scanType === "sweepstakes"
         ).length;
-        const surveyScanConversions = allQrScans.filter(
-          (s) => s.scanType === "survey" && s.convertedToSurvey
-        ).length;
-        const totalConvertedScans = applicationScanConversions + surveyScanConversions;
+        const [conversionCounts] = await db
+          .select({
+            applicationsFromScans: sql<number>`(SELECT count(*)::int FROM qr_scans WHERE scan_type = 'application' AND converted_to_application = true AND application_id IS NOT NULL AND EXISTS (SELECT 1 FROM recruits WHERE recruits.id = qr_scans.application_id))`,
+            surveysFromScans: sql<number>`(SELECT count(*)::int FROM qr_scans WHERE scan_type = 'survey' AND converted_to_survey = true AND survey_response_id IS NOT NULL AND EXISTS (SELECT 1 FROM qr_survey_responses WHERE qr_survey_responses.id = qr_scans.survey_response_id))`,
+            sweepstakesFromScans: sql<number>`(SELECT count(*)::int FROM qr_scans WHERE scan_type = 'sweepstakes' AND converted_to_application = true)`,
+          })
+          .from(qrScans)
+          .limit(1);
+        const applicationScanConversions = conversionCounts?.applicationsFromScans ?? 0;
+        const surveyScanConversions = conversionCounts?.surveysFromScans ?? 0;
+        const sweepstakesConversions = conversionCounts?.sweepstakesFromScans ?? 0;
+        const totalConvertedScans = applicationScanConversions + surveyScanConversions + sweepstakesConversions;
         const qrConversionRate =
           totalQrScans > 0
             ? Math.round((totalConvertedScans / totalQrScans) * 100)
@@ -1995,6 +2093,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             totalSurveyScans,
             applicationsFromScans: applicationScanConversions,
             surveysFromScans: surveyScanConversions,
+            sweepstakesFromScans: sweepstakesConversions,
             totalConverted: totalConvertedScans,
             conversionRate: qrConversionRate,
           },
@@ -2744,36 +2843,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
 
-      // Send confirmation email to the person who submitted feedback
-      try {
-        await sendSurveyConfirmationEmail(
-          created.email,
-          created.name,
-          created.rating,
-          recruiter.id
-        );
-      } catch (emailError) {
-        console.error(
-          "⚠️ Failed to send survey confirmation email:",
-          emailError
-        );
-        // Don't fail the request if email fails
-      }
+      // High school senior survey: AI summary + email results to recruiter (and optional respondent confirmation)
+      if (created.source === "high_school_senior_survey") {
+        let aiSummary = "AI summary is not available (e.g. Groq API key not set). Review the full results below.";
+        try {
+          aiSummary = await generateHighSchoolSurveyAISummary(created.feedback || "");
+        } catch (aiError) {
+          console.error("⚠️ High school survey AI summary failed (non-blocking):", aiError);
+        }
+        try {
+          await sendHighSchoolSurveyResultsEmail(
+            recruiter.email,
+            recruiter.fullName ?? "Recruiter",
+            created.feedback ?? "",
+            aiSummary,
+            { name: created.name ?? "", email: created.email ?? "", phone: created.phone ?? "" }
+          );
+        } catch (emailError) {
+          console.error("⚠️ Failed to send high school survey results email:", emailError);
+        }
+        if (created.email?.trim()) {
+          try {
+            await sendHighSchoolSurveyRespondentConfirmation(
+              created.email.trim(),
+              created.name?.trim() || "there",
+              recruiter.fullName ?? "Your recruiter",
+              recruiter.email ?? undefined
+            );
+          } catch (emailError) {
+            console.error("⚠️ Failed to send high school survey respondent confirmation:", emailError);
+          }
+        }
+      } else {
+        // Send confirmation email to the person who submitted feedback
+        try {
+          await sendSurveyConfirmationEmail(
+            created.email,
+            created.name,
+            created.rating,
+            recruiter.id
+          );
+        } catch (emailError) {
+          console.error(
+            "⚠️ Failed to send survey confirmation email:",
+            emailError
+          );
+        }
 
-      // Send notification to the recruiter about the new survey response
-      try {
-        await sendRecruiterSurveyNotification(
-          recruiter.email,
-          recruiter.fullName,
-          created.name,
-          created.rating
-        );
-      } catch (emailError) {
-        console.error(
-          "⚠️ Failed to send recruiter survey notification:",
-          emailError
-        );
-        // Don't fail the request if email fails
+        // Send notification to the recruiter about the new survey response
+        try {
+          await sendRecruiterSurveyNotification(
+            recruiter.email,
+            recruiter.fullName,
+            created.name,
+            created.rating
+          );
+        } catch (emailError) {
+          console.error(
+            "⚠️ Failed to send recruiter survey notification:",
+            emailError
+          );
+        }
       }
 
       res.status(201).json(created);
