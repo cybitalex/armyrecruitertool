@@ -55,6 +55,8 @@ function MyQRCodeContent() {
   const { toast } = useToast();
   const [qrCodeImage, setQrCodeImage] = useState("");
   const [surveyQrCodeImage, setSurveyQrCodeImage] = useState("");
+  const [lifeGoalsQrCodeImage, setLifeGoalsQrCodeImage] = useState("");
+  const [highSchoolQrCodeImage, setHighSchoolQrCodeImage] = useState("");
   const [sweepstakesQrCodeImage, setSweepstakesQrCodeImage] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -78,6 +80,8 @@ function MyQRCodeContent() {
 
   const qrUrl = `${window.location.origin}/apply?r=${user?.qrCode}`;
   const surveyUrl = `${window.location.origin}/survey?r=${user?.qrCode}`;
+  const lifeGoalsUrl = `${window.location.origin}/life-goals?r=${user?.qrCode}`;
+  const highSchoolSurveyUrl = `${window.location.origin}/high-school-survey?r=${user?.qrCode}`;
   const sweepstakesUrl = `${window.location.origin}/sweepstakes?r=${user?.qrCode}`;
 
   useEffect(() => {
@@ -113,12 +117,16 @@ function MyQRCodeContent() {
 
   const loadQRCodes = async () => {
     try {
-      const [{ qrCode }, survey] = await Promise.all([
+      const [{ qrCode }, survey, lifeGoals, highSchool] = await Promise.all([
         auth.getQRCode(),
         auth.getSurveyQRCode(),
+        auth.getLifeGoalsQRCode(),
+        auth.getHighSchoolSurveyQRCode(),
       ]);
       setQrCodeImage(qrCode);
       setSurveyQrCodeImage(survey.qrCode);
+      setLifeGoalsQrCodeImage(lifeGoals.qrCode);
+      setHighSchoolQrCodeImage(highSchool.qrCode);
 
       if (isVRSRecruiter) {
         try {
@@ -405,6 +413,120 @@ function MyQRCodeContent() {
                 >
                   <Share2 className="w-4 h-4 mr-2" />
                   Copy Presentation/Interview Link
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Life Goals Survey QR Code */}
+          <Card>
+            <CardHeader className="text-center px-4 sm:px-6 pt-4 sm:pt-6">
+              <CardTitle className="text-lg sm:text-xl">
+                Life Goals Survey QR Code
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm mt-1">
+                5-question multiple-choice survey — captures goals, Army perception, and lead info
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center px-4 sm:px-6 pb-4 sm:pb-6">
+              {loading ? (
+                <div className="w-48 h-48 sm:w-64 sm:h-64 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
+                  <p className="text-gray-500 text-sm">Loading QR Code...</p>
+                </div>
+              ) : (
+                <div className="bg-white p-3 sm:p-4 rounded-lg border-2 sm:border-4 border-green-700">
+                  <img
+                    src={lifeGoalsQrCodeImage}
+                    alt="Life Goals Survey QR Code"
+                    className="w-48 h-48 sm:w-64 sm:h-64"
+                  />
+                </div>
+              )}
+
+              <div className="mt-4 sm:mt-6 w-full space-y-2 sm:space-y-3">
+                <Button
+                  onClick={() => {
+                    const link = document.createElement("a");
+                    link.href = lifeGoalsQrCodeImage;
+                    link.download = `army-recruiter-life-goals-qr-${user?.fullName
+                      ?.replace(/\s+/g, "-")
+                      .toLowerCase()}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className="w-full bg-green-700 hover:bg-green-800 text-sm sm:text-base"
+                  disabled={loading}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Life Goals QR
+                </Button>
+
+                <Button
+                  onClick={() => copyLink(lifeGoalsUrl)}
+                  variant="outline"
+                  className="w-full text-sm sm:text-base"
+                  disabled={loading}
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy Life Goals Survey Link
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* High School Seniors Survey QR Code */}
+          <Card>
+            <CardHeader className="text-center px-4 sm:px-6 pt-4 sm:pt-6">
+              <CardTitle className="text-lg sm:text-xl">
+                High School Seniors Survey QR Code
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm mt-1">
+                Tailored for high school seniors — college plans, tuition, GI Bill awareness, or post‑grad plans
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center px-4 sm:px-6 pb-4 sm:pb-6">
+              {loading ? (
+                <div className="w-48 h-48 sm:w-64 sm:h-64 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
+                  <p className="text-gray-500 text-sm">Loading QR Code...</p>
+                </div>
+              ) : (
+                <div className="bg-white p-3 sm:p-4 rounded-lg border-2 sm:border-4 border-green-700">
+                  <img
+                    src={highSchoolQrCodeImage}
+                    alt="High School Seniors Survey QR Code"
+                    className="w-48 h-48 sm:w-64 sm:h-64"
+                  />
+                </div>
+              )}
+
+              <div className="mt-4 sm:mt-6 w-full space-y-2 sm:space-y-3">
+                <Button
+                  onClick={() => {
+                    const link = document.createElement("a");
+                    link.href = highSchoolQrCodeImage;
+                    link.download = `army-recruiter-high-school-survey-${user?.fullName
+                      ?.replace(/\s+/g, "-")
+                      .toLowerCase()}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className="w-full bg-green-700 hover:bg-green-800 text-sm sm:text-base"
+                  disabled={loading}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download High School Survey QR
+                </Button>
+
+                <Button
+                  onClick={() => copyLink(highSchoolSurveyUrl)}
+                  variant="outline"
+                  className="w-full text-sm sm:text-base"
+                  disabled={loading}
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy High School Survey Link
                 </Button>
               </div>
             </CardContent>

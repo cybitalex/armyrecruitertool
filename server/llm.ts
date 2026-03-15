@@ -13,7 +13,8 @@ export interface AIMessage {
  */
 export async function askAI(
   messages: AIMessage[],
-  model = "llama-3.3-70b-versatile"
+  model = "llama-3.3-70b-versatile",
+  options?: { max_tokens?: number }
 ): Promise<string> {
   if (!GROQ_API_KEY) {
     return `🤖 AI Assistant requires a Groq API key.
@@ -140,4 +141,30 @@ ${locationInfo}
 - Concerts/entertainment → Youth engagement, visibility
 
 Give concise, actionable answers. If asked for strategies, provide 3-5 specific steps. When discussing locations, include timing recommendations. Always be professional and supportive of the recruiter's mission.`;
+}
+
+/**
+ * Generate an AI summary and recruiter suggestions from a high school senior survey (feedback text).
+ * Slightly detailed: bullets and short sentences (no long paragraphs), still useful for follow-up and common themes.
+ */
+export async function generateHighSchoolSurveyAISummary(feedbackText: string): Promise<string> {
+  const messages: AIMessage[] = [
+    {
+      role: "system",
+      content: `You are an expert U.S. Army recruiting advisor. You are given the raw text results of a "High School Seniors Survey" completed by a high school senior. Produce a concise but useful summary for the recruiter. Use bullets and short sentences only—no long paragraphs. This summary is used even when the respondent does not provide contact info (for common themes and later outreach).
+
+Output exactly two sections in plain text (no markdown).
+
+1) OVERALL SUMMARY (4–8 short bullet points):
+   Cover: college in fall or not; funding/job/plans; passion and priorities; view of Army and GI Bill awareness; main concerns; whether contact info was provided. One line per bullet; keep each bullet to one sentence.
+
+2) SUGGESTIONS FOR RECRUITER (3–5 short bullets):
+   Specific, actionable items: e.g. mention Post 9/11 GI Bill, Army Reserve vs Active, tuition assistance, career paths, or how to address their concerns. One line per bullet.`,
+    },
+    {
+      role: "user",
+      content: `High school senior survey results:\n\n${feedbackText}`,
+    },
+  ];
+  return askAI(messages, "llama-3.3-70b-versatile", { max_tokens: 1024 });
 }

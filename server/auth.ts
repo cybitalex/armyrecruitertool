@@ -610,6 +610,105 @@ export async function sendRecruiterSurveyNotification(
   }
 }
 
+// Send high school senior survey results to recruiter (with AI summary and optional contact)
+export async function sendHighSchoolSurveyResultsEmail(
+  recruiterEmail: string,
+  recruiterName: string,
+  surveyResults: string,
+  aiSummary: string,
+  contact: { name: string; email: string; phone: string }
+) {
+  const hasContact = contact.name?.trim() || contact.email?.trim() || contact.phone?.trim();
+  const contactSection = hasContact
+    ? `
+        <div style="background-color: #f0f8f0; padding: 20px; border-left: 4px solid #006400; margin: 20px 0; border-radius: 4px;">
+          <h3 style="color: #006400; margin-top: 0;">Contact Information (optional — provided by respondent)</h3>
+          <div style="background-color: white; padding: 15px; border-radius: 4px;">
+            <p style="margin: 8px 0;"><strong>Name:</strong> ${contact.name?.trim() || "—"}</p>
+            <p style="margin: 8px 0;"><strong>Email:</strong> ${contact.email?.trim() ? `<a href="mailto:${contact.email}" style="color: #006400;">${contact.email}</a>` : "—"}</p>
+            <p style="margin: 8px 0;"><strong>Phone:</strong> ${contact.phone?.trim() ? `<a href="tel:${contact.phone}" style="color: #006400;">${contact.phone}</a>` : "—"}</p>
+          </div>
+        </div>
+      `
+    : `
+        <div style="background-color: #fff9e6; padding: 16px; border-left: 4px solid #f0ad4e; margin: 20px 0; border-radius: 4px;">
+          <p style="margin: 0 0 8px 0; color: #856404;"><strong>No contact information provided.</strong></p>
+          <p style="margin: 0; color: #666; font-size: 14px;">This response is still valuable: use the AI summary and raw results to understand common themes, aggregate trends, and to tailor future outreach and messaging. The data can be combined with other responses later to identify recurring facts and patterns.</p>
+        </div>
+      `;
+
+  const mailOptions = {
+    from: `Army Recruiter Tool <${process.env.SMTP_USER || "alex.cybitdevs@gmail.com"}>`,
+    to: recruiterEmail,
+    subject: "High School Seniors Survey – New Response (with AI Summary) 🎖️",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
+        <h2 style="color: #006400;">High School Seniors Survey – New Response 🎖️</h2>
+        <p>Hello ${recruiterName},</p>
+        <p>You received a new High School Seniors Survey response. Below are the raw results, an AI-generated summary and follow-up suggestions, and contact info (if provided).</p>
+
+        <div style="background-color: #e8f4ea; padding: 20px; border-left: 4px solid #006400; margin: 20px 0; border-radius: 4px;">
+          <h3 style="color: #006400; margin-top: 0;">🤖 AI Summary & Suggestions</h3>
+          <div style="background-color: white; padding: 15px; border-radius: 4px; white-space: pre-wrap; font-size: 14px; line-height: 1.5;">${aiSummary.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+        </div>
+
+        ${contactSection}
+
+        <div style="background-color: #f9f9f9; padding: 20px; border: 1px solid #ddd; margin: 20px 0; border-radius: 4px;">
+          <h3 style="color: #333; margin-top: 0;">Full Survey Results (raw)</h3>
+          <pre style="margin: 0; font-size: 12px; line-height: 1.4; white-space: pre-wrap; word-break: break-word;">${surveyResults.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
+        </div>
+
+        <p style="margin-top: 20px;">
+          <a href="${process.env.APP_URL || "https://armyrecruitertool.duckdns.org"}/dashboard" style="background-color: #006400; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">View Dashboard</a>
+        </p>
+
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <p style="color: #666; font-size: 12px;"><strong>UNCLASSIFIED</strong><br>Army Recruiter Tool – Pilot / Eval use only. Do not reply to this email.</p>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ High school survey results email sent to recruiter: ${recruiterEmail}`);
+  } catch (error) {
+    console.error("❌ Failed to send high school survey results email:", error);
+    throw new Error("Failed to send high school survey results email");
+  }
+}
+
+// Optional confirmation to respondent when they provided email (high school survey)
+export async function sendHighSchoolSurveyRespondentConfirmation(
+  respondentEmail: string,
+  respondentName: string,
+  recruiterName: string,
+  recruiterEmail?: string
+) {
+  const mailOptions = {
+    from: `Army Recruiter Tool <${process.env.SMTP_USER || "alex.cybitdevs@gmail.com"}>`,
+    to: respondentEmail,
+    subject: "Thanks for Completing the High School Seniors Survey 🎖️",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #006400;">Thanks for Completing the Survey! 🎖️</h2>
+        <p>${respondentName ? `Hi ${respondentName},` : "Hi,"}</p>
+        <p>We received your High School Seniors Survey response. Your recruiter may follow up with information tailored to your goals (e.g. education benefits, career paths).</p>
+        ${recruiterName ? `<p><strong>Your response was sent to:</strong> ${recruiterName}${recruiterEmail ? ` — <a href="mailto:${recruiterEmail}" style="color: #006400;">${recruiterEmail}</a>` : ""}</p>` : ""}
+        <p style="color: #666; font-size: 12px;"><strong>UNCLASSIFIED</strong><br>Army Recruiter Tool. For recruiting follow-up only.</p>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ High school survey confirmation sent to respondent: ${respondentEmail}`);
+  } catch (error) {
+    console.error("❌ Failed to send high school survey respondent confirmation:", error);
+    throw new Error("Failed to send high school survey respondent confirmation");
+  }
+}
+
 // Send notification to recruiter when they receive a new application via QR code
 export async function sendRecruiterApplicationNotification(
   recruiterEmail: string,
@@ -730,6 +829,52 @@ export async function generateSurveyQRCodeImage(qrCode: string): Promise<string>
   } catch (error) {
     console.error('❌ Failed to generate survey QR code:', error);
     throw new Error('Failed to generate survey QR code');
+  }
+}
+
+// Generate QR code image for life goals / Army interest survey
+export async function generateLifeGoalsQRCodeImage(qrCode: string): Promise<string> {
+  const url = `${process.env.APP_URL || 'https://armyrecruitertool.duckdns.org'}/life-goals?r=${qrCode}`;
+
+  try {
+    const qrCodeDataUrl = await QRCode.toDataURL(url, {
+      errorCorrectionLevel: 'H',
+      type: 'image/png',
+      width: 300,
+      margin: 2,
+      color: {
+        dark: '#006400',
+        light: '#FFFFFF',
+      },
+    });
+
+    return qrCodeDataUrl;
+  } catch (error) {
+    console.error('❌ Failed to generate life goals QR code:', error);
+    throw new Error('Failed to generate life goals QR code');
+  }
+}
+
+// Generate QR code image for high school seniors survey
+export async function generateHighSchoolSurveyQRCodeImage(qrCode: string): Promise<string> {
+  const url = `${process.env.APP_URL || 'https://armyrecruitertool.duckdns.org'}/high-school-survey?r=${qrCode}`;
+
+  try {
+    const qrCodeDataUrl = await QRCode.toDataURL(url, {
+      errorCorrectionLevel: 'H',
+      type: 'image/png',
+      width: 300,
+      margin: 2,
+      color: {
+        dark: '#006400',
+        light: '#FFFFFF',
+      },
+    });
+
+    return qrCodeDataUrl;
+  } catch (error) {
+    console.error('❌ Failed to generate high school survey QR code:', error);
+    throw new Error('Failed to generate high school survey QR code');
   }
 }
 

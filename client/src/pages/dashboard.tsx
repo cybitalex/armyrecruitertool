@@ -41,6 +41,7 @@ function DashboardContent() {
   const [currentStation, setCurrentStation] = useState<Station | null>(null);
   const [showQRAnalytics, setShowQRAnalytics] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [surveyDetailsModal, setSurveyDetailsModal] = useState<QrSurveyResponse | null>(null);
 
   // Use React Query for stats to auto-update when invalidated
   const { data: statsData, isLoading: statsLoading, error: statsError, refetch: refetchStats } = useQuery({
@@ -110,6 +111,21 @@ function DashboardContent() {
       setSurveyResponses(surveyData.responses);
     }
   }, [surveyData]);
+
+  const presentationResponses = surveyResponses.filter(
+    (r) => r.source !== "high_school_senior_survey"
+  );
+  const highSchoolResponses = surveyResponses.filter(
+    (r) => r.source === "high_school_senior_survey"
+  );
+  const highSchoolWithContact = highSchoolResponses.filter(
+    (r) => (r.name?.trim() || r.email?.trim() || r.phone?.trim()) ?? false
+  ).length;
+  const highSchoolAnalytics = {
+    total: highSchoolResponses.length,
+    withContact: highSchoolWithContact,
+    noContact: highSchoolResponses.length - highSchoolWithContact,
+  };
 
   // Load current station information
   useEffect(() => {
@@ -515,17 +531,17 @@ function DashboardContent() {
               <div className="text-center py-8 text-gray-500">
                 Loading feedback...
               </div>
-            ) : surveyResponses.length === 0 ? (
+            ) : presentationResponses.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Star className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                <p>No feedback submitted yet</p>
+                <p>No presentation feedback yet</p>
                 <p className="text-sm mt-2">
                   Use your Presentation Survey QR code during briefings to collect quick ratings.
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
-                {surveyResponses.slice(0, 5).map((response) => (
+                {presentationResponses.slice(0, 5).map((response) => (
                   <div
                     key={response.id}
                     className="p-3 sm:p-4 border rounded-lg bg-white flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4"
@@ -533,8 +549,15 @@ function DashboardContent() {
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                         <div className="min-w-0 flex-1">
-                          <div className="font-medium text-gray-900 text-sm sm:text-base truncate">
-                            {response.name}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-gray-900 text-sm sm:text-base truncate">
+                              {response.name}
+                            </span>
+                            {response.source === "life_goals_survey" && (
+                              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                Life Goals Survey
+                              </Badge>
+                            )}
                           </div>
                           <div className="text-xs text-gray-500 truncate">
                             {response.email}
@@ -552,18 +575,20 @@ function DashboardContent() {
                             </div>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                              key={star}
-                              className={`w-3 h-3 sm:w-4 sm:h-4 ${
-                                response.rating >= star
-                                  ? "text-yellow-500 fill-yellow-500"
-                                  : "text-gray-300"
-                              }`}
-                            />
-                          ))}
-                        </div>
+                        {response.source === "presentation" && (
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`w-3 h-3 sm:w-4 sm:h-4 ${
+                                  response.rating >= star
+                                    ? "text-yellow-500 fill-yellow-500"
+                                    : "text-gray-300"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
                       {response.feedback && (
                         <p className="text-xs sm:text-sm text-gray-700 mt-2 break-words">
@@ -581,6 +606,59 @@ function DashboardContent() {
             )}
           </CardContent>
         </Card>
+
+            {/* Recent High School Seniors Survey */}
+            {highSchoolResponses.length > 0 && (
+              <Card className="mt-6 sm:mt-8">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    Recent High School Seniors Survey
+                  </CardTitle>
+                  <CardDescription>
+                    {highSchoolResponses.length} response{highSchoolResponses.length !== 1 ? "s" : ""}
+                    {highSchoolAnalytics.total >= 2 && (
+                      <span className="ml-1">
+                        · {highSchoolAnalytics.withContact} with contact, {highSchoolAnalytics.noContact} without
+                      </span>
+                    )}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {highSchoolResponses.slice(0, 5).map((response) => (
+                      <div
+                        key={response.id}
+                        className="p-3 border rounded-lg bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs text-gray-500">
+                            {response.createdAt && format(new Date(response.createdAt), "MMM d, yyyy")}
+                            {(response.name?.trim() || response.email?.trim() || response.phone?.trim()) ? (
+                              <span className="ml-2 text-green-700">· Has contact</span>
+                            ) : (
+                              <span className="ml-2 text-gray-400">· No contact</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-700 mt-1 line-clamp-2 break-words">
+                            {response.feedback?.replace(/\n/g, " ").slice(0, 120) || "—"}
+                            {(response.feedback?.length ?? 0) > 120 ? "…" : ""}
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-shrink-0"
+                          onClick={() => setSurveyDetailsModal(response)}
+                        >
+                          Details
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* All Leads Tab */}
@@ -667,87 +745,155 @@ function DashboardContent() {
 
           {/* All Surveys Tab */}
           <TabsContent value="surveys">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5" />
-                  All Survey Responses
-                </CardTitle>
-                <CardDescription>
-                  {user?.role === 'station_commander' || user?.role === 'admin'
-                    ? `View all survey feedback from your station (${surveyResponses.length} total)`
-                    : `View all your survey feedback (${surveyResponses.length} total)`}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {surveyLoading ? (
-                  <div className="text-center py-8 text-gray-500">
-                    Loading feedback...
-                  </div>
-                ) : surveyResponses.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Star className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                    <p>No feedback submitted yet</p>
-                    <p className="text-sm mt-2">
-                      Use your Presentation Survey QR code during briefings to collect quick ratings.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {surveyResponses.map((response) => (
-                      <div
-                        key={response.id}
-                        className="p-3 sm:p-4 border rounded-lg bg-white"
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="font-medium text-gray-900 text-sm sm:text-base">
-                                {response.name}
+            {surveyLoading ? (
+              <div className="text-center py-8 text-gray-500">Loading feedback...</div>
+            ) : surveyResponses.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center text-gray-500">
+                  <Star className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                  <p>No survey responses yet</p>
+                  <p className="text-sm mt-2">Use your survey QR codes to collect feedback and high school senior responses.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-8">
+                {/* Presentation Feedback */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="w-5 h-5" />
+                      Presentation Feedback
+                    </CardTitle>
+                    <CardDescription>
+                      {presentationResponses.length} response{presentationResponses.length !== 1 ? "s" : ""}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {presentationResponses.length === 0 ? (
+                      <p className="text-sm text-gray-500">No presentation feedback yet.</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {presentationResponses.map((response) => (
+                          <div key={response.id} className="p-3 sm:p-4 border rounded-lg bg-white">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-medium text-gray-900 text-sm sm:text-base">{response.name}</span>
+                                    {response.source === "life_goals_survey" && (
+                                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                        Life Goals Survey
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {response.source === "presentation" && (
+                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                      {[1, 2, 3, 4, 5].map((star) => (
+                                        <Star
+                                          key={star}
+                                          className={`w-3 h-3 sm:w-4 sm:h-4 ${
+                                            response.rating >= star ? "text-yellow-500 fill-yellow-500" : "text-gray-300"
+                                          }`}
+                                        />
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {response.email} • {response.phone}
+                                </div>
+                                {(user?.role === "station_commander" || user?.role === "admin") &&
+                                  (response as any).recruiterName && (
+                                    <div className="text-xs text-blue-600 mt-1 font-medium">
+                                      Recruiter: {(response as any).recruiterName}
+                                      {(response as any).recruiterRank && ` (${(response as any).recruiterRank})`}
+                                    </div>
+                                  )}
+                                {response.feedback && (
+                                  <div className="mt-2 text-xs sm:text-sm text-gray-700 bg-gray-50 p-3 rounded break-words">
+                                    &quot;{response.feedback}&quot;
+                                  </div>
+                                )}
                               </div>
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star
-                                    key={star}
-                                    className={`w-3 h-3 sm:w-4 sm:h-4 ${
-                                      response.rating >= star
-                                        ? "text-yellow-500 fill-yellow-500"
-                                        : "text-gray-300"
-                                    }`}
-                                  />
-                                ))}
+                              <div className="text-left sm:text-right text-xs text-gray-500 whitespace-nowrap flex-shrink-0">
+                                {response.createdAt && format(new Date(response.createdAt), "MMM d, yyyy")}
                               </div>
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {response.email} • {response.phone}
-                            </div>
-                            {(user?.role === 'station_commander' || user?.role === 'admin') && (response as any).recruiterName && (
-                              <div className="text-xs text-blue-600 mt-1 font-medium">
-                                Recruiter: {(response as any).recruiterName}
-                                {(response as any).recruiterRank && ` (${(response as any).recruiterRank})`}
-                              </div>
-                            )}
-                            {response.feedback && (
-                              <div className="mt-2 text-xs sm:text-sm text-gray-700 bg-gray-50 p-3 rounded break-words">
-                                "{response.feedback}"
-                              </div>
-                            )}
-                            <div className="mt-2">
-                              <Badge variant="outline" className="text-xs">
-                                Source: {response.source}
-                              </Badge>
                             </div>
                           </div>
-                          <div className="text-left sm:text-right text-xs text-gray-500 whitespace-nowrap flex-shrink-0">
-                            {response.createdAt && format(new Date(response.createdAt), "MMM d, yyyy")}
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* High School Seniors Survey */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="w-5 h-5" />
+                      High School Seniors Survey
+                    </CardTitle>
+                    <CardDescription>
+                      {highSchoolResponses.length} response{highSchoolResponses.length !== 1 ? "s" : ""}
+                      {highSchoolAnalytics.total >= 2 && (
+                        <span className="ml-1">
+                          · {highSchoolAnalytics.withContact} with contact, {highSchoolAnalytics.noContact} without
+                        </span>
+                      )}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {highSchoolResponses.length === 0 ? (
+                      <p className="text-sm text-gray-500">No high school senior survey responses yet.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {highSchoolResponses.map((response) => (
+                          <div
+                            key={response.id}
+                            className="p-3 sm:p-4 border rounded-lg bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2 mb-1">
+                                <span className="text-xs text-gray-500">
+                                  {response.createdAt && format(new Date(response.createdAt), "MMM d, yyyy")}
+                                </span>
+                                {(response.name?.trim() || response.email?.trim() || response.phone?.trim()) ? (
+                                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
+                                    Has contact
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-xs text-gray-500">
+                                    No contact
+                                  </Badge>
+                                )}
+                                {(user?.role === "station_commander" || user?.role === "admin") &&
+                                  (response as any).recruiterName && (
+                                    <span className="text-xs text-blue-600">
+                                      {(response as any).recruiterName}
+                                    </span>
+                                  )}
+                              </div>
+                              <p className="text-sm text-gray-700 line-clamp-2 break-words">
+                                {response.feedback?.replace(/\n/g, " ").slice(0, 150) || "—"}
+                                {(response.feedback?.length ?? 0) > 150 ? "…" : ""}
+                              </p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-shrink-0"
+                              onClick={() => setSurveyDetailsModal(response)}
+                            >
+                              Details
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 
@@ -912,6 +1058,49 @@ function DashboardContent() {
               <div className="text-center py-8 text-gray-500">No analytics data available</div>
             )}
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Survey details modal (high school or any survey) */}
+        <Dialog open={!!surveyDetailsModal} onOpenChange={(open) => !open && setSurveyDetailsModal(null)}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg">
+                {surveyDetailsModal?.source === "high_school_senior_survey"
+                  ? "High School Seniors Survey – Details"
+                  : "Survey Details"}
+              </DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm">
+                {surveyDetailsModal?.createdAt &&
+                  format(new Date(surveyDetailsModal.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                {surveyDetailsModal?.source === "high_school_senior_survey" &&
+                  ((surveyDetailsModal?.name?.trim() ||
+                    surveyDetailsModal?.email?.trim() ||
+                    surveyDetailsModal?.phone?.trim())
+                    ? " · Contact provided"
+                    : " · No contact (data still useful for common themes)")}
+              </DialogDescription>
+            </DialogHeader>
+            {surveyDetailsModal && (
+              <div className="flex flex-col gap-4 overflow-y-auto min-h-0">
+                {(surveyDetailsModal.name?.trim() ||
+                  surveyDetailsModal.email?.trim() ||
+                  surveyDetailsModal.phone?.trim()) && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
+                    <h4 className="font-medium text-green-800 mb-2">Contact</h4>
+                    <p><strong>Name:</strong> {surveyDetailsModal.name?.trim() || "—"}</p>
+                    <p><strong>Email:</strong> {surveyDetailsModal.email?.trim() || "—"}</p>
+                    <p><strong>Phone:</strong> {surveyDetailsModal.phone?.trim() || "—"}</p>
+                  </div>
+                )}
+                <div className="flex-1 min-h-0">
+                  <h4 className="font-medium text-gray-800 mb-2">Full response</h4>
+                  <pre className="p-3 bg-gray-50 border rounded-lg text-xs sm:text-sm whitespace-pre-wrap break-words overflow-y-auto max-h-[40vh]">
+                    {surveyDetailsModal.feedback || "—"}
+                  </pre>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </main>

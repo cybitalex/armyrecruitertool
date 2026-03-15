@@ -43,6 +43,8 @@ import SORBIntakePage from "@/pages/sorb-intake";
 // Public pages
 import ApplyPage from "@/pages/apply";
 import SurveyPage from "@/pages/survey";
+import LifeGoalsSurveyPage from "@/pages/life-goals-survey";
+import HighSchoolSurveyPage from "@/pages/high-school-survey";
 import SweepstakesPage from "@/pages/sweepstakes";
 import NotFound from "@/pages/not-found";
 import ProfilePage from "@/pages/profile";
@@ -59,6 +61,8 @@ function Router() {
       <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/apply" component={ApplyPage} />
       <Route path="/survey" component={SurveyPage} />
+      <Route path="/life-goals" component={LifeGoalsSurveyPage} />
+      <Route path="/high-school-survey" component={HighSchoolSurveyPage} />
       <Route path="/sweepstakes" component={SweepstakesPage} />
       <Route path="/approval-success" component={ApprovalSuccess} />
       

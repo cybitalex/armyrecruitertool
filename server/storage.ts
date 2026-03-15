@@ -559,16 +559,21 @@ export class MemStorage implements IStorage {
           )
         );
 
-      // Get QR scan tracking stats using aggregation
+      // Get QR scan tracking stats: only count conversions where the linked recruit/survey still exists
+      // (so deleted applications/surveys don't inflate stats)
       const qrScanStats = await db
         .select({
           totalScans: sql<number>`count(*)::int`,
           totalSurveyScans: sql<number>`count(*) filter (where ${qrScans.scanType} = 'survey')::int`,
           totalSweepstakesScans: sql<number>`count(*) filter (where ${qrScans.scanType} = 'sweepstakes')::int`,
-          applicationsFromScans: sql<number>`count(*) filter (where ${qrScans.scanType} = 'application' AND ${qrScans.convertedToApplication} = true)::int`,
-          surveysFromScans: sql<number>`count(*) filter (where ${qrScans.scanType} = 'survey' AND ${qrScans.convertedToSurvey} = true)::int`,
+          applicationsFromScans: sql<number>`count(*) filter (where ${qrScans.scanType} = 'application' AND ${qrScans.convertedToApplication} = true AND ${qrScans.applicationId} IS NOT NULL AND EXISTS (SELECT 1 FROM recruits WHERE recruits.id = qr_scans.application_id))::int`,
+          surveysFromScans: sql<number>`count(*) filter (where ${qrScans.scanType} = 'survey' AND ${qrScans.convertedToSurvey} = true AND ${qrScans.surveyResponseId} IS NOT NULL AND EXISTS (SELECT 1 FROM qr_survey_responses WHERE qr_survey_responses.id = qr_scans.survey_response_id))::int`,
           sweepstakesFromScans: sql<number>`count(*) filter (where ${qrScans.scanType} = 'sweepstakes' AND ${qrScans.convertedToApplication} = true)::int`,
-          totalConverted: sql<number>`count(*) filter (where (${qrScans.convertedToApplication} = true OR ${qrScans.convertedToSurvey} = true))::int`,
+          totalConverted: sql<number>`count(*) filter (where
+            (${qrScans.scanType} = 'application' AND ${qrScans.convertedToApplication} = true AND ${qrScans.applicationId} IS NOT NULL AND EXISTS (SELECT 1 FROM recruits WHERE recruits.id = qr_scans.application_id))
+            OR (${qrScans.scanType} = 'survey' AND ${qrScans.convertedToSurvey} = true AND ${qrScans.surveyResponseId} IS NOT NULL AND EXISTS (SELECT 1 FROM qr_survey_responses WHERE qr_survey_responses.id = qr_scans.survey_response_id))
+            OR (${qrScans.scanType} = 'sweepstakes' AND ${qrScans.convertedToApplication} = true)
+          )::int`,
         })
         .from(qrScans)
         .where(eq(qrScans.recruiterId, recruiterId));
