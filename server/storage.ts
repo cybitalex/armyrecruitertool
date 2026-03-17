@@ -509,57 +509,58 @@ export class MemStorage implements IStorage {
     try {
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthStartISO = monthStart.toISOString();
 
-      // Get all-time recruit stats using aggregation
-      const allTimeRecruitStats = await db
-        .select({
-          total: sql<number>`count(*)::int`,
-          leads: sql<number>`count(*) filter (where ${recruitsTable.status} IN ('lead', 'pending'))::int`,
-          prospects: sql<number>`count(*) filter (where ${recruitsTable.status} = 'prospect')::int`,
-          qrCodeScans: sql<number>`count(*) filter (where ${recruitsTable.source} = 'qr_code')::int`,
-          directEntries: sql<number>`count(*) filter (where ${recruitsTable.source} = 'direct')::int`,
-        })
-        .from(recruitsTable)
-        .where(eq(recruitsTable.recruiterId, recruiterId));
+      // Run all 5 aggregation queries in parallel — eliminates sequential round-trips
+      const [
+        allTimeRecruitStats,
+        monthlyRecruitStats,
+        allTimeSurveyStats,
+        monthlySurveyStats,
+        qrScanStats,
+      ] = await Promise.all([
+        db
+          .select({
+            total: sql<number>`count(*)::int`,
+            leads: sql<number>`count(*) filter (where ${recruitsTable.status} IN ('lead', 'pending'))::int`,
+            prospects: sql<number>`count(*) filter (where ${recruitsTable.status} = 'prospect')::int`,
+            qrCodeScans: sql<number>`count(*) filter (where ${recruitsTable.source} = 'qr_code')::int`,
+            directEntries: sql<number>`count(*) filter (where ${recruitsTable.source} = 'direct')::int`,
+          })
+          .from(recruitsTable)
+          .where(eq(recruitsTable.recruiterId, recruiterId)),
 
-      // Get monthly recruit stats using aggregation
-      const monthlyRecruitStats = await db
-        .select({
-          total: sql<number>`count(*)::int`,
-          leads: sql<number>`count(*) filter (where ${recruitsTable.status} IN ('lead', 'pending'))::int`,
-          prospects: sql<number>`count(*) filter (where ${recruitsTable.status} = 'prospect')::int`,
-        })
-        .from(recruitsTable)
-        .where(
-          and(
-            eq(recruitsTable.recruiterId, recruiterId),
-            sql`${recruitsTable.submittedAt} >= ${monthStart.toISOString()}`
-          )
-        );
+        db
+          .select({
+            total: sql<number>`count(*)::int`,
+            leads: sql<number>`count(*) filter (where ${recruitsTable.status} IN ('lead', 'pending'))::int`,
+            prospects: sql<number>`count(*) filter (where ${recruitsTable.status} = 'prospect')::int`,
+          })
+          .from(recruitsTable)
+          .where(
+            and(
+              eq(recruitsTable.recruiterId, recruiterId),
+              sql`${recruitsTable.submittedAt} >= ${monthStartISO}`
+            )
+          ),
 
-      // Get survey stats using aggregation
-      const allTimeSurveyStats = await db
-        .select({
-          total: sql<number>`count(*)::int`,
-        })
-        .from(qrSurveyResponses)
-        .where(eq(qrSurveyResponses.recruiterId, recruiterId));
+        db
+          .select({ total: sql<number>`count(*)::int` })
+          .from(qrSurveyResponses)
+          .where(eq(qrSurveyResponses.recruiterId, recruiterId)),
 
-      const monthlySurveyStats = await db
-        .select({
-          total: sql<number>`count(*)::int`,
-        })
-        .from(qrSurveyResponses)
-        .where(
-          and(
-            eq(qrSurveyResponses.recruiterId, recruiterId),
-            sql`${qrSurveyResponses.createdAt} >= ${monthStart.toISOString()}`
-          )
-        );
+        db
+          .select({ total: sql<number>`count(*)::int` })
+          .from(qrSurveyResponses)
+          .where(
+            and(
+              eq(qrSurveyResponses.recruiterId, recruiterId),
+              sql`${qrSurveyResponses.createdAt} >= ${monthStartISO}`
+            )
+          ),
 
-      // Get QR scan tracking stats: only count conversions where the linked recruit/survey still exists
-      // (so deleted applications/surveys don't inflate stats)
-      const qrScanStats = await db
+        // QR scan tracking — parallel with the rest
+        db
         .select({
           totalScans: sql<number>`count(*)::int`,
           totalSurveyScans: sql<number>`count(*) filter (where ${qrScans.scanType} = 'survey')::int`,
@@ -573,8 +574,9 @@ export class MemStorage implements IStorage {
             OR (${qrScans.scanType} = 'sweepstakes' AND ${qrScans.convertedToApplication} = true)
           )::int`,
         })
-        .from(qrScans)
-        .where(eq(qrScans.recruiterId, recruiterId));
+          .from(qrScans)
+          .where(eq(qrScans.recruiterId, recruiterId)),
+      ]);
 
       const allTimeStats = allTimeRecruitStats[0] || {
         total: 0,

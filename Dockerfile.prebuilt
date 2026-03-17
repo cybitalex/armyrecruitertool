@@ -1,0 +1,30 @@
+# Prebuilt stage - app AND node_modules are prepared on the host before this runs.
+# No npm registry access needed inside the container.
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy pre-installed node_modules from host
+COPY node_modules ./node_modules
+
+# Copy pre-built dist from host
+COPY dist ./dist
+
+# Copy package files (for reference / runtime metadata)
+COPY package*.json ./
+
+# Copy drizzle config and schema
+COPY drizzle.config.ts ./
+COPY shared ./shared
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
+USER nodejs
+
+# Expose port
+EXPOSE 5001
+
+ENV NODE_ENV=production
+ENV PORT=5001
+
+CMD ["node", "dist/index.js"]

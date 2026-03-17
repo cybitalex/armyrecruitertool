@@ -48,8 +48,39 @@ import {
   sendStationChangeRequestNotification,
 } from "./auth";
 import { db } from "./database";
-import { users, qrScans, qrCodeLocations, notifications, recruits, armyMOS } from "@shared/schema";
+import { users, qrScans, qrCodeLocations, notifications, recruits, armyMOS, piiAuditLog } from "@shared/schema";
 import { eq, sql, and, desc, inArray, lte, gte } from "drizzle-orm";
+
+// ── PII Audit Helper ──────────────────────────────────────────────────────────
+// Writes a non-blocking audit record for any access to PII-bearing resources.
+// Failures are logged to stderr but never surface to the caller.
+async function auditPiiAccess(opts: {
+  userId?: string | null;
+  userName?: string | null;
+  ip?: string;
+  method: string;
+  endpoint: string;
+  action: string;
+  recordId?: string | null;
+  statusCode?: number;
+  userAgent?: string;
+}) {
+  try {
+    await db.insert(piiAuditLog).values({
+      userId: opts.userId ?? null,
+      userName: opts.userName ?? null,
+      ipAddress: opts.ip ?? null,
+      method: opts.method,
+      endpoint: opts.endpoint,
+      action: opts.action,
+      recordId: opts.recordId ?? null,
+      statusCode: opts.statusCode ?? null,
+      userAgent: opts.userAgent ?? null,
+    });
+  } catch (err) {
+    console.error("⚠️  PII audit log write failed:", err);
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // AUTHENTICATION ENDPOINTS
@@ -267,6 +298,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select()
         .from(stations)
         .orderBy(stations.state);
+      // Stations change rarely — cache for 10 minutes, shared across all users
+      res.setHeader("Cache-Control", "public, max-age=600, stale-while-revalidate=120");
       res.json(allStations);
     } catch (error) {
       console.error("❌ Failed to fetch stations:", error);
@@ -1733,6 +1766,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
+      // ── Orphan cleanup: clear conversion flags where the linked record is gone ──
+      // Application scans: convertedToApplication = true but recruit deleted
+      await db.execute(sql`
+        UPDATE qr_scans
+        SET converted_to_application = false, application_id = NULL
+        WHERE converted_to_application = true
+          AND application_id IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM recruits WHERE recruits.id = qr_scans.application_id)
+      `);
+      // Survey scans: convertedToSurvey = true but survey response deleted
+      await db.execute(sql`
+        UPDATE qr_scans
+        SET converted_to_survey = false, survey_response_id = NULL
+        WHERE converted_to_survey = true
+          AND survey_response_id IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM qr_survey_responses WHERE qr_survey_responses.id = qr_scans.survey_response_id)
+      `);
+
       // Get all scans for this user (or station if station commander/admin)
       // Sort by most recent first
       let allScans;
@@ -1814,6 +1865,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         scansByLocation[locationKey].totalScans++;
+        // After orphan cleanup above, these flags are now accurate
         const converted =
           scan.scanType === "survey"
             ? scan.convertedToSurvey || false
@@ -1851,25 +1903,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         (a, b) => b.totalScans - a.totalScans
       );
 
+      const totalConverted = allScans.filter((s) =>
+        s.scanType === "survey" ? s.convertedToSurvey : s.convertedToApplication
+      ).length;
+
       res.json({
         locations,
         totalScans: allScans.length,
-        totalConverted: allScans.filter((s) =>
-          s.scanType === "survey"
-            ? s.convertedToSurvey
-            : s.convertedToApplication
-        ).length,
+        totalConverted,
         overallConversionRate:
           allScans.length > 0
-            ? Math.round(
-                (allScans.filter((s) =>
-                  s.scanType === "survey"
-                    ? s.convertedToSurvey
-                    : s.convertedToApplication
-                ).length /
-                  allScans.length) *
-                  100
-              )
+            ? Math.round((totalConverted / allScans.length) * 100)
             : 0,
       });
     } catch (error) {
@@ -2041,6 +2085,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
+      // ── Orphan cleanup: clear stale conversion flags for deleted records ──
+      await db.execute(sql`
+        UPDATE qr_scans
+        SET converted_to_application = false, application_id = NULL
+        WHERE converted_to_application = true
+          AND application_id IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM recruits WHERE recruits.id = qr_scans.application_id)
+      `);
+      await db.execute(sql`
+        UPDATE qr_scans
+        SET converted_to_survey = false, survey_response_id = NULL
+        WHERE converted_to_survey = true
+          AND survey_response_id IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM qr_survey_responses WHERE qr_survey_responses.id = qr_scans.survey_response_id)
+      `);
+
       // Use optimized aggregation for stats instead of loading all recruits
       let stats;
       let recruiterRecruits: any[] = [];
@@ -2183,6 +2243,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get recent recruits (already sorted by database query, just take first 10)
       const recentRecruits = recruiterRecruits.slice(0, 10);
 
+      // Allow client and shared proxy to cache for 60s; private = per-user only
+      res.setHeader("Cache-Control", "private, max-age=60, stale-while-revalidate=30");
       res.json({
         ...stats,
         recentRecruits,
@@ -2270,9 +2332,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             : null,
         }));
 
+        res.setHeader("Cache-Control", "private, max-age=60, stale-while-revalidate=30");
         res.json(recruitsWithRecruiter);
+        auditPiiAccess({ userId, userName: user.fullName, ip: req.ip, method: "GET", endpoint: "/api/recruits", action: "VIEW_RECRUITS_LIST", statusCode: 200, userAgent: req.headers["user-agent"] });
       } else {
+        res.setHeader("Cache-Control", "private, max-age=60, stale-while-revalidate=30");
         res.json(userRecruits);
+        auditPiiAccess({ userId, userName: user.fullName, ip: req.ip, method: "GET", endpoint: "/api/recruits", action: "VIEW_RECRUITS_LIST", statusCode: 200, userAgent: req.headers["user-agent"] });
       }
     } catch (error) {
       res.status(500).json({
@@ -2306,24 +2372,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verify user has permission to view this recruit
       if (user.role === "admin") {
-        // Admin can see all recruits
         res.json(recruit);
+        auditPiiAccess({ userId, userName: user.fullName, ip: req.ip, method: "GET", endpoint: "/api/recruits/:id", action: "VIEW_RECRUIT_DETAIL", recordId: recruit.id, statusCode: 200, userAgent: req.headers["user-agent"] });
       } else if (user.role === "station_commander" && user.stationId) {
-        // Station commander can see recruits from their station
         const recruiter = await db
           .select()
           .from(users)
           .where(eq(users.id, recruit.recruiterId || ""));
         if (recruiter.length > 0 && recruiter[0].stationId === user.stationId) {
           res.json(recruit);
+          auditPiiAccess({ userId, userName: user.fullName, ip: req.ip, method: "GET", endpoint: "/api/recruits/:id", action: "VIEW_RECRUIT_DETAIL", recordId: recruit.id, statusCode: 200, userAgent: req.headers["user-agent"] });
         } else {
           res
             .status(403)
             .json({ error: "You don't have permission to view this recruit" });
         }
       } else if (recruit.recruiterId === userId) {
-        // Regular recruiter can only see their own recruits
         res.json(recruit);
+        auditPiiAccess({ userId, userName: user.fullName, ip: req.ip, method: "GET", endpoint: "/api/recruits/:id", action: "VIEW_RECRUIT_DETAIL", recordId: recruit.id, statusCode: 200, userAgent: req.headers["user-agent"] });
       } else {
         res
           .status(403)
@@ -2481,11 +2547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(
         `📝 POST /api/recruits - Session userId: ${
           userId || "NULL"
-        }, recruiterCode: ${recruiterCode || "NULL"}`
-      );
-      console.log(
-        `📝 Session data:`,
-        JSON.stringify((req as any).session || {})
+        }, recruiterCode: ${recruiterCode ? "[PRESENT]" : "NULL"}`
       );
 
       // Determine source and recruiterId:
@@ -2583,7 +2645,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Remove recruiterCode from body and use recruiterId
-      const { recruiterCode: _, ...recruitData } = body;
+      const { recruiterCode: _, age, jobCategory, ...recruitData } = body;
+
+      // Convert age → approximate date of birth (Jan 1 of birth year)
+      if (age !== undefined && age !== null) {
+        const birthYear = new Date().getFullYear() - parseInt(age);
+        recruitData.dateOfBirth = recruitData.dateOfBirth || `${birthYear}-01-01`;
+      }
+
+      // Ensure no required fields are left blank/null
+      recruitData.dateOfBirth    = recruitData.dateOfBirth    || "1990-01-01";
+      recruitData.educationLevel = recruitData.educationLevel || "not_provided";
+      recruitData.hasDriversLicense = recruitData.hasDriversLicense || "unknown";
+      recruitData.hasPriorService   = recruitData.hasPriorService   || "no";
+      recruitData.availability      = recruitData.availability      || "flexible";
+      recruitData.address  = recruitData.address  || "";
+      recruitData.city     = recruitData.city     || "";
+      recruitData.state    = recruitData.state    || "";
+      recruitData.zipCode  = recruitData.zipCode  || "";
+
+      // If a job category was provided without a preferredMOS, use the category itself
+      if (jobCategory && !recruitData.preferredMOS) {
+        recruitData.preferredMOS = jobCategory;
+      }
 
       console.log(
         `📝 Creating recruit - recruiterId: ${
@@ -2733,6 +2817,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Audit new PII submission (no personal details in the log, only record ID)
+      auditPiiAccess({ userId: recruiterId ?? null, ip: req.ip, method: "POST", endpoint: "/api/recruits", action: "PII_SUBMISSION_RECEIVED", recordId: recruit.id, statusCode: 201, userAgent: req.headers["user-agent"] });
       res.status(201).json(recruit);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -3386,6 +3472,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           new Date().toISOString().split("T")[0]
         }.csv`
       );
+      // Audit high-sensitivity bulk export
+      const [exportUser] = await db.select().from(users).where(eq(users.id, userId));
+      auditPiiAccess({ userId, userName: exportUser?.fullName, ip: req.ip, method: "GET", endpoint: "/api/recruits/export/csv", action: "EXPORT_PII_BULK_CSV", recordId: null, statusCode: 200, userAgent: req.headers["user-agent"] });
       res.send(csvContent);
     } catch (error) {
       res.status(500).json({

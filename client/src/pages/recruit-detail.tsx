@@ -153,8 +153,18 @@ export default function RecruitDetail() {
     mutationFn: async (id: string) => {
       return await apiRequest("DELETE", `/api/recruits/${id}`, undefined);
     },
+    onMutate: async (id: string) => {
+      // Cancel any in-flight refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: ["/api/recruits"] });
+      // Instantly remove from the list cache — no waiting for server round-trip
+      queryClient.setQueryData<any[]>(["/api/recruits"], (old) =>
+        old ? old.filter((r) => r.id !== id) : []
+      );
+    },
     onSuccess: () => {
+      // Force a clean refetch of both recruits list and stats counts
       queryClient.invalidateQueries({ queryKey: ["/api/recruits"] });
+      queryClient.invalidateQueries({ queryKey: ["/recruiter/stats"] });
       toast({
         title: "Application Deleted",
         description: "The recruit application has been removed.",
@@ -162,6 +172,8 @@ export default function RecruitDetail() {
       navigate("/");
     },
     onError: (error: Error) => {
+      // On failure, restore from server
+      queryClient.invalidateQueries({ queryKey: ["/api/recruits"] });
       toast({
         title: "Delete Failed",
         description: error.message,

@@ -36,9 +36,6 @@ import ProspectingMap from "@/pages/prospecting-map";
 import AdminRequests from "@/pages/admin-requests";
 import StationCommanderDashboard from "@/pages/station-commander-dashboard";
 import ShippersPage from "@/pages/shippers";
-import SORBAnalyticsPage from "@/pages/sorb-analytics";
-import SORBDashboard from "@/pages/sorb-dashboard";
-import SORBIntakePage from "@/pages/sorb-intake";
 
 // Public pages
 import ApplyPage from "@/pages/apply";
@@ -67,10 +64,8 @@ function Router() {
       <Route path="/approval-success" component={ApprovalSuccess} />
       
       {/* Protected routes */}
-      <Route path="/" component={IS_SORB ? SORBDashboard : Dashboard} />
-      <Route path="/dashboard" component={IS_SORB ? SORBDashboard : Dashboard} />
-      <Route path="/analytics" component={SORBAnalyticsPage} />
-      <Route path="/sorb-intake" component={SORBIntakePage} />
+      <Route path="/" component={Dashboard} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/my-qr" component={MyQRCode} />
       <Route path="/prospecting" component={ProspectingMap} />
@@ -83,7 +78,7 @@ function Router() {
       
       {/* Station Commander routes */}
       <Route path="/station-commander" component={StationCommanderDashboard} />
-      {!IS_SORB && <Route path="/shippers" component={ShippersPage} />}
+      <Route path="/shippers" component={ShippersPage} />
       
       {/* 404 */}
       <Route component={NotFound} />
@@ -95,7 +90,7 @@ function AppContent() {
   const [location] = useLocation();
 
   useEffect(() => {
-    document.title = IS_SORB ? "SORB Army Recruiter Tool" : "Army Recruiter Tool";
+    document.title = "Army Recruiter Tool";
   }, []);
   
   // Pages with their own full layout (no header/footer)

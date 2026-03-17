@@ -5,89 +5,158 @@ import { recruits, recruiter as recruiterApi } from "../lib/api";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Alert, AlertDescription } from "../components/ui/alert";
-import { CheckCircle2, AlertCircle, User as UserIcon } from "lucide-react";
+import { CheckCircle2, AlertCircle, User as UserIcon, Globe } from "lucide-react";
 import type { User } from "@shared/schema";
 import { ARMY_RANKS } from "@shared/constants";
-import { IS_SORB } from "../lib/sorb-config";
+
+// ──────────────────────────────────────────────
+// Job category → AI description mapping
+// ──────────────────────────────────────────────
+const JOB_CATEGORIES = [
+  { value: "combat_infantry",     en: "Combat / Infantry",            es: "Combate / Infantería",           ai: "combat infantry frontline soldier field operations" },
+  { value: "medical_healthcare",  en: "Medical / Healthcare",         es: "Medicina / Salud",               ai: "military medical healthcare nursing medic 68W" },
+  { value: "technology_computers",en: "Technology / Computers / IT",  es: "Tecnología / Computadoras",      ai: "information technology cybersecurity computer networks signals 25 series" },
+  { value: "intelligence_cyber",  en: "Intelligence / Cyber",         es: "Inteligencia / Ciber",           ai: "military intelligence cyber operations signals intelligence 35 series" },
+  { value: "aviation",            en: "Aviation",                     es: "Aviación",                       ai: "Army aviation helicopter pilot crew 15 series" },
+  { value: "engineering",         en: "Engineering / Construction",   es: "Ingeniería / Construcción",      ai: "combat engineer construction sapper bridge 12 series" },
+  { value: "mechanics_maintenance",en:"Mechanics / Vehicle Maintenance",es:"Mecánica / Mantenimiento",      ai: "vehicle mechanic maintenance wheeled tracked 91 series" },
+  { value: "admin_finance",       en: "Administration / Finance",     es: "Administración / Finanzas",      ai: "Army administration finance HR human resources 42 series" },
+  { value: "special_operations",  en: "Special Operations",           es: "Operaciones Especiales",         ai: "special forces ranger airborne 18X Option 40 special operations" },
+  { value: "not_sure",            en: "Not sure yet",                 es: "No estoy seguro/a todavía",      ai: "general Army interest exploring options" },
+] as const;
+
+// ──────────────────────────────────────────────
+// Translations
+// ──────────────────────────────────────────────
+const T = {
+  en: {
+    langToggle: "Español",
+    pageTitle: "U.S. Army Interest Form",
+    pageSubLinked: "🎯 This form is linked to your recruiter",
+    pageSubDefault: "Complete this form to learn more about opportunities in the Army",
+    sentTo: "Your application will be sent to:",
+    whyTitle: "Discover What the U.S. Army Has to Offer",
+    benefit1Title: "Education Benefits",
+    benefit1Desc: "Over $250,000 in education value through the Post-9/11 GI Bill® — covers 100% tuition, housing allowance, and book stipend.",
+    benefit2Title: "Healthcare Coverage",
+    benefit2Desc: "Comprehensive medical, dental, and vision coverage through TRICARE for you and your family.",
+    benefit3Title: "Career Training & Skills",
+    benefit3Desc: "Over 150+ career fields with fully paid training and industry-recognized certifications.",
+    benefit4Title: "Pay & Financial Benefits",
+    benefit4Desc: "Competitive base pay, housing/food allowances, 30 days paid vacation, enlistment bonuses up to $50,000, and a federal pension after 20 years.",
+    ctaText: "⬇️ Fill out the form below to learn more — no commitment required",
+    sectionPersonal: "Your Information",
+    firstName: "First Name",
+    lastName: "Last Name",
+    age: "Age",
+    agePlaceholder: "e.g. 21",
+    phone: "Phone Number",
+    phonePlaceholder: "555-123-4567",
+    email: "Email Address",
+    sectionJob: "Area of Interest",
+    jobCategory: "What type of job are you most interested in?",
+    jobPlaceholder: "Select a job category",
+    disclaimer: "Submitting this form does not constitute enlistment or any commitment. It is simply a way to express interest and connect with a recruiter to learn more.",
+    privacyNote: "UNCLASSIFIED — Your information will be handled per Army regulations and the Privacy Act of 1974. SSN is NOT collected at this stage.",
+    submitBtn: "Submit Interest Form",
+    submitting: "Submitting...",
+    successTitle: "Form Submitted! 🎖️",
+    successDesc: "Thank you for your interest in learning more about the U.S. Army",
+    successBody: "Your information has been successfully submitted. A recruiter will reach out to you soon to answer any questions and share more details.",
+    successLinked: "✅ Your form has been linked to your recruiter",
+    successEmail: "Check your email for confirmation",
+    required: "*",
+  },
+  es: {
+    langToggle: "English",
+    pageTitle: "Formulario de Interés — Ejército de EE.UU.",
+    pageSubLinked: "🎯 Este formulario está vinculado a su reclutador",
+    pageSubDefault: "Complete este formulario para obtener más información sobre las oportunidades en el Ejército",
+    sentTo: "Su solicitud será enviada a:",
+    whyTitle: "Descubra lo que el Ejército de EE.UU. tiene para ofrecer",
+    benefit1Title: "Beneficios Educativos",
+    benefit1Desc: "Más de $250,000 en valor educativo a través del GI Bill® — cubre el 100% de la matrícula, vivienda y libros.",
+    benefit2Title: "Cobertura de Salud",
+    benefit2Desc: "Cobertura médica, dental y de visión completa a través de TRICARE para usted y su familia.",
+    benefit3Title: "Capacitación Profesional",
+    benefit3Desc: "Más de 150 campos de carrera con capacitación pagada y certificaciones reconocidas por la industria.",
+    benefit4Title: "Pago y Beneficios Financieros",
+    benefit4Desc: "Salario base competitivo, subsidios de vivienda y comida, 30 días de vacaciones pagadas, bonos de alistamiento de hasta $50,000.",
+    ctaText: "⬇️ Complete el formulario a continuación para obtener más información — sin compromiso",
+    sectionPersonal: "Su Información",
+    firstName: "Nombre",
+    lastName: "Apellido",
+    age: "Edad",
+    agePlaceholder: "ej. 21",
+    phone: "Número de Teléfono",
+    phonePlaceholder: "555-123-4567",
+    email: "Correo Electrónico",
+    sectionJob: "Área de Interés",
+    jobCategory: "¿Qué tipo de trabajo le interesa más?",
+    jobPlaceholder: "Seleccione una categoría",
+    disclaimer: "Enviar este formulario no constituye alistamiento ni ningún compromiso. Es simplemente una forma de expresar interés y conectarse con un reclutador.",
+    privacyNote: "NO CLASIFICADO — Su información será manejada según las regulaciones del Ejército y la Ley de Privacidad de 1974. El SSN NO se recopila en esta etapa.",
+    submitBtn: "Enviar Formulario de Interés",
+    submitting: "Enviando...",
+    successTitle: "¡Formulario Enviado! 🎖️",
+    successDesc: "Gracias por su interés en obtener más información sobre el Ejército de EE.UU.",
+    successBody: "Su información ha sido enviada exitosamente. Un reclutador se pondrá en contacto con usted pronto.",
+    successLinked: "✅ Su formulario ha sido vinculado a su reclutador",
+    successEmail: "Revise su correo electrónico para confirmar",
+    required: "*",
+  },
+} as const;
+
+type Lang = "en" | "es";
 
 export default function ApplyPage() {
   const [location] = useLocation();
   const queryClient = useQueryClient();
-  
-  // Read recruiter code from the real browser query string so it works with URLs like
-  // https://armyrecruitertool.duckdns.org/apply?r=...
+  const [lang, setLang] = useState<Lang>("en");
+  const t = T[lang];
+
   const [recruiterCode, setRecruiterCode] = useState<string | null>(null);
-  
   useEffect(() => {
     try {
-      const search = typeof window !== "undefined" ? window.location.search : "";
-      const params = new URLSearchParams(search);
-      const code = params.get("r");
-      setRecruiterCode(code);
-      console.log(`🔍 Apply page - Extracted recruiterCode from URL: ${code || 'NULL'}`);
+      const params = new URLSearchParams(window.location.search);
+      setRecruiterCode(params.get("r"));
     } catch {
       setRecruiterCode(null);
     }
   }, [location]);
 
   const [recruiterInfo, setRecruiterInfo] = useState<Partial<User> | null>(null);
+  const scanTracked = useRef(false);
+
+  useEffect(() => {
+    if (recruiterCode && !scanTracked.current) {
+      scanTracked.current = true;
+      fetch("/api/qr-scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qrCode: recruiterCode, scanType: "application" }),
+      }).catch(() => {});
+      recruiterApi.getByQRCode(recruiterCode)
+        .then((d) => setRecruiterInfo(d.recruiter))
+        .catch(() => setRecruiterInfo(null));
+    }
+  }, [recruiterCode]);
 
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    middleName: "",
-    dateOfBirth: "",
-    email: "",
+    age: "",
     phone: "",
-    educationLevel: "",
-    hasDriversLicense: "yes",
-    hasPriorService: "no",
-    priorServiceBranch: "",
-    priorServiceYears: "",
-    preferredMOS: "",
-    availability: "",
-    additionalNotes: "",
+    email: "",
+    jobCategory: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const scanTracked = useRef(false); // Prevent double-tracking
-
-  // Fetch recruiter info if QR code is present AND track the scan
-  useEffect(() => {
-    if (recruiterCode && !scanTracked.current) {
-      scanTracked.current = true; // Mark as tracked to prevent double-counting
-      
-      // Track the QR scan (for analytics)
-      fetch("/api/qr-scan", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ 
-          qrCode: recruiterCode,
-          scanType: "application" 
-        }),
-      }).then(() => {
-        console.log("📱 QR scan tracked");
-      }).catch((err) => {
-        console.error("Failed to track QR scan (non-critical):", err);
-      });
-
-      // Fetch recruiter info to display on the form
-      recruiterApi.getByQRCode(recruiterCode)
-        .then((data) => setRecruiterInfo(data.recruiter))
-        .catch(() => {
-          // Silently fail - recruiter info is optional
-          setRecruiterInfo(null);
-        });
-    }
-  }, [recruiterCode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,30 +164,25 @@ export default function ApplyPage() {
     setLoading(true);
 
     try {
-      // Log what we're sending
-      console.log(`📤 Submitting application - recruiterCode: ${recruiterCode || 'NULL'}`);
-      
+      const category = JOB_CATEGORIES.find((c) => c.value === formData.jobCategory);
       const payload = {
-        ...formData,
-        recruiterCode: recruiterCode || undefined, // Send QR code, backend will resolve to recruiterId
-        // source will be set by backend based on whether recruiterCode exists or user is logged in
-        priorServiceYears: formData.priorServiceYears
-          ? parseInt(formData.priorServiceYears)
-          : undefined,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        age: formData.age ? parseInt(formData.age) : undefined,
+        phone: formData.phone.trim(),
+        email: formData.email.trim(),
+        preferredMOS: category?.ai ?? "",
+        jobCategory: formData.jobCategory,
+        recruiterCode: recruiterCode || undefined,
       };
-      
-      console.log(`📤 Payload being sent:`, { ...payload, recruiterCode: payload.recruiterCode || 'NULL' });
-      
-      await recruits.create(payload as any);
 
-      // Invalidate stats and recruits queries so dashboard updates
+      await recruits.create(payload as any);
       queryClient.invalidateQueries({ queryKey: ["/recruiter/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/recruits"] });
-
       setSuccess(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Application submission failed");
+      setError(err instanceof Error ? err.message : "Submission failed");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setLoading(false);
@@ -131,54 +195,29 @@ export default function ApplyPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
-            <CardTitle className="text-2xl">Form Submitted! 🎖️</CardTitle>
-            <CardDescription>
-              {IS_SORB
-                ? "Thank you for your interest in U.S. Army Special Operations pipelines"
-                : "Thank you for your interest in learning more about the U.S. Army"}
-            </CardDescription>
+            <CardTitle className="text-2xl">{t.successTitle}</CardTitle>
+            <CardDescription>{t.successDesc}</CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-4">
-            <p className="text-sm text-gray-600">
-              {IS_SORB
-                ? "Your interest profile has been submitted. A recruiter will follow up to discuss screening, readiness, and potential pipeline fit."
-                : "Your information has been successfully submitted. A recruiter will reach out to you soon to answer any questions and share more details."}
-            </p>
+            <p className="text-sm text-gray-600">{t.successBody}</p>
             {recruiterInfo && (
               <div className="bg-green-50 p-4 rounded-lg border border-green-200 text-left">
-                <p className="text-sm font-semibold text-green-800 mb-2">
-                  ✅ Your form has been submitted to:
-                </p>
+                <p className="text-sm font-semibold text-green-800 mb-2">✅ {t.sentTo}</p>
                 <div className="text-sm text-green-700 space-y-1">
                   <p className="font-medium">{recruiterInfo.fullName}</p>
-                  {recruiterInfo.rank && (
-                    <p className="text-xs">{recruiterInfo.rank}</p>
-                  )}
-                  {recruiterInfo.unit && (
-                    <p className="text-xs">{recruiterInfo.unit}</p>
-                  )}
+                  {recruiterInfo.rank && <p className="text-xs">{recruiterInfo.rank}</p>}
                   {recruiterInfo.phoneNumber && (
-                    <p className="text-xs mt-2">Phone: {recruiterInfo.phoneNumber}</p>
-                  )}
-                  {recruiterInfo.email && (
-                    <p className="text-xs">Email: {recruiterInfo.email}</p>
+                    <p className="text-xs mt-2">📞 {recruiterInfo.phoneNumber}</p>
                   )}
                 </div>
-                <p className="text-xs text-green-600 mt-2">
-                  They will be in touch with you shortly to answer your questions.
-                </p>
               </div>
             )}
             {recruiterCode && !recruiterInfo && (
               <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <p className="text-sm text-green-800">
-                  ✅ Your form has been linked to your recruiter
-                </p>
+                <p className="text-sm text-green-800">{t.successLinked}</p>
               </div>
             )}
-            <p className="text-xs text-gray-500">
-              Check your email ({formData.email}) for confirmation
-            </p>
+            <p className="text-xs text-gray-500">{t.successEmail} ({formData.email})</p>
           </CardContent>
         </Card>
       </div>
@@ -186,47 +225,53 @@ export default function ApplyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        {/* Recruiter Info Card - Compact style similar to survey page */}
+    <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-xl mx-auto">
+
+        {/* Language toggle */}
+        <div className="flex justify-end mb-4">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setLang(lang === "en" ? "es" : "en")}
+            className="flex items-center gap-2 border-green-600 text-green-700 hover:bg-green-50"
+          >
+            <Globe className="w-4 h-4" />
+            {t.langToggle}
+          </Button>
+        </div>
+
+        {/* Recruiter card */}
         {recruiterInfo && (
-          <Card className="mb-6 bg-green-50 border border-green-200">
+          <Card className="mb-5 bg-green-50 border border-green-200">
             <CardContent className="p-4">
-              <p className="text-xs font-semibold text-green-900 mb-3 text-center">
-                Your application will be sent to:
-              </p>
-              
+              <p className="text-xs font-semibold text-green-900 mb-3 text-center">{t.sentTo}</p>
               <div className="flex items-center gap-4">
-                {/* Profile Picture */}
                 {recruiterInfo.profilePicture ? (
                   <img
                     src={recruiterInfo.profilePicture}
                     alt={recruiterInfo.fullName}
-                    className="w-20 h-20 rounded-full object-cover border-3 border-green-600 shadow-md flex-shrink-0"
+                    className="w-16 h-16 rounded-full object-cover border-2 border-green-600 shadow flex-shrink-0"
                   />
                 ) : (
-                  <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center border-3 border-green-600 shadow-md flex-shrink-0">
-                    <UserIcon className="w-10 h-10 text-green-600" />
+                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center border-2 border-green-600 shadow flex-shrink-0">
+                    <UserIcon className="w-8 h-8 text-green-600" />
                   </div>
                 )}
-                
-                {/* Contact Information - Rank, Last Name, Phone */}
-                <div className="flex-1 space-y-1">
+                <div className="flex-1 space-y-0.5">
                   {recruiterInfo.rank && (
-                    <p className="text-sm font-bold text-green-900">
-                      {ARMY_RANKS.find(r => r.value === recruiterInfo.rank)?.label || recruiterInfo.rank}
+                    <p className="text-xs font-bold text-green-900">
+                      {ARMY_RANKS.find((r) => r.value === recruiterInfo.rank)?.label ?? recruiterInfo.rank}
                     </p>
                   )}
                   {recruiterInfo.fullName && (
                     <p className="text-base font-bold text-green-900">
-                      {recruiterInfo.fullName.split(' ').pop()}
+                      {recruiterInfo.fullName.split(" ").pop()}
                     </p>
                   )}
                   {recruiterInfo.phoneNumber && (
-                    <a 
-                      href={`tel:${recruiterInfo.phoneNumber}`}
-                      className="text-sm text-green-700 hover:underline flex items-center gap-1"
-                    >
+                    <a href={`tel:${recruiterInfo.phoneNumber}`} className="text-sm text-green-700 hover:underline">
                       📞 {recruiterInfo.phoneNumber}
                     </a>
                   )}
@@ -236,375 +281,175 @@ export default function ApplyPage() {
           </Card>
         )}
 
-        {/* Benefits Section */}
-        <Card className="mb-6 bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-xl font-bold text-green-900 text-center flex items-center justify-center gap-2">
-              <span className="text-2xl">🇺🇸</span>
-              {IS_SORB ? "Why Pursue a Special Operations Pipeline?" : "Discover What the U.S. Army Has to Offer"}
+        {/* Benefits card */}
+        <Card className="mb-5 bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-bold text-green-900 text-center flex items-center justify-center gap-2">
+              <span className="text-xl">🇺🇸</span>
+              {t.whyTitle}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200">
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl flex-shrink-0">{IS_SORB ? "🎯" : "🎓"}</span>
-                  <div>
-                    <h4 className="font-bold text-green-900 mb-1">
-                      {IS_SORB ? "Mission-Focused Career Paths" : "Education Benefits"}
-                    </h4>
-                    <p className="text-sm text-gray-700">
-                      {IS_SORB
-                        ? "Explore pathways like 18X, Option 40, Civil Affairs, PSYOP, and other Special Operations opportunities."
-                        : "Over $250,000 in education value through the Post-9/11 GI Bill® — covers 100% tuition, housing allowance, and book stipend. Active duty soldiers also receive up to $4,500/year in Tuition Assistance while serving."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200">
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl flex-shrink-0">{IS_SORB ? "🧭" : "🏥"}</span>
-                  <div>
-                    <h4 className="font-bold text-green-900 mb-1">
-                      {IS_SORB ? "Structured Screening & Guidance" : "Healthcare Coverage"}
-                    </h4>
-                    <p className="text-sm text-gray-700">
-                      {IS_SORB
-                        ? "Work with recruiters who assess GT, readiness, and qualifications to match you to the right pipeline."
-                        : "Comprehensive medical, dental, and vision coverage through TRICARE for you and your family — at little to no cost while on active duty."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200">
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl flex-shrink-0">{IS_SORB ? "🏋️" : "💼"}</span>
-                  <div>
-                    <h4 className="font-bold text-green-900 mb-1">
-                      {IS_SORB ? "Preparation & Mentorship" : "Career Training & Skills"}
-                    </h4>
-                    <p className="text-sm text-gray-700">
-                      {IS_SORB
-                        ? "Track physical readiness and receive mentorship on rucking, endurance, and selection preparation."
-                        : "Over 150+ career fields with fully paid training and industry-recognized certifications in technology, healthcare, engineering, aviation, and more."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200">
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl flex-shrink-0">{IS_SORB ? "🤝" : "💰"}</span>
-                  <div>
-                    <h4 className="font-bold text-green-900 mb-1">
-                      {IS_SORB ? "Quality Over Volume" : "Pay & Financial Benefits"}
-                    </h4>
-                    <p className="text-sm text-gray-700">
-                      {IS_SORB
-                        ? "SORB focuses on identifying and preparing high-potential candidates for Special Operations success."
-                        : "Competitive base pay, tax-free housing (BAH) and food (BAS) allowances, 30 days paid vacation, enlistment bonuses up to $50,000, and a federal pension after 20 years."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {!IS_SORB && (
-                <>
-                  <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200">
-                    <div className="flex items-start gap-3">
-                      <span className="text-2xl flex-shrink-0">📚</span>
-                      <div>
-                        <h4 className="font-bold text-green-900 mb-1">Student Loan Repayment</h4>
-                        <p className="text-sm text-gray-700">
-                          Army Reserve members may qualify for up to $65,000 in Student Loan Repayment (SLRP). Active duty soldiers may also be eligible through special programs.
-                        </p>
-                      </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { icon: "🎓", title: t.benefit1Title, desc: t.benefit1Desc },
+                { icon: "🏥", title: t.benefit2Title, desc: t.benefit2Desc },
+                { icon: "💼", title: t.benefit3Title, desc: t.benefit3Desc },
+                { icon: "💰", title: t.benefit4Title, desc: t.benefit4Desc },
+              ].map(({ icon, title, desc }) => (
+                <div key={title} className="bg-white rounded-lg p-3 shadow-sm border border-green-200">
+                  <div className="flex items-start gap-2">
+                    <span className="text-xl flex-shrink-0">{icon}</span>
+                    <div>
+                      <h4 className="font-bold text-green-900 text-sm mb-0.5">{title}</h4>
+                      <p className="text-xs text-gray-700">{desc}</p>
                     </div>
                   </div>
-
-                  <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200">
-                    <div className="flex items-start gap-3">
-                      <span className="text-2xl flex-shrink-0">🛡️</span>
-                      <div>
-                        <h4 className="font-bold text-green-900 mb-1">Army Reserve Benefits</h4>
-                        <p className="text-sm text-gray-700">
-                          Serve one weekend/month and two weeks/year while keeping your civilian career. Benefits include drill pay, TRICARE Reserve Select, retirement points, and access to military bases and commissaries.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
+                </div>
+              ))}
             </div>
-
-            {/* Call to Action */}
-            <div className="mt-4 text-center">
-              <p className="text-sm font-semibold text-green-900">
-                {IS_SORB
-                  ? "⬇️ Complete this form to start your Special Operations screening conversation"
-                  : "⬇️ Fill out the form below to learn more — no commitment required"}
-              </p>
-            </div>
+            <p className="text-xs font-semibold text-green-900 text-center mt-3">{t.ctaText}</p>
           </CardContent>
         </Card>
 
+        {/* Main form */}
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold text-green-800">
-              {IS_SORB ? "SORB Interest Form" : "U.S. Army Interest Form"}
-            </CardTitle>
-            <CardDescription className="text-base">
-              {IS_SORB
-                ? (recruiterCode
-                    ? "🎯 This form is linked to your SORB recruiter"
-                    : "Complete this form to express interest in Special Operations pathways")
-                : (recruiterCode
-                    ? "🎯 This form is linked to your recruiter"
-                    : "Complete this form to learn more about opportunities in the Army")}
+            <CardTitle className="text-2xl font-bold text-green-800">{t.pageTitle}</CardTitle>
+            <CardDescription>
+              {recruiterCode ? t.pageSubLinked : t.pageSubDefault}
             </CardDescription>
           </CardHeader>
+
           <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-5">
               {error && (
                 <Alert variant="destructive">
-                  <AlertCircle className="h-4 h-4" />
+                  <AlertCircle className="h-4 w-4" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
 
-              {/* Personal Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                {t.sectionPersonal}
+              </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name *</Label>
-                    <Input
-                      id="firstName"
-                      required
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="middleName">Middle Name</Label>
-                    <Input
-                      id="middleName"
-                      value={formData.middleName}
-                      onChange={(e) => setFormData({ ...formData, middleName: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name *</Label>
-                    <Input
-                      id="lastName"
-                      required
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    />
-                  </div>
+              {/* Name row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="firstName">
+                    {t.firstName} <span className="text-red-500">{t.required}</span>
+                  </Label>
+                  <Input
+                    id="firstName"
+                    required
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  />
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-                    <Input
-                      id="dateOfBirth"
-                      type="date"
-                      required
-                      value={formData.dateOfBirth}
-                      onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    />
-                  </div>
+                <div className="space-y-1">
+                  <Label htmlFor="lastName">
+                    {t.lastName} <span className="text-red-500">{t.required}</span>
+                  </Label>
+                  <Input
+                    id="lastName"
+                    required
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  />
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number *</Label>
+              {/* Age + Phone row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="age">
+                    {t.age} <span className="text-red-500">{t.required}</span>
+                  </Label>
+                  <Input
+                    id="age"
+                    type="number"
+                    min={16}
+                    max={60}
+                    required
+                    placeholder={t.agePlaceholder}
+                    value={formData.age}
+                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="phone">
+                    {t.phone} <span className="text-red-500">{t.required}</span>
+                  </Label>
                   <Input
                     id="phone"
                     type="tel"
                     required
-                    placeholder="555-123-4567"
+                    placeholder={t.phonePlaceholder}
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   />
                 </div>
               </div>
 
-              {/* Education & Background */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">Background</h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="educationLevel">Education Level *</Label>
-                    <Select
-                      value={formData.educationLevel}
-                      onValueChange={(value) => setFormData({ ...formData, educationLevel: value })}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select education level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="high_school">High School Diploma/GED</SelectItem>
-                        <SelectItem value="some_college">Some College</SelectItem>
-                        <SelectItem value="associates">Associate's Degree</SelectItem>
-                        <SelectItem value="bachelors">Bachelor's Degree</SelectItem>
-                        <SelectItem value="masters">Master's Degree or Higher</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="hasDriversLicense">Driver's License *</Label>
-                    <Select
-                      value={formData.hasDriversLicense}
-                      onValueChange={(value) => setFormData({ ...formData, hasDriversLicense: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="yes">Yes</SelectItem>
-                        <SelectItem value="no">No</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {!IS_SORB && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="hasPriorService">Prior Military Service *</Label>
-                      <Select
-                        value={formData.hasPriorService}
-                        onValueChange={(value) => setFormData({ ...formData, hasPriorService: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="no">No</SelectItem>
-                          <SelectItem value="yes">Yes</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {formData.hasPriorService === "yes" && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="priorServiceBranch">Branch</Label>
-                          <Input
-                            id="priorServiceBranch"
-                            value={formData.priorServiceBranch}
-                            onChange={(e) => setFormData({ ...formData, priorServiceBranch: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="priorServiceYears">Years Served</Label>
-                          <Input
-                            id="priorServiceYears"
-                            type="number"
-                            min="0"
-                            value={formData.priorServiceYears}
-                            onChange={(e) => setFormData({ ...formData, priorServiceYears: e.target.value })}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
+              {/* Email */}
+              <div className="space-y-1">
+                <Label htmlFor="email">
+                  {t.email} <span className="text-red-500">{t.required}</span>
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
               </div>
 
-              {/* Additional Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">Additional Information</h3>
-
-                <div className="space-y-2">
-                  <Label htmlFor="preferredMOS">Preferred MOS (Military Occupational Specialty)</Label>
-                  <Input
-                    id="preferredMOS"
-                    placeholder={IS_SORB ? "e.g., 11B, 68W, 35F" : "e.g., Infantry, Medical, Intelligence"}
-                    value={formData.preferredMOS}
-                    onChange={(e) => setFormData({ ...formData, preferredMOS: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="availability">When are you available to start? *</Label>
-                  <Select
-                    value={formData.availability}
-                    onValueChange={(value) => setFormData({ ...formData, availability: value })}
-                    required
-                  >
-                    <SelectTrigger 
-                      id="availability"
-                      className="w-full min-h-[44px] touch-manipulation sm:min-h-[36px]"
-                    >
-                      <SelectValue placeholder="Select availability" />
-                    </SelectTrigger>
-                    <SelectContent 
-                      position="popper"
-                      side="bottom"
-                      align="start"
-                      className="z-[100] w-[var(--radix-select-trigger-width)] max-h-[300px]"
-                    >
-                      <SelectItem value="immediate">Immediately</SelectItem>
-                      <SelectItem value="1_month">Within 1 Month</SelectItem>
-                      <SelectItem value="3_months">Within 3 Months</SelectItem>
-                      <SelectItem value="6_months">Within 6 Months</SelectItem>
-                      <SelectItem value="flexible">Flexible</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="additionalNotes">Additional Notes</Label>
-                  <Textarea
-                    id="additionalNotes"
-                    placeholder="Any questions or additional information"
-                    value={formData.additionalNotes}
-                    onChange={(e) => setFormData({ ...formData, additionalNotes: e.target.value })}
-                  />
-                </div>
+              {/* Job category */}
+              <div className="space-y-1 pt-1">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                  {t.sectionJob}
+                </h3>
+                <Label htmlFor="jobCategory">
+                  {t.jobCategory} <span className="text-red-500">{t.required}</span>
+                </Label>
+                <Select
+                  value={formData.jobCategory}
+                  onValueChange={(v) => setFormData({ ...formData, jobCategory: v })}
+                  required
+                >
+                  <SelectTrigger id="jobCategory" className="w-full min-h-[44px]">
+                    <SelectValue placeholder={t.jobPlaceholder} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {JOB_CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {lang === "en" ? c.en : c.es}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-sm text-yellow-800">
-                <strong>Important:</strong>{" "}
-                {IS_SORB
-                  ? "This form does not guarantee selection. It is used for interest capture, initial screening, and recruiter follow-up for Special Operations pathways."
-                  : "Submitting this form does not constitute enlistment or any commitment. It is simply a way to express interest and connect with a recruiter to learn more."}
+              {/* Disclaimer */}
+              <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg text-xs text-yellow-800">
+                <strong>{lang === "en" ? "Important: " : "Importante: "}</strong>
+                {t.disclaimer}
               </div>
 
-              <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded">
-                <strong>UNCLASSIFIED</strong> - Your information will be handled per 
-                Army regulations and the Privacy Act of 1974. SSN is NOT collected 
-                at this stage.
+              <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
+                <strong>UNCLASSIFIED</strong> — {t.privacyNote}
               </div>
             </CardContent>
 
             <div className="px-6 pb-6">
               <Button
                 type="submit"
-                className="w-full bg-green-700 hover:bg-green-800 py-6 text-lg"
-                disabled={loading}
+                className="w-full bg-green-700 hover:bg-green-800 py-6 text-base font-semibold"
+                disabled={loading || !formData.jobCategory}
               >
-                {loading
-                  ? (IS_SORB ? "Submitting Interest Form..." : "Submitting...")
-                  : (IS_SORB ? "Submit SORB Interest Form" : "Submit Interest Form")}
+                {loading ? t.submitting : t.submitBtn}
               </Button>
             </div>
           </form>
@@ -613,4 +458,3 @@ export default function ApplyPage() {
     </div>
   );
 }
-

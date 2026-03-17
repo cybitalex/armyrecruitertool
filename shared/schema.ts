@@ -116,12 +116,20 @@ export const insertRecruitSchema = createInsertSchema(recruits).omit({
   submittedAt: true,
   ipAddress: true,
 }).extend({
-  // Address fields were removed from the interest form; default to empty
-  // string so the NOT NULL DB constraint is satisfied without requiring them.
+  // Fields no longer collected on the minimal interest form — safe defaults.
   address: z.string().default(""),
   city: z.string().default(""),
   state: z.string().default(""),
   zipCode: z.string().default(""),
+  dateOfBirth: z.string().optional().default(""),
+  educationLevel: z.string().optional().default("not_provided"),
+  hasDriversLicense: z.string().optional().default("unknown"),
+  hasPriorService: z.string().optional().default("no"),
+  availability: z.string().optional().default("flexible"),
+  // age supplied by the minimal form; converted to approximate DOB on the server
+  age: z.number().int().min(14).max(80).optional(),
+  // job category label (UI-facing); used to populate preferredMOS for AI
+  jobCategory: z.string().optional(),
 });
 
 export type InsertRecruit = z.infer<typeof insertRecruitSchema>;
@@ -408,3 +416,22 @@ export const insertArmyMOSSchema = createInsertSchema(armyMOS).omit({
 
 export type InsertArmyMOS = z.infer<typeof insertArmyMOSSchema>;
 export type ArmyMOS = typeof armyMOS.$inferSelect;
+
+// PII Audit Log — Privacy Act of 1974 / AR 25-22 compliance
+export const piiAuditLog = pgTable("pii_audit_log", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  eventTime: timestamp("event_time", { withTimezone: true }).notNull().defaultNow(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  userName: text("user_name"),
+  ipAddress: text("ip_address"),
+  method: text("method").notNull(),
+  endpoint: text("endpoint").notNull(),
+  action: text("action").notNull(),
+  recordId: text("record_id"),
+  statusCode: integer("status_code"),
+  userAgent: text("user_agent"),
+});
+
+export type PiiAuditLog = typeof piiAuditLog.$inferSelect;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useAuth, ProtectedRoute } from "../lib/auth-context";
 import { recruits, stats, surveys, qrScanAnalytics } from "../lib/api";
 import type { Recruit, QrSurveyResponse, Station } from "@shared/schema";
@@ -52,7 +52,6 @@ function DashboardContent() {
         totalRecruits: response.totalRecruits || 0,
         qrCodeScans: response.qrCodeScans || 0,
         directEntries: response.directEntries || 0,
-        // NEW: QR scan tracking data
         qrScanTracking: response.qrScanTracking || {
           totalScans: 0,
           totalSurveyScans: 0,
@@ -63,16 +62,20 @@ function DashboardContent() {
         },
       };
     },
-    refetchInterval: 10000, // Auto-refresh every 10 seconds for faster updates
-    refetchOnWindowFocus: true, // Refetch when user returns to the tab
-    refetchOnMount: true, // Always refetch when component mounts
+    refetchInterval: 15_000,        // poll every 15s — near real-time counts
+    refetchOnWindowFocus: true,      // refresh immediately when returning to tab
+    refetchIntervalInBackground: false, // pause polling when tab is hidden
+    placeholderData: keepPreviousData, // show last counts instantly, no spinner while updating
     retry: 1,
   });
 
   const { data: recruitsData, isLoading: recruitsLoading, error: recruitsError, refetch: refetchRecruits } = useQuery({
     queryKey: ["/api/recruits"],
     queryFn: () => recruits.list(),
-    refetchInterval: 30000, // Auto-refresh every 30 seconds
+    refetchInterval: 20_000,        // poll every 20s
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: false,
+    placeholderData: keepPreviousData, // list stays visible while silently refreshing
     retry: 1,
   });
 
@@ -84,7 +87,10 @@ function DashboardContent() {
   } = useQuery({
     queryKey: ["/api/surveys/my"],
     queryFn: () => surveys.getMyResponses(),
-    refetchInterval: 60000,
+    refetchInterval: 30_000,        // surveys update less often
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: false,
+    placeholderData: keepPreviousData,
     retry: 1,
   });
 
@@ -198,6 +204,22 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* PII / Pilot Evaluation Banner — Privacy Act of 1974 notice */}
+      <div className="bg-amber-50 border-b border-amber-300 px-3 py-2">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-amber-900">
+          <span className="font-bold uppercase tracking-wide text-amber-800 shrink-0">
+            UNCLASSIFIED // FOUO — PILOT EVALUATION
+          </span>
+          <span className="hidden sm:inline text-amber-600">|</span>
+          <span>
+            This system collects and processes Personally Identifiable Information (PII) covered under the{" "}
+            <strong>Privacy Act of 1974 (5 U.S.C. § 552a)</strong> and AR 25-22.
+            Access is restricted to authorized personnel only. Data is used solely for Army recruiting evaluation purposes.
+            Unauthorized access, disclosure, or misuse is prohibited and subject to criminal/civil penalties.
+          </span>
+        </div>
+      </div>
+
       {/* Page Title Section */}
       <div className="bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 sm:px-6 lg:px-8 py-3 sm:py-4">

@@ -160,9 +160,21 @@ function ShippersPageContent() {
     mutationFn: async (id: string) => {
       await apiRequest("DELETE", `/api/recruits/${id}`);
     },
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/shippers"] });
+      await queryClient.cancelQueries({ queryKey: ["/api/recruits"] });
+      // Instantly remove from both caches
+      queryClient.setQueryData<any[]>(["/api/shippers"], (old) =>
+        old ? old.filter((r) => r.id !== id) : []
+      );
+      queryClient.setQueryData<any[]>(["/api/recruits"], (old) =>
+        old ? old.filter((r) => r.id !== id) : []
+      );
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/shippers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/recruits"] });
+      queryClient.invalidateQueries({ queryKey: ["/recruiter/stats"] });
       toast({
         title: "Shipper Deleted",
         description: "The recruit has been removed from the system.",
@@ -171,6 +183,8 @@ function ShippersPageContent() {
       setShipperToDelete(null);
     },
     onError: (error: Error) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/shippers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/recruits"] });
       toast({
         title: "Delete Failed",
         description: error.message,

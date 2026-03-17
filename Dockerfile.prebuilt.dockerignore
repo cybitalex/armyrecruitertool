@@ -1,0 +1,15 @@
+npm-debug.log
+logs
+*.log
+.git
+.gitignore
+.env
+.env.local
+.DS_Store
+.vscode
+.idea
+ecosystem.config.cjs
+PM2_SETUP.md
+REVERSE_PROXY_SETUP.md
+setup-pm2.sh
+setup-reverse-proxy.sh

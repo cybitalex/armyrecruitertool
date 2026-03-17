@@ -130,6 +130,12 @@ export const recruits = {
       body: JSON.stringify({ status }),
     });
   },
+
+  delete: async (id: string) => {
+    return apiCall<{ success: boolean }>(`/recruits/${id}`, {
+      method: "DELETE",
+    });
+  },
 };
 
 // Recruiter API
@@ -157,6 +163,16 @@ export const stats = {
       totalRecruits: number;
       qrCodeScans: number;
       directEntries: number;
+      qrScanTracking: {
+        totalScans: number;
+        totalSurveyScans: number;
+        totalSweepstakesScans: number;
+        applicationsFromScans: number;
+        surveysFromScans: number;
+        sweepstakesFromScans: number;
+        totalConverted: number;
+        conversionRate: number;
+      };
       recentRecruits: Recruit[];
     }>("/recruiter/stats");
   },
@@ -288,7 +304,7 @@ export const stationCommander = {
 
 // Location QR Codes API
 export const locationQRCodes = {
-  create: async (data: { locationLabel: string; qrType: 'application' | 'survey' }) => {
+  create: async (data: { locationLabel: string; qrType: "application" | "survey" | "sweepstakes" }) => {
     return apiCall<{
       id: string;
       locationLabel: string;
@@ -325,6 +341,65 @@ export const locationQRCodes = {
   },
 };
 
+// SORB (Special Operations Recruiting Battalion) API
+export const sorb = {
+  getAnalytics: async (filters?: {
+    station?: string[];
+    sorbCo?: string[];
+    logAttempt?: string[];
+    gtMin?: number;
+    gtMax?: number;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.station?.length) filters.station.forEach((s) => params.append("station", s));
+    if (filters?.sorbCo?.length) filters.sorbCo.forEach((c) => params.append("sorbCo", c));
+    if (filters?.logAttempt?.length) filters.logAttempt.forEach((a) => params.append("logAttempt", a));
+    if (filters?.gtMin != null) params.set("gtMin", String(filters.gtMin));
+    if (filters?.gtMax != null) params.set("gtMax", String(filters.gtMax));
+    const qs = params.toString();
+    return apiCall<{
+      funnel: Array<{ label: string; count: number; percent: number }>;
+      totalQM: number;
+      totalLeadsAttempted: number;
+      totalContacts: number;
+      appointmentsMade: number;
+      percentAttempted: number;
+      percentContacted: number;
+      stations: string[];
+      sorbCompanies: string[];
+      logAttemptTypes: string[];
+    }>(`/sorb/analytics${qs ? `?${qs}` : ""}`);
+  },
+
+  getLeads: async (filters?: {
+    station?: string[];
+    sorbCo?: string[];
+    logAttempt?: string[];
+    gtMin?: number;
+    gtMax?: number;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.station?.length) filters.station.forEach((s) => params.append("station", s));
+    if (filters?.sorbCo?.length) filters.sorbCo.forEach((c) => params.append("sorbCo", c));
+    if (filters?.logAttempt?.length) filters.logAttempt.forEach((a) => params.append("logAttempt", a));
+    if (filters?.gtMin != null) params.set("gtMin", String(filters.gtMin));
+    if (filters?.gtMax != null) params.set("gtMax", String(filters.gtMax));
+    const qs = params.toString();
+    return apiCall<Array<{
+      rank: string;
+      lastName: string;
+      gt: number;
+      mos: string;
+      post: string;
+      phone: string;
+      unit: string;
+      logAttempt: string;
+      contacted: "Y" | "N";
+      sorbCo: string;
+    }>>(`/sorb/leads${qs ? `?${qs}` : ""}`);
+  },
+};
+
 // QR Scan Analytics API
 export const qrScanAnalytics = {
   getAnalytics: async () => {
@@ -341,12 +416,40 @@ export const qrScanAnalytics = {
           converted: boolean;
           conversionType: string | null;
           ipAddress: string | null;
+          approxLocation: {
+            country: string | null;
+            region: string | null;
+            city: string | null;
+            latitude: string | null;
+            longitude: string | null;
+            timezone: string | null;
+            isp: string | null;
+          };
         }>;
       }>;
       totalScans: number;
       totalConverted: number;
       overallConversionRate: number;
     }>("/qr-scans/analytics");
+  },
+};
+
+export const sweepstakes = {
+  submit: async (data: {
+    recruiterCode: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    interest?: string;
+  }) => {
+    return apiCall<{ success: boolean; recruitId: string; message: string }>(
+      "/sweepstakes",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    );
   },
 };
 

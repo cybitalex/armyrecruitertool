@@ -27,51 +27,78 @@ declare module "http" {
   }
 }
 
-// Security Headers Middleware (NIPR Compliant)
+// Security Headers Middleware — Privacy Act / DoD PII compliant for pilot evaluation
 app.use((req, res, next) => {
-  // Prevent clickjacking attacks
+  // Prevent clickjacking
   res.setHeader("X-Frame-Options", "SAMEORIGIN");
-
-  // Prevent MIME type sniffing
+  // Prevent MIME sniffing
   res.setHeader("X-Content-Type-Options", "nosniff");
-
-  // Enable XSS protection
+  // Legacy XSS protection
   res.setHeader("X-XSS-Protection", "1; mode=block");
-
-  // Control referrer information
+  // Strict referrer — no PII leaks via Referer header
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-
+  // HSTS — force HTTPS for 1 year, include subdomains
+  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+  // Restrict browser feature access (camera, microphone, geolocation)
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()");
   // Content Security Policy
   res.setHeader(
     "Content-Security-Policy",
     "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://plausible.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://www.eventbriteapi.com https://maps.googleapis.com https://overpass-api.de https://api.groq.com https://plausible.io;"
   );
-
-  // Add security attribution
+  // System identification headers
   res.setHeader("X-Developed-By", "SGT Alex Moran - CyBit Devs");
-  res.setHeader("X-System-Classification", "UNCLASSIFIED");
-
+  res.setHeader("X-System-Classification", "UNCLASSIFIED//FOR OFFICIAL USE ONLY");
+  // Privacy Act / pilot status markers
+  res.setHeader("X-Privacy-Act", "5-USC-552a");
+  res.setHeader("X-System-Status", "PILOT-EVALUATION");
+  // Remove fingerprinting headers
+  res.removeHeader("X-Powered-By");
   next();
 });
 
-// Rate limiting for API routes (basic implementation)
+// ── Rate Limiting ────────────────────────────────────────────────────────────
+// General API: 100 req/min per IP
+// PII-submission routes (/api/recruits POST, /api/apply): 10 req/10-min per IP
+// This protects against bulk scraping and brute-force submission of PII forms.
 const requestCounts = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT = 100; // requests per minute
-const RATE_WINDOW = 60 * 1000; // 1 minute
+const piiSubmitCounts = new Map<string, { count: number; resetTime: number }>();
+
+const RATE_LIMIT = 100;
+const RATE_WINDOW = 60 * 1000;
+const PII_SUBMIT_LIMIT = 10;
+const PII_SUBMIT_WINDOW = 10 * 60 * 1000; // 10 minutes
 
 app.use("/api/*", (req, res, next) => {
   const clientIp = req.ip || req.socket.remoteAddress || "unknown";
   const now = Date.now();
 
-  let clientData = requestCounts.get(clientIp);
+  // Stricter limit for PII-collecting POST endpoints
+  const isPiiSubmit =
+    (req.method === "POST" && req.path === "/recruits") ||
+    (req.method === "POST" && req.path.startsWith("/apply"));
 
+  if (isPiiSubmit) {
+    let pd = piiSubmitCounts.get(clientIp);
+    if (!pd || now > pd.resetTime) {
+      pd = { count: 0, resetTime: now + PII_SUBMIT_WINDOW };
+      piiSubmitCounts.set(clientIp, pd);
+    }
+    pd.count++;
+    if (pd.count > PII_SUBMIT_LIMIT) {
+      return res.status(429).json({
+        message: "Submission limit reached. Please wait before submitting again.",
+        retryAfter: Math.ceil((pd.resetTime - now) / 1000),
+      });
+    }
+  }
+
+  let clientData = requestCounts.get(clientIp);
   if (!clientData || now > clientData.resetTime) {
     clientData = { count: 0, resetTime: now + RATE_WINDOW };
     requestCounts.set(clientIp, clientData);
   }
-
   clientData.count++;
-
   if (clientData.count > RATE_LIMIT) {
     return res.status(429).json({
       message: "Too many requests. Please try again later.",
@@ -144,6 +171,27 @@ app.use((req, res, next) => {
   next();
 });
 
+// ── PII-safe request/response logger ─────────────────────────────────────────
+// PII fields are redacted before any response body reaches the log stream,
+// satisfying Privacy Act of 1974 requirements for system/audit logs.
+const PII_FIELDS = new Set([
+  "firstName", "lastName", "fullName", "name",
+  "email", "phone", "phoneNumber",
+  "address", "city", "state", "zipCode",
+  "dateOfBirth", "ssn", "password", "token",
+  "preferredMOS", "notes", "additionalNotes",
+]);
+
+function redactPii(obj: unknown, depth = 0): unknown {
+  if (depth > 4 || obj === null || typeof obj !== "object") return obj;
+  if (Array.isArray(obj)) return `[Array(${obj.length})]`;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    out[k] = PII_FIELDS.has(k) ? "[REDACTED]" : redactPii(v, depth + 1);
+  }
+  return out;
+}
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -160,13 +208,10 @@ app.use((req, res, next) => {
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        const safe = redactPii(capturedJsonResponse);
+        logLine += ` :: ${JSON.stringify(safe)}`;
       }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
+      if (logLine.length > 120) logLine = logLine.slice(0, 119) + "…";
       log(logLine);
     }
   });
