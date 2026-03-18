@@ -116,7 +116,9 @@ export const insertRecruitSchema = createInsertSchema(recruits).omit({
   submittedAt: true,
   ipAddress: true,
 }).extend({
-  // Fields no longer collected on the minimal interest form — safe defaults.
+  // Fields not collected on the minimal QR/interest form — safe server-side defaults.
+  lastName: z.string().optional().default("—"),
+  email: z.string().optional().default(""),
   address: z.string().default(""),
   city: z.string().default(""),
   state: z.string().default(""),
@@ -126,7 +128,7 @@ export const insertRecruitSchema = createInsertSchema(recruits).omit({
   hasDriversLicense: z.string().optional().default("unknown"),
   hasPriorService: z.string().optional().default("no"),
   availability: z.string().optional().default("flexible"),
-  // age supplied by the minimal form; converted to approximate DOB on the server
+  // age optionally supplied; converted to approximate DOB on the server
   age: z.number().int().min(14).max(80).optional(),
   // job category label (UI-facing); used to populate preferredMOS for AI
   jobCategory: z.string().optional(),

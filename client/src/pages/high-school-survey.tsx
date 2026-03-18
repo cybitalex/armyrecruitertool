@@ -53,7 +53,6 @@ export default function HighSchoolSurveyPage() {
     consideringCollegeOrVocational: "" as ConsideringFuture,
 
     name: "",
-    email: "",
     phone: "",
   });
 
@@ -129,7 +128,6 @@ export default function HighSchoolSurveyPage() {
 
     lines.push("", "--- CONTACT (optional) ---", "");
     lines.push("Name:", formData.name || "—");
-    lines.push("Email:", formData.email || "—");
     lines.push("Phone:", formData.phone || "—");
     return lines.join("\n");
   };
@@ -175,7 +173,7 @@ export default function HighSchoolSurveyPage() {
       await surveys.submit({
         recruiterCode,
         name: formData.name || "",
-        email: formData.email || "",
+        email: "",
         phone: formData.phone || "",
         rating: passionToRating() || 1,
         feedback: buildFeedback(),
@@ -456,17 +454,15 @@ export default function HighSchoolSurveyPage() {
               <div className="border-t pt-4 space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900">Contact information (optional)</h3>
                 <p className="text-sm text-gray-600">Leave your info if you&apos;d like a recruiter to follow up with options that fit your plans.</p>
-                <div className="space-y-2">
-                  <Label htmlFor="hs-name">Name</Label>
-                  <Input id="hs-name" value={formData.name} onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="hs-email">Email</Label>
-                  <Input id="hs-email" type="email" value={formData.email} onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="hs-phone">Phone</Label>
-                  <Input id="hs-phone" type="tel" placeholder="555-123-4567" value={formData.phone} onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="hs-name">First Name</Label>
+                    <Input id="hs-name" value={formData.name} onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="hs-phone">Phone</Label>
+                    <Input id="hs-phone" type="tel" placeholder="555-123-4567" value={formData.phone} onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))} />
+                  </div>
                 </div>
               </div>
 

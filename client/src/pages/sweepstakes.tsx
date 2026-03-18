@@ -4,7 +4,6 @@ import { recruiter as recruiterApi, sweepstakes } from "../lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
-import { Textarea } from "../components/ui/textarea";
 import { Button } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { CheckCircle2, Gift, User as UserIcon } from "lucide-react";
@@ -17,10 +16,7 @@ export default function SweepstakesPage() {
   const [recruiterInfo, setRecruiterInfo] = useState<Partial<User> | null>(null);
   const [formData, setFormData] = useState({
     firstName: "",
-    lastName: "",
-    email: "",
     phone: "",
-    interest: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -63,7 +59,11 @@ export default function SweepstakesPage() {
       if (!recruiterCode) throw new Error("Missing recruiter code");
       await sweepstakes.submit({
         recruiterCode,
-        ...formData,
+        firstName: formData.firstName,
+        lastName: "—",
+        email: "",
+        phone: formData.phone,
+        interest: "",
       });
       setSuccess(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -152,35 +152,10 @@ export default function SweepstakesPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="lastName">Last Name *</Label>
-                  <Input
-                    id="lastName"
-                    required
-                    value={formData.lastName}
-                    onChange={(e) =>
-                      setFormData((p) => ({ ...p, lastName: e.target.value }))
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData((p) => ({ ...p, email: e.target.value }))
-                    }
-                  />
-                </div>
-                <div>
                   <Label htmlFor="phone">Phone *</Label>
                   <Input
                     id="phone"
+                    type="tel"
                     required
                     value={formData.phone}
                     onChange={(e) =>
@@ -188,18 +163,6 @@ export default function SweepstakesPage() {
                     }
                   />
                 </div>
-              </div>
-
-              <div>
-                <Label htmlFor="interest">What interests you most? (optional)</Label>
-                <Textarea
-                  id="interest"
-                  value={formData.interest}
-                  onChange={(e) =>
-                    setFormData((p) => ({ ...p, interest: e.target.value }))
-                  }
-                  placeholder="Special Operations, benefits, next steps, etc."
-                />
               </div>
 
               <Button

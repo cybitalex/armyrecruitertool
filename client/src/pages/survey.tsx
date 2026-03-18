@@ -24,7 +24,6 @@ export default function SurveyPage() {
 
   const [formData, setFormData] = useState({
     name: "",
-    email: "",
     phone: "",
     rating: 0,
     feedback: "",
@@ -85,7 +84,7 @@ export default function SurveyPage() {
       await surveys.submit({
         recruiterCode,
         name: formData.name,
-        email: formData.email,
+        email: "",
         phone: formData.phone,
         rating: formData.rating,
         feedback: formData.feedback || undefined,
@@ -217,38 +216,30 @@ export default function SurveyPage() {
                 <p className="text-xs text-gray-500 text-center">1 = Poor &nbsp;·&nbsp; 5 = Excellent</p>
               </div>
 
-              {/* Contact Info (optional) */}
+              {/* Contact Info */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900">Basic Contact Information</h3>
 
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name (optional)</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                  />
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">First Name (optional)</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email (optional)</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number (optional)</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="555-123-4567"
-                    value={formData.phone}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number (optional)</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="555-123-4567"
+                      value={formData.phone}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                    />
+                  </div>
                 </div>
               </div>
 

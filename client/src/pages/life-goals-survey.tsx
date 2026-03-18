@@ -24,7 +24,6 @@ export default function LifeGoalsSurveyPage() {
 
   const [formData, setFormData] = useState({
     name: "",
-    email: "",
     phone: "",
     rating: 0,
     mainGoal: "" as
@@ -198,7 +197,7 @@ ${formData.followUpPermission === "yes" ? "Yes, okay to text" : "No / not right 
       await surveys.submit({
         recruiterCode,
         name: formData.name,
-        email: formData.email,
+        email: "",
         phone: formData.phone,
         rating: formData.rating >= 1 && formData.rating <= 5 ? formData.rating : 0,
         feedback: combinedFeedback,
@@ -526,34 +525,26 @@ ${formData.followUpPermission === "yes" ? "Yes, okay to text" : "No / not right 
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900">Your Contact Info</h3>
 
-                <div className="space-y-2">
-                  <Label htmlFor="lg-name">Name (optional)</Label>
-                  <Input
-                    id="lg-name"
-                    value={formData.name}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                  />
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="lg-name">First Name (optional)</Label>
+                    <Input
+                      id="lg-name"
+                      value={formData.name}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="lg-email">Email (optional)</Label>
-                  <Input
-                    id="lg-email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="lg-phone">Phone Number (optional)</Label>
-                  <Input
-                    id="lg-phone"
-                    type="tel"
-                    placeholder="555-123-4567"
-                    value={formData.phone}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="lg-phone">Phone Number (optional)</Label>
+                    <Input
+                      id="lg-phone"
+                      type="tel"
+                      placeholder="555-123-4567"
+                      value={formData.phone}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                    />
+                  </div>
                 </div>
               </div>
 

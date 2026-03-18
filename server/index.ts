@@ -40,7 +40,7 @@ app.use((req, res, next) => {
   // HSTS — force HTTPS for 1 year, include subdomains
   res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
   // Restrict browser feature access (camera, microphone, geolocation)
-  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(self), payment=(), usb=()");
   // Content Security Policy
   res.setHeader(
     "Content-Security-Policy",

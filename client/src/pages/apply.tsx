@@ -5,12 +5,10 @@ import { recruits, recruiter as recruiterApi } from "../lib/api";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { CheckCircle2, AlertCircle, User as UserIcon, Globe } from "lucide-react";
 import type { User } from "@shared/schema";
-import { ARMY_RANKS } from "@shared/constants";
 
 // ──────────────────────────────────────────────
 // Job category → AI description mapping
@@ -47,35 +45,27 @@ const T = {
     benefit3Desc: "Over 150+ career fields with fully paid training and industry-recognized certifications.",
     benefit4Title: "Pay & Financial Benefits",
     benefit4Desc: "Competitive base pay, housing/food allowances, 30 days paid vacation, enlistment bonuses up to $50,000, and a federal pension after 20 years.",
-    ctaText: "⬇️ Fill out the form below to learn more — no commitment required",
-    sectionPersonal: "Your Information",
+    ctaText: "⬇️ Fill out the quick form below — no commitment required",
+    sectionPersonal: "Quick Contact",
     firstName: "First Name",
-    lastName: "Last Name",
-    age: "Age",
-    agePlaceholder: "e.g. 21",
     phone: "Phone Number",
     phonePlaceholder: "555-123-4567",
-    email: "Email Address",
-    sectionJob: "Area of Interest",
-    jobCategory: "What type of job are you most interested in?",
-    jobPlaceholder: "Select a job category",
-    disclaimer: "Submitting this form does not constitute enlistment or any commitment. It is simply a way to express interest and connect with a recruiter to learn more.",
-    privacyNote: "UNCLASSIFIED — Your information will be handled per Army regulations and the Privacy Act of 1974. SSN is NOT collected at this stage.",
-    submitBtn: "Submit Interest Form",
+    disclaimer: "Submitting this form does not constitute enlistment or any commitment. A recruiter will reach out to learn more about you.",
+    privacyNote: "UNCLASSIFIED — Handled per Army regulations and the Privacy Act of 1974.",
+    submitBtn: "Connect With a Recruiter",
     submitting: "Submitting...",
-    successTitle: "Form Submitted! 🎖️",
-    successDesc: "Thank you for your interest in learning more about the U.S. Army",
-    successBody: "Your information has been successfully submitted. A recruiter will reach out to you soon to answer any questions and share more details.",
-    successLinked: "✅ Your form has been linked to your recruiter",
-    successEmail: "Check your email for confirmation",
+    successTitle: "We'll Be in Touch! 🎖️",
+    successDesc: "Thank you for your interest in the U.S. Army",
+    successBody: "A recruiter will reach out to you shortly.",
+    successLinked: "✅ Your info has been linked to your recruiter",
     required: "*",
   },
   es: {
     langToggle: "English",
     pageTitle: "Formulario de Interés — Ejército de EE.UU.",
     pageSubLinked: "🎯 Este formulario está vinculado a su reclutador",
-    pageSubDefault: "Complete este formulario para obtener más información sobre las oportunidades en el Ejército",
-    sentTo: "Su solicitud será enviada a:",
+    pageSubDefault: "Complete este formulario para conectarse con un reclutador",
+    sentTo: "Su información será enviada a:",
     whyTitle: "Descubra lo que el Ejército de EE.UU. tiene para ofrecer",
     benefit1Title: "Beneficios Educativos",
     benefit1Desc: "Más de $250,000 en valor educativo a través del GI Bill® — cubre el 100% de la matrícula, vivienda y libros.",
@@ -85,27 +75,19 @@ const T = {
     benefit3Desc: "Más de 150 campos de carrera con capacitación pagada y certificaciones reconocidas por la industria.",
     benefit4Title: "Pago y Beneficios Financieros",
     benefit4Desc: "Salario base competitivo, subsidios de vivienda y comida, 30 días de vacaciones pagadas, bonos de alistamiento de hasta $50,000.",
-    ctaText: "⬇️ Complete el formulario a continuación para obtener más información — sin compromiso",
-    sectionPersonal: "Su Información",
+    ctaText: "⬇️ Complete el formulario rápido — sin compromiso",
+    sectionPersonal: "Contacto Rápido",
     firstName: "Nombre",
-    lastName: "Apellido",
-    age: "Edad",
-    agePlaceholder: "ej. 21",
     phone: "Número de Teléfono",
     phonePlaceholder: "555-123-4567",
-    email: "Correo Electrónico",
-    sectionJob: "Área de Interés",
-    jobCategory: "¿Qué tipo de trabajo le interesa más?",
-    jobPlaceholder: "Seleccione una categoría",
-    disclaimer: "Enviar este formulario no constituye alistamiento ni ningún compromiso. Es simplemente una forma de expresar interés y conectarse con un reclutador.",
-    privacyNote: "NO CLASIFICADO — Su información será manejada según las regulaciones del Ejército y la Ley de Privacidad de 1974. El SSN NO se recopila en esta etapa.",
-    submitBtn: "Enviar Formulario de Interés",
+    disclaimer: "Enviar este formulario no constituye alistamiento. Un reclutador se comunicará con usted para conocerle mejor.",
+    privacyNote: "NO CLASIFICADO — Manejado según las regulaciones del Ejército y la Ley de Privacidad de 1974.",
+    submitBtn: "Conectar Con un Reclutador",
     submitting: "Enviando...",
-    successTitle: "¡Formulario Enviado! 🎖️",
-    successDesc: "Gracias por su interés en obtener más información sobre el Ejército de EE.UU.",
-    successBody: "Su información ha sido enviada exitosamente. Un reclutador se pondrá en contacto con usted pronto.",
-    successLinked: "✅ Su formulario ha sido vinculado a su reclutador",
-    successEmail: "Revise su correo electrónico para confirmar",
+    successTitle: "¡Nos pondremos en contacto! 🎖️",
+    successDesc: "Gracias por su interés en el Ejército de EE.UU.",
+    successBody: "Un reclutador se comunicará con usted en breve.",
+    successLinked: "✅ Su información ha sido vinculada a su reclutador",
     required: "*",
   },
 } as const;
@@ -147,11 +129,7 @@ export default function ApplyPage() {
 
   const [formData, setFormData] = useState({
     firstName: "",
-    lastName: "",
-    age: "",
     phone: "",
-    email: "",
-    jobCategory: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -164,15 +142,10 @@ export default function ApplyPage() {
     setLoading(true);
 
     try {
-      const category = JOB_CATEGORIES.find((c) => c.value === formData.jobCategory);
       const payload = {
         firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
-        age: formData.age ? parseInt(formData.age) : undefined,
+        lastName: "—",          // placeholder — not collected at this stage
         phone: formData.phone.trim(),
-        email: formData.email.trim(),
-        preferredMOS: category?.ai ?? "",
-        jobCategory: formData.jobCategory,
         recruiterCode: recruiterCode || undefined,
       };
 
@@ -217,7 +190,6 @@ export default function ApplyPage() {
                 <p className="text-sm text-green-800">{t.successLinked}</p>
               </div>
             )}
-            <p className="text-xs text-gray-500">{t.successEmail} ({formData.email})</p>
           </CardContent>
         </Card>
       </div>
@@ -322,7 +294,7 @@ export default function ApplyPage() {
           </CardHeader>
 
           <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-5">
+            <CardContent className="space-y-4">
               {error && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
@@ -334,108 +306,37 @@ export default function ApplyPage() {
                 {t.sectionPersonal}
               </h3>
 
-              {/* Name row */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label htmlFor="firstName">
-                    {t.firstName} <span className="text-red-500">{t.required}</span>
-                  </Label>
-                  <Input
-                    id="firstName"
-                    required
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="lastName">
-                    {t.lastName} <span className="text-red-500">{t.required}</span>
-                  </Label>
-                  <Input
-                    id="lastName"
-                    required
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* Age + Phone row */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label htmlFor="age">
-                    {t.age} <span className="text-red-500">{t.required}</span>
-                  </Label>
-                  <Input
-                    id="age"
-                    type="number"
-                    min={16}
-                    max={60}
-                    required
-                    placeholder={t.agePlaceholder}
-                    value={formData.age}
-                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="phone">
-                    {t.phone} <span className="text-red-500">{t.required}</span>
-                  </Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    required
-                    placeholder={t.phonePlaceholder}
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* Email */}
+              {/* First Name */}
               <div className="space-y-1">
-                <Label htmlFor="email">
-                  {t.email} <span className="text-red-500">{t.required}</span>
+                <Label htmlFor="firstName">
+                  {t.firstName} <span className="text-red-500">{t.required}</span>
                 </Label>
                 <Input
-                  id="email"
-                  type="email"
+                  id="firstName"
                   required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  autoComplete="given-name"
+                  className="text-base py-5"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 />
               </div>
 
-              {/* Job category */}
-              <div className="space-y-1 pt-1">
-                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">
-                  {t.sectionJob}
-                </h3>
-                <Label htmlFor="jobCategory">
-                  {t.jobCategory} <span className="text-red-500">{t.required}</span>
+              {/* Phone */}
+              <div className="space-y-1">
+                <Label htmlFor="phone">
+                  {t.phone} <span className="text-red-500">{t.required}</span>
                 </Label>
-                <Select
-                  value={formData.jobCategory}
-                  onValueChange={(v) => setFormData({ ...formData, jobCategory: v })}
+                <Input
+                  id="phone"
+                  type="tel"
                   required
-                >
-                  <SelectTrigger id="jobCategory" className="w-full min-h-[44px]">
-                    <SelectValue placeholder={t.jobPlaceholder} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {JOB_CATEGORIES.map((c) => (
-                      <SelectItem key={c.value} value={c.value}>
-                        {lang === "en" ? c.en : c.es}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Disclaimer */}
-              <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg text-xs text-yellow-800">
-                <strong>{lang === "en" ? "Important: " : "Importante: "}</strong>
-                {t.disclaimer}
+                  autoComplete="tel"
+                  inputMode="tel"
+                  placeholder={t.phonePlaceholder}
+                  className="text-base py-5"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
               </div>
 
               <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
@@ -447,7 +348,7 @@ export default function ApplyPage() {
               <Button
                 type="submit"
                 className="w-full bg-green-700 hover:bg-green-800 py-6 text-base font-semibold"
-                disabled={loading || !formData.jobCategory}
+                disabled={loading}
               >
                 {loading ? t.submitting : t.submitBtn}
               </Button>
