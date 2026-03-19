@@ -1619,10 +1619,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Location label is required" });
       }
 
-      if (!["application", "survey"].includes(qrType)) {
+      if (!["application", "survey", "life_goals", "high_school", "sweepstakes"].includes(qrType)) {
         return res
           .status(400)
-          .json({ error: "QR type must be 'application' or 'survey'" });
+          .json({ error: "Invalid QR type" });
       }
 
       // Generate unique QR code identifier
@@ -1641,10 +1641,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .returning();
 
       // Generate QR code image
+      const { generateLifeGoalsQRCodeImage, generateHighSchoolSurveyQRCodeImage, generateSweepstakesQRCodeImage: generateSweepstakesQR } = await import("./auth");
       const qrCodeImage =
-        qrType === "application"
-          ? await generateQRCodeImage(qrCodeId)
-          : await generateSurveyQRCodeImage(qrCodeId);
+        qrType === "life_goals"
+          ? await generateLifeGoalsQRCodeImage(qrCodeId)
+          : qrType === "high_school"
+          ? await generateHighSchoolSurveyQRCodeImage(qrCodeId)
+          : qrType === "sweepstakes"
+          ? await generateSweepstakesQR(qrCodeId)
+          : qrType === "survey"
+          ? await generateSurveyQRCodeImage(qrCodeId)
+          : await generateQRCodeImage(qrCodeId);
 
       res.json({
         id: locationQR.id,
@@ -1706,10 +1713,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate QR code image
+      const { generateLifeGoalsQRCodeImage: genLG, generateHighSchoolSurveyQRCodeImage: genHS, generateSweepstakesQRCodeImage: genSW } = await import("./auth");
       const qrCodeImage =
-        locationQR.qrType === "application"
-          ? await generateQRCodeImage(locationQR.qrCode)
-          : await generateSurveyQRCodeImage(locationQR.qrCode);
+        locationQR.qrType === "life_goals"
+          ? await genLG(locationQR.qrCode)
+          : locationQR.qrType === "high_school"
+          ? await genHS(locationQR.qrCode)
+          : locationQR.qrType === "sweepstakes"
+          ? await genSW(locationQR.qrCode)
+          : locationQR.qrType === "survey"
+          ? await generateSurveyQRCodeImage(locationQR.qrCode)
+          : await generateQRCodeImage(locationQR.qrCode);
 
       res.json({ qrCode: qrCodeImage });
     } catch (error) {
@@ -1835,6 +1849,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             converted: boolean;
             conversionType: string | null;
             ipAddress: string | null;
+            approxLocation: {
+              city: string | null;
+              region: string | null;
+              country: string | null;
+            };
           }>;
         }
       > = {};
@@ -1886,6 +1905,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               : "application"
             : null,
           ipAddress: scan.ipAddress,
+          approxLocation: {
+            city: scan.scanCity ?? null,
+            region: scan.scanRegion ?? null,
+            country: scan.scanCountry ?? null,
+          },
         });
       });
 
