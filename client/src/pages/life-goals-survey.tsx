@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { surveys, recruiter as recruiterApi } from "../lib/api";
 import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import {
@@ -23,8 +22,6 @@ export default function LifeGoalsSurveyPage() {
   const [recruiterInfo, setRecruiterInfo] = useState<Partial<User> | null>(null);
 
   const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
     rating: 0,
     mainGoal: "" as
       | ""
@@ -196,9 +193,9 @@ ${formData.followUpPermission === "yes" ? "Yes, okay to text" : "No / not right 
 
       await surveys.submit({
         recruiterCode,
-        name: formData.name,
+        name: "",
         email: "",
-        phone: formData.phone,
+        phone: "",
         rating: formData.rating >= 1 && formData.rating <= 5 ? formData.rating : 0,
         feedback: combinedFeedback,
         source: "life_goals_survey",
@@ -522,31 +519,6 @@ ${formData.followUpPermission === "yes" ? "Yes, okay to text" : "No / not right 
               </div>
 
               {/* Contact info (optional) */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">Your Contact Info</h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="lg-name">First Name (optional)</Label>
-                    <Input
-                      id="lg-name"
-                      value={formData.name}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="lg-phone">Phone Number (optional)</Label>
-                    <Input
-                      id="lg-phone"
-                      type="tel"
-                      placeholder="555-123-4567"
-                      value={formData.phone}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
-                    />
-                  </div>
-                </div>
-              </div>
 
               <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-sm text-yellow-800">
                 <strong>Note:</strong> This is not an enlistment form. It&apos;s only to understand your goals

@@ -116,9 +116,11 @@ export const insertRecruitSchema = createInsertSchema(recruits).omit({
   submittedAt: true,
   ipAddress: true,
 }).extend({
-  // Fields not collected on the minimal QR/interest form — safe server-side defaults.
+  // All contact fields are anonymous on public QR forms — safe server-side defaults.
+  firstName: z.string().optional().default("Anonymous"),
   lastName: z.string().optional().default("—"),
   email: z.string().optional().default(""),
+  phone: z.string().optional().default(""),
   address: z.string().default(""),
   city: z.string().default(""),
   state: z.string().default(""),

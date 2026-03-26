@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { recruiter as recruiterApi, sweepstakes } from "../lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { Label } from "../components/ui/label";
-import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { CheckCircle2, Gift, User as UserIcon } from "lucide-react";
@@ -14,10 +12,6 @@ export default function SweepstakesPage() {
   const [location] = useLocation();
   const [recruiterCode, setRecruiterCode] = useState<string | null>(null);
   const [recruiterInfo, setRecruiterInfo] = useState<Partial<User> | null>(null);
-  const [formData, setFormData] = useState({
-    firstName: "",
-    phone: "",
-  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -37,13 +31,8 @@ export default function SweepstakesPage() {
     fetch("/api/qr-scan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        qrCode: recruiterCode,
-        scanType: "sweepstakes",
-      }),
-    }).catch(() => {
-      // Non-critical for end user
-    });
+      body: JSON.stringify({ qrCode: recruiterCode, scanType: "sweepstakes" }),
+    }).catch(() => {});
 
     recruiterApi
       .getByQRCode(recruiterCode)
@@ -59,10 +48,10 @@ export default function SweepstakesPage() {
       if (!recruiterCode) throw new Error("Missing recruiter code");
       await sweepstakes.submit({
         recruiterCode,
-        firstName: formData.firstName,
+        firstName: "Anonymous",
         lastName: "—",
         email: "",
-        phone: formData.phone,
+        phone: "",
         interest: "",
       });
       setSuccess(true);
@@ -83,7 +72,7 @@ export default function SweepstakesPage() {
             <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
             <CardTitle className="text-2xl">Entry Submitted</CardTitle>
             <CardDescription>
-              You are entered for a chance to win 3D glasses.
+              You are entered for a chance to win 3D glasses. A recruiter will follow up with you.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -128,7 +117,7 @@ export default function SweepstakesPage() {
               VRS Sweepstakes Entry
             </CardTitle>
             <CardDescription>
-              Enter your info for a chance to win 3D glasses.
+              Tap the button below to enter for a chance to win 3D glasses. No personal information is collected.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -139,30 +128,8 @@ export default function SweepstakesPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="firstName">First Name *</Label>
-                  <Input
-                    id="firstName"
-                    required
-                    value={formData.firstName}
-                    onChange={(e) =>
-                      setFormData((p) => ({ ...p, firstName: e.target.value }))
-                    }
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Phone *</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    required
-                    value={formData.phone}
-                    onChange={(e) =>
-                      setFormData((p) => ({ ...p, phone: e.target.value }))
-                    }
-                  />
-                </div>
+              <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded text-center">
+                <strong>UNCLASSIFIED</strong> — No personally identifiable information (PII) is collected through this entry.
               </div>
 
               <Button

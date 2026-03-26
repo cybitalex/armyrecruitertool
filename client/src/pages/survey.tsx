@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { surveys, recruiter as recruiterApi } from "../lib/api";
 import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import {
   Card,
@@ -23,8 +21,6 @@ export default function SurveyPage() {
   const [recruiterInfo, setRecruiterInfo] = useState<Partial<User> | null>(null);
 
   const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
     rating: 0,
     feedback: "",
   });
@@ -83,9 +79,9 @@ export default function SurveyPage() {
     try {
       await surveys.submit({
         recruiterCode,
-        name: formData.name,
+        name: "",
         email: "",
-        phone: formData.phone,
+        phone: "",
         rating: formData.rating,
         feedback: formData.feedback || undefined,
         source: "presentation",
@@ -214,33 +210,6 @@ export default function SurveyPage() {
                   ))}
                 </div>
                 <p className="text-xs text-gray-500 text-center">1 = Poor &nbsp;·&nbsp; 5 = Excellent</p>
-              </div>
-
-              {/* Contact Info */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">Basic Contact Information</h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">First Name (optional)</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number (optional)</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="555-123-4567"
-                      value={formData.phone}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
-                    />
-                  </div>
-                </div>
               </div>
 
               {/* Optional feedback */}

@@ -1,5 +1,6 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import { randomBytes } from "crypto";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import {
@@ -82,15 +83,53 @@ async function auditPiiAccess(opts: {
   }
 }
 
+// ── CSRF Protection ───────────────────────────────────────────────────────────
+// Synchronizer Token Pattern:
+// - A CSRF token is generated and stored in the session on login.
+// - It is returned in the login/me response so the SPA can read it.
+// - All authenticated POST/PUT/PATCH/DELETE calls must include it as X-CSRF-Token.
+// - Public form endpoints (surveys, QR scan) are exempt since they have no session.
+
+const CSRF_EXEMPT_PREFIXES = [
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/verify",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/qr-scan",
+  "/api/surveys",
+  "/api/sweepstakes",
+  "/api/life-goals",
+  "/api/high-school",
+  "/api/recruits",   // public interest form POST — still protected by PII rate limit
+];
+
+function csrfMiddleware(req: Request, res: Response, next: NextFunction) {
+  const mutating = ["POST", "PUT", "PATCH", "DELETE"].includes(req.method);
+  if (!mutating) return next();
+
+  const isExempt = CSRF_EXEMPT_PREFIXES.some((p) => req.path.startsWith(p));
+  if (isExempt) return next();
+
+  const sessionCsrf = (req as any).session?.csrfToken as string | undefined;
+  if (!sessionCsrf) return next(); // unauthenticated — let auth middleware reject
+
+  const headerCsrf = req.headers["x-csrf-token"] as string | undefined;
+  if (!headerCsrf || headerCsrf !== sessionCsrf) {
+    return res.status(403).json({ error: "Invalid or missing CSRF token" });
+  }
+  next();
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  app.use(csrfMiddleware);
+
   // AUTHENTICATION ENDPOINTS
 
   // Register new recruiter
   app.post("/api/auth/register", async (req, res) => {
     try {
-      console.log("📝 Registration attempt for:", req.body.email);
       const result = await registerUser(req.body);
-      console.log("✅ Registration successful for:", req.body.email);
       res.status(201).json(result);
     } catch (error) {
       console.error("❌ Registration error:", error);
@@ -158,14 +197,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create session
       await createSession(req, user.id);
 
-      // Verify session was created
-      console.log(
-        "✅ Session created for user:",
-        user.id,
-        "Session ID:",
-        req.sessionID
-      );
-      console.log("📝 Session data:", JSON.stringify(req.session));
+      // Generate CSRF token for the session (synchronizer token pattern)
+      const csrfToken = randomBytes(32).toString("hex");
+      (req as any).session.csrfToken = csrfToken;
 
       // Return user data (without sensitive fields)
       const {
@@ -180,15 +214,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.save((err) => {
           if (err) {
             console.error("❌ Error saving session before response:", err);
-          } else {
-            console.log("✅ Session fully saved, sending response");
           }
           resolve();
         });
       });
 
-      // Send response after session is saved
-      res.json({ message: "Login successful", user: userData });
+      // Send CSRF token in response body — SPA stores it in memory
+      res.json({ message: "Login successful", user: userData, csrfToken });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Login failed";
       res.status(401).json({ error: message });
@@ -208,14 +240,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user
   app.get("/api/auth/me", async (req, res) => {
     try {
-      console.log("🔍 Auth check - Session ID:", req.sessionID);
-      console.log("🔍 Auth check - Session data:", JSON.stringify(req.session));
-      console.log("🔍 Auth check - Cookies:", req.headers.cookie);
-
       const userId = (req as any).session?.userId;
 
       if (!userId) {
-        console.log("❌ No userId in session");
         return res.status(401).json({ error: "Not authenticated" });
       }
 
@@ -231,8 +258,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resetPasswordToken,
         ...userData
       } = user;
-      console.log("✅ User authenticated:", userData.email);
-      res.json({ user: userData });
+
+      // Ensure CSRF token exists (re-generate if session is old/pre-CSRF)
+      let csrfToken = (req as any).session?.csrfToken as string | undefined;
+      if (!csrfToken) {
+        csrfToken = randomBytes(32).toString("hex");
+        (req as any).session.csrfToken = csrfToken;
+      }
+
+      res.json({ user: userData, csrfToken });
     } catch (error) {
       console.error("❌ Auth check error:", error);
       res.status(500).json({ error: "Failed to fetch user data" });
@@ -281,7 +315,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .set({ passwordHash: newPasswordHash })
         .where(eq(users.id, userId));
 
-      console.log(`✅ Password changed for user: ${user.email}`);
       res.json({ message: "Password changed successfully" });
     } catch (error) {
       console.error("❌ Password change error:", error);

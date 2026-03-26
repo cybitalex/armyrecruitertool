@@ -1,14 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { useQueryClient } from "@tanstack/react-query";
-import { recruits, recruiter as recruiterApi } from "../lib/api";
+import { recruiter as recruiterApi } from "../lib/api";
 import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { Alert, AlertDescription } from "../components/ui/alert";
-import { CheckCircle2, AlertCircle, User as UserIcon, Globe } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { User as UserIcon, Globe } from "lucide-react";
 import type { User } from "@shared/schema";
+import { ARMY_RANKS } from "@shared/constants";
 
 // ──────────────────────────────────────────────
 // Job category → AI description mapping
@@ -38,27 +35,22 @@ const T = {
     sentTo: "Your application will be sent to:",
     whyTitle: "Discover What the U.S. Army Has to Offer",
     benefit1Title: "Education Benefits",
-    benefit1Desc: "Over $250,000 in education value through the Post-9/11 GI Bill® — covers 100% tuition, housing allowance, and book stipend.",
+    benefit1Desc: "Over $300,000 in education value through the Post-9/11 GI Bill® — covers 100% tuition, housing allowance, and book stipend.",
     benefit2Title: "Healthcare Coverage",
     benefit2Desc: "Comprehensive medical, dental, and vision coverage through TRICARE for you and your family.",
     benefit3Title: "Career Training & Skills",
     benefit3Desc: "Over 150+ career fields with fully paid training and industry-recognized certifications.",
     benefit4Title: "Pay & Financial Benefits",
     benefit4Desc: "Competitive base pay, housing/food allowances, 30 days paid vacation, enlistment bonuses up to $50,000, and a federal pension after 20 years.",
-    ctaText: "⬇️ Fill out the quick form below — no commitment required",
-    sectionPersonal: "Quick Contact",
-    firstName: "First Name",
-    phone: "Phone Number",
-    phonePlaceholder: "555-123-4567",
-    disclaimer: "Submitting this form does not constitute enlistment or any commitment. A recruiter will reach out to learn more about you.",
-    privacyNote: "UNCLASSIFIED — Handled per Army regulations and the Privacy Act of 1974.",
-    submitBtn: "Connect With a Recruiter",
+    ctaText: "Tap the button below to connect with a recruiter — no commitment required",
+    disclaimer: "Submitting does not constitute enlistment or any commitment. No personal information is collected.",
+    privacyNote: "UNCLASSIFIED — No personally identifiable information (PII) is collected through this form.",
+    submitBtn: "I'm Interested — Connect Me With a Recruiter",
     submitting: "Submitting...",
     successTitle: "We'll Be in Touch! 🎖️",
     successDesc: "Thank you for your interest in the U.S. Army",
-    successBody: "A recruiter will reach out to you shortly.",
-    successLinked: "✅ Your info has been linked to your recruiter",
-    required: "*",
+    successBody: "A recruiter will reach out to you shortly to answer any questions.",
+    successLinked: "✅ Your interest has been linked to your recruiter",
   },
   es: {
     langToggle: "English",
@@ -68,27 +60,22 @@ const T = {
     sentTo: "Su información será enviada a:",
     whyTitle: "Descubra lo que el Ejército de EE.UU. tiene para ofrecer",
     benefit1Title: "Beneficios Educativos",
-    benefit1Desc: "Más de $250,000 en valor educativo a través del GI Bill® — cubre el 100% de la matrícula, vivienda y libros.",
+    benefit1Desc: "Más de $300,000 en valor educativo a través del GI Bill® — cubre el 100% de la matrícula, vivienda y libros.",
     benefit2Title: "Cobertura de Salud",
     benefit2Desc: "Cobertura médica, dental y de visión completa a través de TRICARE para usted y su familia.",
     benefit3Title: "Capacitación Profesional",
     benefit3Desc: "Más de 150 campos de carrera con capacitación pagada y certificaciones reconocidas por la industria.",
     benefit4Title: "Pago y Beneficios Financieros",
     benefit4Desc: "Salario base competitivo, subsidios de vivienda y comida, 30 días de vacaciones pagadas, bonos de alistamiento de hasta $50,000.",
-    ctaText: "⬇️ Complete el formulario rápido — sin compromiso",
-    sectionPersonal: "Contacto Rápido",
-    firstName: "Nombre",
-    phone: "Número de Teléfono",
-    phonePlaceholder: "555-123-4567",
-    disclaimer: "Enviar este formulario no constituye alistamiento. Un reclutador se comunicará con usted para conocerle mejor.",
-    privacyNote: "NO CLASIFICADO — Manejado según las regulaciones del Ejército y la Ley de Privacidad de 1974.",
-    submitBtn: "Conectar Con un Reclutador",
+    ctaText: "Toque el botón para conectarse con un reclutador — sin compromiso",
+    disclaimer: "No constituye alistamiento. No se recopila información personal.",
+    privacyNote: "NO CLASIFICADO — No se recopila información de identificación personal (PII) a través de este formulario.",
+    submitBtn: "Estoy Interesado — Conectarme Con un Reclutador",
     submitting: "Enviando...",
     successTitle: "¡Nos pondremos en contacto! 🎖️",
     successDesc: "Gracias por su interés en el Ejército de EE.UU.",
-    successBody: "Un reclutador se comunicará con usted en breve.",
-    successLinked: "✅ Su información ha sido vinculada a su reclutador",
-    required: "*",
+    successBody: "Un reclutador se comunicará con usted pronto.",
+    successLinked: "✅ Su interés ha sido vinculado a su reclutador",
   },
 } as const;
 
@@ -96,7 +83,6 @@ type Lang = "en" | "es";
 
 export default function ApplyPage() {
   const [location] = useLocation();
-  const queryClient = useQueryClient();
   const [lang, setLang] = useState<Lang>("en");
   const t = T[lang];
 
@@ -127,74 +113,7 @@ export default function ApplyPage() {
     }
   }, [recruiterCode]);
 
-  const [formData, setFormData] = useState({
-    firstName: "",
-    phone: "",
-  });
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
-      const payload = {
-        firstName: formData.firstName.trim(),
-        lastName: "—",          // placeholder — not collected at this stage
-        phone: formData.phone.trim(),
-        recruiterCode: recruiterCode || undefined,
-      };
-
-      await recruits.create(payload as any);
-      queryClient.invalidateQueries({ queryKey: ["/recruiter/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/recruits"] });
-      setSuccess(true);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Submission failed");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (success) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
-            <CardTitle className="text-2xl">{t.successTitle}</CardTitle>
-            <CardDescription>{t.successDesc}</CardDescription>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <p className="text-sm text-gray-600">{t.successBody}</p>
-            {recruiterInfo && (
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200 text-left">
-                <p className="text-sm font-semibold text-green-800 mb-2">✅ {t.sentTo}</p>
-                <div className="text-sm text-green-700 space-y-1">
-                  <p className="font-medium">{recruiterInfo.fullName}</p>
-                  {recruiterInfo.rank && <p className="text-xs">{recruiterInfo.rank}</p>}
-                  {recruiterInfo.phoneNumber && (
-                    <p className="text-xs mt-2">📞 {recruiterInfo.phoneNumber}</p>
-                  )}
-                </div>
-              </div>
-            )}
-            {recruiterCode && !recruiterInfo && (
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <p className="text-sm text-green-800">{t.successLinked}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
@@ -284,77 +203,10 @@ export default function ApplyPage() {
           </CardContent>
         </Card>
 
-        {/* Main form */}
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-green-800">{t.pageTitle}</CardTitle>
-            <CardDescription>
-              {recruiterCode ? t.pageSubLinked : t.pageSubDefault}
-            </CardDescription>
-          </CardHeader>
-
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                {t.sectionPersonal}
-              </h3>
-
-              {/* First Name */}
-              <div className="space-y-1">
-                <Label htmlFor="firstName">
-                  {t.firstName} <span className="text-red-500">{t.required}</span>
-                </Label>
-                <Input
-                  id="firstName"
-                  required
-                  autoComplete="given-name"
-                  className="text-base py-5"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                />
-              </div>
-
-              {/* Phone */}
-              <div className="space-y-1">
-                <Label htmlFor="phone">
-                  {t.phone} <span className="text-red-500">{t.required}</span>
-                </Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  required
-                  autoComplete="tel"
-                  inputMode="tel"
-                  placeholder={t.phonePlaceholder}
-                  className="text-base py-5"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                />
-              </div>
-
-              <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
-                <strong>UNCLASSIFIED</strong> — {t.privacyNote}
-              </div>
-            </CardContent>
-
-            <div className="px-6 pb-6">
-              <Button
-                type="submit"
-                className="w-full bg-green-700 hover:bg-green-800 py-6 text-base font-semibold"
-                disabled={loading}
-              >
-                {loading ? t.submitting : t.submitBtn}
-              </Button>
-            </div>
-          </form>
-        </Card>
+        {/* Privacy note */}
+        <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded text-center">
+          <strong>UNCLASSIFIED</strong> — {t.privacyNote}
+        </div>
       </div>
     </div>
   );

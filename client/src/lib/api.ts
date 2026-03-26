@@ -2,16 +2,38 @@ import type { User, Recruit, QrSurveyResponse } from "@shared/schema";
 
 const API_BASE = "/api";
 
+// ── CSRF token (synchronizer token pattern) ───────────────────────────────────
+// Populated on login and on every /auth/me response; automatically attached
+// as X-CSRF-Token on all state-changing requests.
+let _csrfToken: string | undefined;
+
+export function setCsrfToken(token: string | undefined) {
+  _csrfToken = token;
+}
+
+export function getCsrfToken(): string | undefined {
+  return _csrfToken;
+}
+
+const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
 // Helper function for API calls
 async function apiCall<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
+  const method = (options?.method ?? "GET").toUpperCase();
+  const extraHeaders: Record<string, string> = {};
+  if (MUTATING_METHODS.has(method) && _csrfToken) {
+    extraHeaders["X-CSRF-Token"] = _csrfToken;
+  }
+
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
       ...options?.headers,
+      ...extraHeaders,
     },
     credentials: "include", // Important for session cookies
   });
@@ -44,16 +66,20 @@ export const auth = {
   },
 
   login: async (email: string, password: string) => {
-    return apiCall<{ message: string; user: Partial<User> }>("/auth/login", {
+    const result = await apiCall<{ message: string; user: Partial<User>; csrfToken?: string }>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
+    if (result.csrfToken) setCsrfToken(result.csrfToken);
+    return result;
   },
 
   logout: async () => {
-    return apiCall<{ message: string }>("/auth/logout", {
+    const result = await apiCall<{ message: string }>("/auth/logout", {
       method: "POST",
     });
+    setCsrfToken(undefined);
+    return result;
   },
 
   verifyEmail: async (token: string) => {
@@ -62,11 +88,12 @@ export const auth = {
 
   getCurrentUser: async () => {
     try {
-      return await apiCall<{ user: Partial<User> }>("/auth/me");
+      const result = await apiCall<{ user: Partial<User>; csrfToken?: string }>("/auth/me");
+      if (result.csrfToken) setCsrfToken(result.csrfToken);
+      return result;
     } catch (error) {
-      // 401 errors are expected when not logged in, suppress console noise
       if (error instanceof Error && error.message.includes("401")) {
-        throw error; // Still throw to handle in auth context, just don't log
+        throw error;
       }
       throw error;
     }

@@ -15,9 +15,20 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
+import ConnectPgSimple from "connect-pg-simple";
+import pkg from "pg";
+const { Pool } = pkg;
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { checkUpcomingShippers } from "./shipper-notifications";
+
+// Validate required secrets at startup — fail fast rather than run insecure
+const SESSION_SECRET = process.env.JWT_SECRET;
+if (!SESSION_SECRET || SESSION_SECRET.length < 32) {
+  console.error("❌ FATAL: JWT_SECRET env var must be set and at least 32 characters. Exiting.");
+  process.exit(1);
+}
+const PgSession = ConnectPgSimple(session);
 
 const app = express();
 
@@ -41,10 +52,14 @@ app.use((req, res, next) => {
   res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
   // Restrict browser feature access (camera, microphone, geolocation)
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(self), payment=(), usb=()");
-  // Content Security Policy
+  // Content Security Policy — unsafe-eval removed; unsafe-inline kept only for
+  // bundled CSS/Vite HMR. Nonce-based CSP is the next hardening step post-ATO.
+  const isDev = process.env.NODE_ENV !== "production";
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://plausible.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://www.eventbriteapi.com https://maps.googleapis.com https://overpass-api.de https://api.groq.com https://plausible.io;"
+    isDev
+      ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://www.eventbriteapi.com https://maps.googleapis.com https://overpass-api.de https://api.groq.com https://plausible.io;"
+      : "default-src 'self'; script-src 'self' 'unsafe-inline' https://plausible.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://www.eventbriteapi.com https://maps.googleapis.com https://overpass-api.de https://api.groq.com https://plausible.io;"
   );
   // System identification headers
   res.setHeader("X-Developed-By", "SGT Alex Moran - CyBit Devs");
@@ -123,19 +138,32 @@ app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 // Trust proxy for secure cookies behind reverse proxy
 app.set('trust proxy', 1);
 
+// PostgreSQL-backed session store — eliminates the insecure in-memory MemoryStore
+const sessionPool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: false,
+  max: 5,
+});
+
 app.use(
   session({
-    secret: process.env.JWT_SECRET || 'army-recruiter-secret-change-in-production',
-    resave: true, // Force save session even if not modified
+    store: new PgSession({
+      pool: sessionPool,
+      tableName: "user_sessions",
+      createTableIfMissing: true,
+    }),
+    secret: SESSION_SECRET,
+    resave: false,
     saveUninitialized: false,
+    rolling: true, // Reset maxAge on each request (extends active sessions)
     cookie: {
       httpOnly: true,
-      secure: true, // Always secure for HTTPS
+      secure: process.env.NODE_ENV === "production",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax',
-      path: '/', // Ensure cookie is available for all paths
+      sameSite: "strict", // Upgraded from lax — prevents CSRF via cross-site navigation
+      path: "/",
     },
-    name: 'army-recruiter-session', // Custom session name
+    name: "army-recruiter-session",
   })
 );
 

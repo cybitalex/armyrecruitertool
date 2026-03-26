@@ -52,8 +52,6 @@ export default function HighSchoolSurveyPage() {
     goalYearlySalary: "",
     consideringCollegeOrVocational: "" as ConsideringFuture,
 
-    name: "",
-    phone: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -127,8 +125,6 @@ export default function HighSchoolSurveyPage() {
     }
 
     lines.push("", "--- CONTACT (optional) ---", "");
-    lines.push("Name:", formData.name || "—");
-    lines.push("Phone:", formData.phone || "—");
     return lines.join("\n");
   };
 
@@ -172,9 +168,9 @@ export default function HighSchoolSurveyPage() {
     try {
       await surveys.submit({
         recruiterCode,
-        name: formData.name || "",
+        name: "",
         email: "",
-        phone: formData.phone || "",
+        phone: "",
         rating: passionToRating() || 1,
         feedback: buildFeedback(),
         source: "high_school_senior_survey",
@@ -450,21 +446,6 @@ export default function HighSchoolSurveyPage() {
                 </div>
               )}
 
-              {/* Optional contact */}
-              <div className="border-t pt-4 space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">Contact information (optional)</h3>
-                <p className="text-sm text-gray-600">Leave your info if you&apos;d like a recruiter to follow up with options that fit your plans.</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="hs-name">First Name</Label>
-                    <Input id="hs-name" value={formData.name} onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="hs-phone">Phone</Label>
-                    <Input id="hs-phone" type="tel" placeholder="555-123-4567" value={formData.phone} onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))} />
-                  </div>
-                </div>
-              </div>
 
               <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-sm text-yellow-800">
                 <strong>Note:</strong> This is not an enlistment form. It helps recruiters share information (like education benefits) that may fit your goals.
