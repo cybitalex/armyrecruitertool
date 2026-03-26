@@ -42,15 +42,7 @@ const T = {
     benefit3Desc: "Over 150+ career fields with fully paid training and industry-recognized certifications.",
     benefit4Title: "Pay & Financial Benefits",
     benefit4Desc: "Competitive base pay, housing/food allowances, 30 days paid vacation, enlistment bonuses up to $50,000, and a federal pension after 20 years.",
-    ctaText: "Tap the button below to connect with a recruiter — no commitment required",
-    disclaimer: "Submitting does not constitute enlistment or any commitment. No personal information is collected.",
-    privacyNote: "UNCLASSIFIED — No personally identifiable information (PII) is collected through this form.",
-    submitBtn: "I'm Interested — Connect Me With a Recruiter",
-    submitting: "Submitting...",
-    successTitle: "We'll Be in Touch! 🎖️",
-    successDesc: "Thank you for your interest in the U.S. Army",
-    successBody: "A recruiter will reach out to you shortly to answer any questions.",
-    successLinked: "✅ Your interest has been linked to your recruiter",
+    privacyNote: "No personally identifiable information (PII) is collected through this form.",
   },
   es: {
     langToggle: "English",
@@ -67,15 +59,7 @@ const T = {
     benefit3Desc: "Más de 150 campos de carrera con capacitación pagada y certificaciones reconocidas por la industria.",
     benefit4Title: "Pago y Beneficios Financieros",
     benefit4Desc: "Salario base competitivo, subsidios de vivienda y comida, 30 días de vacaciones pagadas, bonos de alistamiento de hasta $50,000.",
-    ctaText: "Toque el botón para conectarse con un reclutador — sin compromiso",
-    disclaimer: "No constituye alistamiento. No se recopila información personal.",
-    privacyNote: "NO CLASIFICADO — No se recopila información de identificación personal (PII) a través de este formulario.",
-    submitBtn: "Estoy Interesado — Conectarme Con un Reclutador",
-    submitting: "Enviando...",
-    successTitle: "¡Nos pondremos en contacto! 🎖️",
-    successDesc: "Gracias por su interés en el Ejército de EE.UU.",
-    successBody: "Un reclutador se comunicará con usted pronto.",
-    successLinked: "✅ Su interés ha sido vinculado a su reclutador",
+    privacyNote: "No se recopila información de identificación personal (PII) a través de este formulario.",
   },
 } as const;
 
@@ -199,7 +183,6 @@ export default function ApplyPage() {
                 </div>
               ))}
             </div>
-            <p className="text-xs font-semibold text-green-900 text-center mt-3">{t.ctaText}</p>
           </CardContent>
         </Card>
 
