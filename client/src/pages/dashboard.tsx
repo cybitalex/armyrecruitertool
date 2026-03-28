@@ -33,8 +33,15 @@ import { Users, QrCode, UserPlus, Star, Download, MapPin, BarChart3, X, FileText
 import { format } from "date-fns";
 import { exportContactsToExcel } from "../lib/exportExcel";
 
+// Accounts that may use direct entry and see the Direct Entries stat
+const DIRECT_ENTRY_EMAILS = new Set([
+  "moran.alex@icloud.com",
+  "alex.moran4.mil@army.mil",
+]);
+
 function DashboardContent() {
   const { user, logout } = useAuth();
+  const canDirectEntry = DIRECT_ENTRY_EMAILS.has(user?.email ?? "");
   const [, setLocation] = useLocation();
   const [recruitsList, setRecruitsList] = useState<Recruit[]>([]);
   const [surveyResponses, setSurveyResponses] = useState<QrSurveyResponse[]>([]);
@@ -330,6 +337,7 @@ function DashboardContent() {
             </CardContent>
           </Card>
 
+          {canDirectEntry && (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
               <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 truncate pr-1">
@@ -346,6 +354,7 @@ function DashboardContent() {
               </p>
             </CardContent>
           </Card>
+          )}
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
@@ -389,6 +398,7 @@ function DashboardContent() {
             </div>
           </Button>
 
+          {canDirectEntry && (
           <Button
             onClick={() => setLocation("/intake-form")}
             variant="outline"
@@ -400,6 +410,7 @@ function DashboardContent() {
               <div className="text-xs opacity-75 truncate">Fill form directly</div>
             </div>
           </Button>
+          )}
 
           <Button
             onClick={handleExportToExcel}

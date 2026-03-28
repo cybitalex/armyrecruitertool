@@ -2495,11 +2495,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         verificationToken,
         resetPasswordToken,
         qrCode: _qrCode,
+        email: _email,
         ...recruiterInfo
       } = recruiter;
+
+      // Only specific accounts are allowed to collect PII via the interest form
+      const FORMS_ENABLED_EMAILS = new Set([
+        "moran.alex@icloud.com",
+        "alex.moran4.mil@army.mil",
+      ]);
+      const formsEnabled = FORMS_ENABLED_EMAILS.has(recruiter.email ?? "");
+
       res.json({
         recruiter: recruiterInfo,
         locationLabel: locationQR?.locationLabel || null,
+        formsEnabled,
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch recruiter information" });
@@ -3552,11 +3562,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Interest description is required" });
       }
 
-      console.log(`🎯 MOS suggestion request for: "${interestDescription}"`);
-      
       const suggestions = await suggestMOS(interestDescription);
-      
-      console.log(`✅ Found ${suggestions.length} MOS suggestions`);
       
       res.json({ 
         suggestions,

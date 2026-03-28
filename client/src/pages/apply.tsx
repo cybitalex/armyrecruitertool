@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { recruiter as recruiterApi } from "../lib/api";
+import { recruiter as recruiterApi, recruits as recruitsApi, mos as mosApi } from "../lib/api";
 import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { User as UserIcon, Globe } from "lucide-react";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { CheckCircle2, AlertCircle, User as UserIcon, Globe, Loader2 } from "lucide-react";
 import type { User } from "@shared/schema";
 import { ARMY_RANKS } from "@shared/constants";
 
@@ -11,16 +14,16 @@ import { ARMY_RANKS } from "@shared/constants";
 // Job category → AI description mapping
 // ──────────────────────────────────────────────
 const JOB_CATEGORIES = [
-  { value: "combat_infantry",     en: "Combat / Infantry",            es: "Combate / Infantería",           ai: "combat infantry frontline soldier field operations" },
-  { value: "medical_healthcare",  en: "Medical / Healthcare",         es: "Medicina / Salud",               ai: "military medical healthcare nursing medic 68W" },
-  { value: "technology_computers",en: "Technology / Computers / IT",  es: "Tecnología / Computadoras",      ai: "information technology cybersecurity computer networks signals 25 series" },
-  { value: "intelligence_cyber",  en: "Intelligence / Cyber",         es: "Inteligencia / Ciber",           ai: "military intelligence cyber operations signals intelligence 35 series" },
-  { value: "aviation",            en: "Aviation",                     es: "Aviación",                       ai: "Army aviation helicopter pilot crew 15 series" },
-  { value: "engineering",         en: "Engineering / Construction",   es: "Ingeniería / Construcción",      ai: "combat engineer construction sapper bridge 12 series" },
-  { value: "mechanics_maintenance",en:"Mechanics / Vehicle Maintenance",es:"Mecánica / Mantenimiento",      ai: "vehicle mechanic maintenance wheeled tracked 91 series" },
-  { value: "admin_finance",       en: "Administration / Finance",     es: "Administración / Finanzas",      ai: "Army administration finance HR human resources 42 series" },
-  { value: "special_operations",  en: "Special Operations",           es: "Operaciones Especiales",         ai: "special forces ranger airborne 18X Option 40 special operations" },
-  { value: "not_sure",            en: "Not sure yet",                 es: "No estoy seguro/a todavía",      ai: "general Army interest exploring options" },
+  { value: "combat_infantry",      en: "Combat / Infantry",             es: "Combate / Infantería",          ai: "combat infantry frontline soldier field operations" },
+  { value: "medical_healthcare",   en: "Medical / Healthcare",          es: "Medicina / Salud",              ai: "military medical healthcare nursing medic 68W" },
+  { value: "technology_computers", en: "Technology / Computers / IT",   es: "Tecnología / Computadoras",     ai: "information technology cybersecurity computer networks signals 25 series" },
+  { value: "intelligence_cyber",   en: "Intelligence / Cyber",          es: "Inteligencia / Ciber",          ai: "military intelligence cyber operations signals intelligence 35 series" },
+  { value: "aviation",             en: "Aviation",                      es: "Aviación",                      ai: "Army aviation helicopter pilot crew 15 series" },
+  { value: "engineering",          en: "Engineering / Construction",    es: "Ingeniería / Construcción",     ai: "combat engineer construction sapper bridge 12 series" },
+  { value: "mechanics_maintenance",en: "Mechanics / Vehicle Maintenance",es:"Mecánica / Mantenimiento",      ai: "vehicle mechanic maintenance wheeled tracked 91 series" },
+  { value: "admin_finance",        en: "Administration / Finance",      es: "Administración / Finanzas",     ai: "Army administration finance HR human resources 42 series" },
+  { value: "special_operations",   en: "Special Operations",            es: "Operaciones Especiales",        ai: "special forces ranger airborne 18X Option 40 special operations" },
+  { value: "not_sure",             en: "Not sure yet",                  es: "No estoy seguro/a todavía",     ai: "general Army interest exploring options" },
 ] as const;
 
 // ──────────────────────────────────────────────
@@ -43,6 +46,19 @@ const T = {
     benefit4Title: "Pay & Financial Benefits",
     benefit4Desc: "Competitive base pay, housing/food allowances, 30 days paid vacation, enlistment bonuses up to $50,000, and a federal pension after 20 years.",
     privacyNote: "No personally identifiable information (PII) is collected through this form.",
+    // Form labels
+    firstName: "First Name",
+    phone: "Phone Number",
+    jobInterestTitle: "What kind of work interests you?",
+    jobInterestSub: "Select all that apply",
+    submitBtn: "Submit My Interest",
+    submitting: "Submitting…",
+    successTitle: "We'll Be in Touch! 🎖️",
+    successDesc: "Thank you for your interest in the U.S. Army.",
+    successBody: "A recruiter will reach out to you shortly.",
+    mosSuggestions: "Army Career Matches Based on Your Interests",
+    mosBadge: "AI Suggested",
+    privacyNoteForm: "Your first name and phone are collected only to connect you with a recruiter. No other PII is stored.",
   },
   es: {
     langToggle: "English",
@@ -60,10 +76,28 @@ const T = {
     benefit4Title: "Pago y Beneficios Financieros",
     benefit4Desc: "Salario base competitivo, subsidios de vivienda y comida, 30 días de vacaciones pagadas, bonos de alistamiento de hasta $50,000.",
     privacyNote: "No se recopila información de identificación personal (PII) a través de este formulario.",
+    firstName: "Nombre",
+    phone: "Número de Teléfono",
+    jobInterestTitle: "¿Qué tipo de trabajo le interesa?",
+    jobInterestSub: "Seleccione todos los que apliquen",
+    submitBtn: "Enviar Mi Interés",
+    submitting: "Enviando…",
+    successTitle: "¡Nos pondremos en contacto! 🎖️",
+    successDesc: "Gracias por su interés en el Ejército de EE.UU.",
+    successBody: "Un reclutador se comunicará con usted pronto.",
+    mosSuggestions: "Carreras del Ejército Basadas en Sus Intereses",
+    mosBadge: "Sugerido por IA",
+    privacyNoteForm: "Su nombre y teléfono solo se usan para conectarle con un reclutador. No se almacena otra PII.",
   },
 } as const;
 
 type Lang = "en" | "es";
+
+interface MOSSuggestion {
+  code: string;
+  title: string;
+  description: string;
+}
 
 export default function ApplyPage() {
   const [location] = useLocation();
@@ -81,6 +115,7 @@ export default function ApplyPage() {
   }, [location]);
 
   const [recruiterInfo, setRecruiterInfo] = useState<Partial<User> | null>(null);
+  const [formsEnabled, setFormsEnabled] = useState(false);
   const scanTracked = useRef(false);
 
   useEffect(() => {
@@ -92,12 +127,90 @@ export default function ApplyPage() {
         body: JSON.stringify({ qrCode: recruiterCode, scanType: "application" }),
       }).catch(() => {});
       recruiterApi.getByQRCode(recruiterCode)
-        .then((d) => setRecruiterInfo(d.recruiter))
-        .catch(() => setRecruiterInfo(null));
+        .then((d) => {
+          setRecruiterInfo(d.recruiter);
+          setFormsEnabled(d.formsEnabled ?? false);
+        })
+        .catch(() => {
+          setRecruiterInfo(null);
+          setFormsEnabled(false);
+        });
     }
   }, [recruiterCode]);
 
+  // ── Form state (only used when formsEnabled) ────────────────────────────────
+  const [firstName, setFirstName] = useState("");
+  const [phone, setPhone]         = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [mosSuggestions, setMosSuggestions]         = useState<MOSSuggestion[]>([]);
+  const [mosFetching, setMosFetching]               = useState(false);
+  const [submitting, setSubmitting]                 = useState(false);
+  const [submitted, setSubmitted]                   = useState(false);
+  const [error, setError]                           = useState<string | null>(null);
 
+  const mosDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const toggleCategory = (value: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
+  };
+
+  // Fetch MOS suggestions whenever categories change
+  useEffect(() => {
+    if (!formsEnabled || selectedCategories.length === 0) {
+      setMosSuggestions([]);
+      return;
+    }
+    if (mosDebounceRef.current) clearTimeout(mosDebounceRef.current);
+    mosDebounceRef.current = setTimeout(async () => {
+      const aiDescriptions = selectedCategories
+        .map((v) => JOB_CATEGORIES.find((c) => c.value === v)?.ai ?? v)
+        .join(", ");
+      setMosFetching(true);
+      try {
+        const result = await mosApi.suggest(aiDescriptions);
+        setMosSuggestions(result.suggestions ?? []);
+      } catch {
+        setMosSuggestions([]);
+      } finally {
+        setMosFetching(false);
+      }
+    }, 600);
+  }, [selectedCategories, formsEnabled]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!firstName.trim()) { setError("Please enter your first name."); return; }
+    if (!phone.trim())     { setError("Please enter your phone number."); return; }
+    setSubmitting(true);
+    try {
+      const jobInterestLabel = selectedCategories
+        .map((v) => JOB_CATEGORIES.find((c) => c.value === v)?.en ?? v)
+        .join(", ");
+      await recruitsApi.create({
+        firstName: firstName.trim(),
+        phone: phone.trim(),
+        preferredMOS: jobInterestLabel || undefined,
+        recruiterCode: recruiterCode ?? undefined,
+        source: "qr_code",
+      } as any);
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Submission failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ── Benefits list ────────────────────────────────────────────────────────────
+  const benefits = [
+    { icon: "🎓", title: t.benefit1Title, desc: t.benefit1Desc },
+    { icon: "🏥", title: t.benefit2Title, desc: t.benefit2Desc },
+    { icon: "💼", title: t.benefit3Title, desc: t.benefit3Desc },
+    { icon: "💰", title: t.benefit4Title, desc: t.benefit4Desc },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
@@ -156,7 +269,141 @@ export default function ApplyPage() {
           </Card>
         )}
 
-        {/* Benefits card */}
+        {/* ── FULL FORM (formsEnabled accounts only) ── */}
+        {formsEnabled && !submitted && (
+          <Card className="mb-5 border-2 border-green-300">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-bold text-green-900 flex items-center gap-2">
+                <span>🇺🇸</span> {t.pageTitle}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-5">
+
+                {/* Name + Phone */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="firstName" className="text-sm font-semibold text-gray-700">
+                      {t.firstName} *
+                    </Label>
+                    <Input
+                      id="firstName"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder={lang === "en" ? "First name" : "Nombre"}
+                      className="mt-1"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone" className="text-sm font-semibold text-gray-700">
+                      {t.phone} *
+                    </Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="(555) 000-0000"
+                      className="mt-1"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Job interest multi-select */}
+                <div>
+                  <p className="text-sm font-semibold text-gray-700 mb-1">{t.jobInterestTitle}</p>
+                  <p className="text-xs text-gray-500 mb-3">{t.jobInterestSub}</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {JOB_CATEGORIES.map((cat) => {
+                      const selected = selectedCategories.includes(cat.value);
+                      return (
+                        <button
+                          key={cat.value}
+                          type="button"
+                          onClick={() => toggleCategory(cat.value)}
+                          className={`rounded-lg border-2 px-3 py-2 text-xs font-medium text-left transition-colors ${
+                            selected
+                              ? "border-green-600 bg-green-600 text-white"
+                              : "border-gray-200 bg-white text-gray-700 hover:border-green-400 hover:bg-green-50"
+                          }`}
+                        >
+                          {lang === "en" ? cat.en : cat.es}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* AI MOS suggestions */}
+                {(mosFetching || mosSuggestions.length > 0) && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-sm font-bold text-yellow-900 mb-2 flex items-center gap-2">
+                      🤖 {t.mosSuggestions}
+                    </p>
+                    {mosFetching ? (
+                      <div className="flex items-center gap-2 text-xs text-yellow-700">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span>{lang === "en" ? "Finding your best matches…" : "Buscando sus mejores opciones…"}</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {mosSuggestions.slice(0, 5).map((s) => (
+                          <div key={s.code} className="bg-white rounded p-2 border border-yellow-200">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-yellow-800 bg-yellow-100 rounded px-1.5 py-0.5">
+                                {s.code}
+                              </span>
+                              <span className="text-xs font-semibold text-gray-800">{s.title}</span>
+                              <span className="ml-auto text-[10px] text-yellow-700 italic">{t.mosBadge}</span>
+                            </div>
+                            {s.description && (
+                              <p className="text-xs text-gray-600 mt-1 line-clamp-2">{s.description}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full bg-green-700 hover:bg-green-800 text-white py-3 font-semibold"
+                >
+                  {submitting ? (
+                    <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{t.submitting}</span>
+                  ) : t.submitBtn}
+                </Button>
+
+                <p className="text-[10px] text-gray-400 text-center">{t.privacyNoteForm}</p>
+              </form>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* ── SUCCESS (formsEnabled only) ── */}
+        {formsEnabled && submitted && (
+          <Card className="mb-5 bg-green-50 border-2 border-green-400">
+            <CardContent className="p-6 text-center">
+              <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto mb-3" />
+              <h2 className="text-xl font-bold text-green-900 mb-1">{t.successTitle}</h2>
+              <p className="text-sm text-green-800 font-medium mb-1">{t.successDesc}</p>
+              <p className="text-xs text-gray-600">{t.successBody}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Benefits card — always visible */}
         <Card className="mb-5 bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg font-bold text-green-900 text-center flex items-center justify-center gap-2">
@@ -166,12 +413,7 @@ export default function ApplyPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[
-                { icon: "🎓", title: t.benefit1Title, desc: t.benefit1Desc },
-                { icon: "🏥", title: t.benefit2Title, desc: t.benefit2Desc },
-                { icon: "💼", title: t.benefit3Title, desc: t.benefit3Desc },
-                { icon: "💰", title: t.benefit4Title, desc: t.benefit4Desc },
-              ].map(({ icon, title, desc }) => (
+              {benefits.map(({ icon, title, desc }) => (
                 <div key={title} className="bg-white rounded-lg p-3 shadow-sm border border-green-200">
                   <div className="flex items-start gap-2">
                     <span className="text-xl flex-shrink-0">{icon}</span>
@@ -188,7 +430,7 @@ export default function ApplyPage() {
 
         {/* Privacy note */}
         <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded text-center">
-          <strong>UNCLASSIFIED</strong> — {t.privacyNote}
+          <strong>UNCLASSIFIED</strong> — {formsEnabled ? t.privacyNoteForm : t.privacyNote}
         </div>
       </div>
     </div>

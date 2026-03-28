@@ -168,7 +168,7 @@ export const recruits = {
 // Recruiter API
 export const recruiter = {
   getByQRCode: async (qrCode: string) => {
-    return apiCall<{ recruiter: Partial<User> }>(`/recruiter/by-qr/${qrCode}`);
+    return apiCall<{ recruiter: Partial<User>; locationLabel: string | null; formsEnabled: boolean }>(`/recruiter/by-qr/${qrCode}`);
   },
   
   getZipCode: async () => {
@@ -424,6 +424,24 @@ export const sorb = {
       contacted: "Y" | "N";
       sorbCo: string;
     }>>(`/sorb/leads${qs ? `?${qs}` : ""}`);
+  },
+};
+
+// MOS Suggestion API
+export const mos = {
+  suggest: async (interestDescription: string) => {
+    return apiCall<{
+      suggestions: Array<{
+        code: string;
+        title: string;
+        description: string;
+        matchScore?: number;
+      }>;
+      count: number;
+    }>("/mos/suggest", {
+      method: "POST",
+      body: JSON.stringify({ interestDescription }),
+    });
   },
 };
 
