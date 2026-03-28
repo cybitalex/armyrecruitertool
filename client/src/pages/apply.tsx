@@ -234,7 +234,32 @@ export default function ApplyPage() {
           </Card>
         )}
 
-        {/* ── FULL FORM (formsEnabled accounts only) ── */}
+        {/* Benefits card — brief Army info (always before form) */}
+        <Card className="mb-5 bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-bold text-green-900 text-center flex items-center justify-center gap-2">
+              <span className="text-xl">🇺🇸</span>
+              {t.whyTitle}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {benefits.map(({ icon, title, desc }) => (
+                <div key={title} className="bg-white rounded-lg p-3 shadow-sm border border-green-200">
+                  <div className="flex items-start gap-2">
+                    <span className="text-xl flex-shrink-0">{icon}</span>
+                    <div>
+                      <h4 className="font-bold text-green-900 text-sm mb-0.5">{title}</h4>
+                      <p className="text-xs text-gray-700">{desc}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── FULL FORM (formsEnabled accounts only) — after Army info ── */}
         {formsEnabled && !submitted && (
           <Card className="mb-5 border-2 border-green-300">
             <CardHeader className="pb-2">
@@ -336,31 +361,6 @@ export default function ApplyPage() {
             </CardContent>
           </Card>
         )}
-
-        {/* Benefits card — always visible */}
-        <Card className="mb-5 bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-bold text-green-900 text-center flex items-center justify-center gap-2">
-              <span className="text-xl">🇺🇸</span>
-              {t.whyTitle}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {benefits.map(({ icon, title, desc }) => (
-                <div key={title} className="bg-white rounded-lg p-3 shadow-sm border border-green-200">
-                  <div className="flex items-start gap-2">
-                    <span className="text-xl flex-shrink-0">{icon}</span>
-                    <div>
-                      <h4 className="font-bold text-green-900 text-sm mb-0.5">{title}</h4>
-                      <p className="text-xs text-gray-700">{desc}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Privacy note */}
         <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded text-center">
