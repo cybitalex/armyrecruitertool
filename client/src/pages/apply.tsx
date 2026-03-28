@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { recruiter as recruiterApi, recruits as recruitsApi, mos as mosApi } from "../lib/api";
+import { recruiter as recruiterApi, recruits as recruitsApi } from "../lib/api";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -55,9 +55,8 @@ const T = {
     submitting: "Submitting…",
     successTitle: "We'll Be in Touch! 🎖️",
     successDesc: "Thank you for your interest in the U.S. Army.",
-    successBody: "A recruiter will reach out to you shortly.",
-    mosSuggestions: "Army Career Matches Based on Your Interests",
-    mosBadge: "AI Suggested",
+    successBody: "A recruiter will reach out to you shortly. They can review your interests and AI career matches in their dashboard.",
+    jobInterestRecruiterOnly: "Specific Army job suggestions are generated for your recruiter only—they appear when they open your lead after you submit.",
     privacyNoteForm: "Your first name and phone are collected only to connect you with a recruiter. No other PII is stored.",
   },
   es: {
@@ -85,19 +84,12 @@ const T = {
     successTitle: "¡Nos pondremos en contacto! 🎖️",
     successDesc: "Gracias por su interés en el Ejército de EE.UU.",
     successBody: "Un reclutador se comunicará con usted pronto.",
-    mosSuggestions: "Carreras del Ejército Basadas en Sus Intereses",
-    mosBadge: "Sugerido por IA",
+    jobInterestRecruiterOnly: "Las sugerencias de empleo del Ejército se generan solo para su reclutador—aparecen cuando abre su contacto después de enviar.",
     privacyNoteForm: "Su nombre y teléfono solo se usan para conectarle con un reclutador. No se almacena otra PII.",
   },
 } as const;
 
 type Lang = "en" | "es";
-
-interface MOSSuggestion {
-  code: string;
-  title: string;
-  description: string;
-}
 
 export default function ApplyPage() {
   const [location] = useLocation();
@@ -142,42 +134,15 @@ export default function ApplyPage() {
   const [firstName, setFirstName] = useState("");
   const [phone, setPhone]         = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [mosSuggestions, setMosSuggestions]         = useState<MOSSuggestion[]>([]);
-  const [mosFetching, setMosFetching]               = useState(false);
   const [submitting, setSubmitting]                 = useState(false);
   const [submitted, setSubmitted]                   = useState(false);
   const [error, setError]                           = useState<string | null>(null);
-
-  const mosDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toggleCategory = (value: string) => {
     setSelectedCategories((prev) =>
       prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
     );
   };
-
-  // Fetch MOS suggestions whenever categories change
-  useEffect(() => {
-    if (!formsEnabled || selectedCategories.length === 0) {
-      setMosSuggestions([]);
-      return;
-    }
-    if (mosDebounceRef.current) clearTimeout(mosDebounceRef.current);
-    mosDebounceRef.current = setTimeout(async () => {
-      const aiDescriptions = selectedCategories
-        .map((v) => JOB_CATEGORIES.find((c) => c.value === v)?.ai ?? v)
-        .join(", ");
-      setMosFetching(true);
-      try {
-        const result = await mosApi.suggest(aiDescriptions);
-        setMosSuggestions(result.suggestions ?? []);
-      } catch {
-        setMosSuggestions([]);
-      } finally {
-        setMosFetching(false);
-      }
-    }, 600);
-  }, [selectedCategories, formsEnabled]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -334,39 +299,8 @@ export default function ApplyPage() {
                       );
                     })}
                   </div>
+                  <p className="text-[11px] text-gray-500 mt-2">{t.jobInterestRecruiterOnly}</p>
                 </div>
-
-                {/* AI MOS suggestions */}
-                {(mosFetching || mosSuggestions.length > 0) && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <p className="text-sm font-bold text-yellow-900 mb-2 flex items-center gap-2">
-                      🤖 {t.mosSuggestions}
-                    </p>
-                    {mosFetching ? (
-                      <div className="flex items-center gap-2 text-xs text-yellow-700">
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        <span>{lang === "en" ? "Finding your best matches…" : "Buscando sus mejores opciones…"}</span>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {mosSuggestions.slice(0, 5).map((s) => (
-                          <div key={s.code} className="bg-white rounded p-2 border border-yellow-200">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-yellow-800 bg-yellow-100 rounded px-1.5 py-0.5">
-                                {s.code}
-                              </span>
-                              <span className="text-xs font-semibold text-gray-800">{s.title}</span>
-                              <span className="ml-auto text-[10px] text-yellow-700 italic">{t.mosBadge}</span>
-                            </div>
-                            {s.description && (
-                              <p className="text-xs text-gray-600 mt-1 line-clamp-2">{s.description}</p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 {error && (
                   <Alert variant="destructive">
