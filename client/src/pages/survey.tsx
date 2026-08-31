@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { surveys, recruiter as recruiterApi } from "../lib/api";
 import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import {
   Card,
@@ -23,9 +21,6 @@ export default function SurveyPage() {
   const [recruiterInfo, setRecruiterInfo] = useState<Partial<User> | null>(null);
 
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
     rating: 0,
     feedback: "",
   });
@@ -84,9 +79,9 @@ export default function SurveyPage() {
     try {
       await surveys.submit({
         recruiterCode,
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
+        name: "",
+        email: "",
+        phone: "",
         rating: formData.rating,
         feedback: formData.feedback || undefined,
         source: "presentation",

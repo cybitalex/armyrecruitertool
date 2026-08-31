@@ -73,7 +73,7 @@ function MyQRCodeContent() {
   const [loadingLocationQRs, setLoadingLocationQRs] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newLocationLabel, setNewLocationLabel] = useState("");
-  const [newQRType, setNewQRType] = useState<"application" | "survey" | "sweepstakes">(
+  const [newQRType, setNewQRType] = useState<"application" | "survey" | "life_goals" | "high_school" | "sweepstakes">(
     "application"
   );
   const [creating, setCreating] = useState(false);
@@ -815,7 +815,7 @@ function MyQRCodeContent() {
                           <Select
                             value={newQRType}
                             onValueChange={(v) =>
-                              setNewQRType(v as "application" | "survey" | "sweepstakes")
+                              setNewQRType(v as "application" | "survey" | "life_goals" | "high_school" | "sweepstakes")
                             }
                           >
                             <SelectTrigger>
@@ -823,10 +823,16 @@ function MyQRCodeContent() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="application">
-                                Application Form
+                                Interest Form
                               </SelectItem>
                               <SelectItem value="survey">
-                                Survey Form
+                                Presentation Survey
+                              </SelectItem>
+                              <SelectItem value="life_goals">
+                                Life Goals Survey
+                              </SelectItem>
+                              <SelectItem value="high_school">
+                                High School Survey
                               </SelectItem>
                               {isVRSRecruiter && (
                                 <SelectItem value="sweepstakes">
@@ -890,8 +896,12 @@ function MyQRCodeContent() {
                         locationQR.qrType === "application"
                           ? "apply"
                           : locationQR.qrType === "survey"
-                            ? "survey"
-                            : "sweepstakes"
+                          ? "survey"
+                          : locationQR.qrType === "life_goals"
+                          ? "life-goals"
+                          : locationQR.qrType === "high_school"
+                          ? "high-school-survey"
+                          : "sweepstakes"
                       }?r=${locationQR.qrCode}`;
 
                       return (
@@ -904,10 +914,14 @@ function MyQRCodeContent() {
                                 </CardTitle>
                                 <CardDescription className="text-xs mt-1">
                                   {locationQR.qrType === "application"
-                                    ? "Application"
+                                    ? "Interest Form"
                                     : locationQR.qrType === "survey"
-                                      ? "Survey"
-                                      : "Sweepstakes"}{" "}
+                                    ? "Presentation Survey"
+                                    : locationQR.qrType === "life_goals"
+                                    ? "Life Goals Survey"
+                                    : locationQR.qrType === "high_school"
+                                    ? "High School Survey"
+                                    : "VRS Sweepstakes"}{" "}
                                   QR Code
                                 </CardDescription>
                               </div>

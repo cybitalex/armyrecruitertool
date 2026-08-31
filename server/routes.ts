@@ -1,5 +1,6 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import { randomBytes } from "crypto";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import {
@@ -48,7 +49,7 @@ import {
   sendStationChangeRequestNotification,
 } from "./auth";
 import { db } from "./database";
-import { users, qrScans, qrCodeLocations, notifications, recruits, armyMOS } from "@shared/schema";
+import { users, qrScans, qrCodeLocations, notifications, recruits, armyMOS, piiAuditLog } from "@shared/schema";
 import { eq, sql, and, desc, inArray, lte, gte } from "drizzle-orm";
 import { getSORBRegistrationStations } from "./sorb-data";
 
@@ -154,15 +155,84 @@ async function lookupApproxLocationByIp(
   }
 }
 
+// ── PII Audit Helper ──────────────────────────────────────────────────────────
+// Writes a non-blocking audit record for any access to PII-bearing resources.
+// Failures are logged to stderr but never surface to the caller.
+async function auditPiiAccess(opts: {
+  userId?: string | null;
+  userName?: string | null;
+  ip?: string;
+  method: string;
+  endpoint: string;
+  action: string;
+  recordId?: string | null;
+  statusCode?: number;
+  userAgent?: string;
+}) {
+  try {
+    await db.insert(piiAuditLog).values({
+      userId: opts.userId ?? null,
+      userName: opts.userName ?? null,
+      ipAddress: opts.ip ?? null,
+      method: opts.method,
+      endpoint: opts.endpoint,
+      action: opts.action,
+      recordId: opts.recordId ?? null,
+      statusCode: opts.statusCode ?? null,
+      userAgent: opts.userAgent ?? null,
+    });
+  } catch (err) {
+    console.error("⚠️  PII audit log write failed:", err);
+  }
+}
+
+// ── CSRF Protection ───────────────────────────────────────────────────────────
+// Synchronizer Token Pattern:
+// - A CSRF token is generated and stored in the session on login.
+// - It is returned in the login/me response so the SPA can read it.
+// - All authenticated POST/PUT/PATCH/DELETE calls must include it as X-CSRF-Token.
+// - Public form endpoints (surveys, QR scan) are exempt since they have no session.
+
+const CSRF_EXEMPT_PREFIXES = [
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/verify",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/qr-scan",
+  "/api/surveys",
+  "/api/sweepstakes",
+  "/api/life-goals",
+  "/api/high-school",
+  "/api/recruits",   // public interest form POST — still protected by PII rate limit
+];
+
+function csrfMiddleware(req: Request, res: Response, next: NextFunction) {
+  const mutating = ["POST", "PUT", "PATCH", "DELETE"].includes(req.method);
+  if (!mutating) return next();
+
+  const isExempt = CSRF_EXEMPT_PREFIXES.some((p) => req.path.startsWith(p));
+  if (isExempt) return next();
+
+  const sessionCsrf = (req as any).session?.csrfToken as string | undefined;
+  if (!sessionCsrf) return next(); // unauthenticated — let auth middleware reject
+
+  const headerCsrf = req.headers["x-csrf-token"] as string | undefined;
+  if (!headerCsrf || headerCsrf !== sessionCsrf) {
+    return res.status(403).json({ error: "Invalid or missing CSRF token" });
+  }
+  next();
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  app.use(csrfMiddleware);
+
   // AUTHENTICATION ENDPOINTS
 
   // Register new recruiter
   app.post("/api/auth/register", async (req, res) => {
     try {
-      console.log("📝 Registration attempt for:", req.body.email);
       const result = await registerUser(req.body);
-      console.log("✅ Registration successful for:", req.body.email);
       res.status(201).json(result);
     } catch (error) {
       console.error("❌ Registration error:", error);
@@ -230,14 +300,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create session
       await createSession(req, user.id);
 
-      // Verify session was created
-      console.log(
-        "✅ Session created for user:",
-        user.id,
-        "Session ID:",
-        req.sessionID
-      );
-      console.log("📝 Session data:", JSON.stringify(req.session));
+      // Generate CSRF token for the session (synchronizer token pattern)
+      const csrfToken = randomBytes(32).toString("hex");
+      (req as any).session.csrfToken = csrfToken;
 
       // Return user data (without sensitive fields)
       const {
@@ -252,15 +317,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.save((err) => {
           if (err) {
             console.error("❌ Error saving session before response:", err);
-          } else {
-            console.log("✅ Session fully saved, sending response");
           }
           resolve();
         });
       });
 
-      // Send response after session is saved
-      res.json({ message: "Login successful", user: userData });
+      // Send CSRF token in response body — SPA stores it in memory
+      res.json({ message: "Login successful", user: userData, csrfToken });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Login failed";
       res.status(401).json({ error: message });
@@ -280,14 +343,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user
   app.get("/api/auth/me", async (req, res) => {
     try {
-      console.log("🔍 Auth check - Session ID:", req.sessionID);
-      console.log("🔍 Auth check - Session data:", JSON.stringify(req.session));
-      console.log("🔍 Auth check - Cookies:", req.headers.cookie);
-
       const userId = (req as any).session?.userId;
 
       if (!userId) {
-        console.log("❌ No userId in session");
         return res.status(401).json({ error: "Not authenticated" });
       }
 
@@ -303,8 +361,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resetPasswordToken,
         ...userData
       } = user;
-      console.log("✅ User authenticated:", userData.email);
-      res.json({ user: userData });
+
+      // Ensure CSRF token exists (re-generate if session is old/pre-CSRF)
+      let csrfToken = (req as any).session?.csrfToken as string | undefined;
+      if (!csrfToken) {
+        csrfToken = randomBytes(32).toString("hex");
+        (req as any).session.csrfToken = csrfToken;
+      }
+
+      res.json({ user: userData, csrfToken });
     } catch (error) {
       console.error("❌ Auth check error:", error);
       res.status(500).json({ error: "Failed to fetch user data" });
@@ -353,7 +418,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .set({ passwordHash: newPasswordHash })
         .where(eq(users.id, userId));
 
-      console.log(`✅ Password changed for user: ${user.email}`);
       res.json({ message: "Password changed successfully" });
     } catch (error) {
       console.error("❌ Password change error:", error);
@@ -377,6 +441,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select()
         .from(stations)
         .orderBy(stations.state);
+      // Stations change rarely — cache for 10 minutes, shared across all users
+      res.setHeader("Cache-Control", "public, max-age=600, stale-while-revalidate=120");
       res.json(allStations);
     } catch (error) {
       console.error("❌ Failed to fetch stations:", error);
@@ -1696,12 +1762,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Location label is required" });
       }
 
-      if (!["application", "survey", "sweepstakes"].includes(qrType)) {
+      if (!["application", "survey", "life_goals", "high_school", "sweepstakes"].includes(qrType)) {
         return res
           .status(400)
-          .json({
-            error: "QR type must be 'application', 'survey', or 'sweepstakes'",
-          });
+          .json({ error: "Invalid QR type" });
       }
 
       if (qrType === "sweepstakes") {
@@ -1729,11 +1793,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .returning();
 
       // Generate QR code image
-      const qrCodeImage = await (qrType === "application"
-        ? generateQRCodeImage(qrCodeId)
-        : qrType === "survey"
-          ? generateSurveyQRCodeImage(qrCodeId)
-          : generateSweepstakesQRCodeImage(qrCodeId));
+      const { generateLifeGoalsQRCodeImage, generateHighSchoolSurveyQRCodeImage, generateSweepstakesQRCodeImage: generateSweepstakesQR } = await import("./auth");
+      const qrCodeImage =
+        qrType === "life_goals"
+          ? await generateLifeGoalsQRCodeImage(qrCodeId)
+          : qrType === "high_school"
+          ? await generateHighSchoolSurveyQRCodeImage(qrCodeId)
+          : qrType === "sweepstakes"
+          ? await generateSweepstakesQR(qrCodeId)
+          : qrType === "survey"
+          ? await generateSurveyQRCodeImage(qrCodeId)
+          : await generateQRCodeImage(qrCodeId);
 
       res.json({
         id: locationQR.id,
@@ -1795,11 +1865,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate QR code image
-      const qrCodeImage = await (locationQR.qrType === "application"
-        ? generateQRCodeImage(locationQR.qrCode)
-        : locationQR.qrType === "survey"
-          ? generateSurveyQRCodeImage(locationQR.qrCode)
-          : generateSweepstakesQRCodeImage(locationQR.qrCode));
+      const { generateLifeGoalsQRCodeImage: genLG, generateHighSchoolSurveyQRCodeImage: genHS, generateSweepstakesQRCodeImage: genSW } = await import("./auth");
+      const qrCodeImage =
+        locationQR.qrType === "life_goals"
+          ? await genLG(locationQR.qrCode)
+          : locationQR.qrType === "high_school"
+          ? await genHS(locationQR.qrCode)
+          : locationQR.qrType === "sweepstakes"
+          ? await genSW(locationQR.qrCode)
+          : locationQR.qrType === "survey"
+          ? await generateSurveyQRCodeImage(locationQR.qrCode)
+          : await generateQRCodeImage(locationQR.qrCode);
 
       res.json({ qrCode: qrCodeImage });
     } catch (error) {
@@ -1856,6 +1932,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
+      // ── Orphan cleanup: clear conversion flags where the linked record is gone ──
+      // Application scans: convertedToApplication = true but recruit deleted
+      await db.execute(sql`
+        UPDATE qr_scans
+        SET converted_to_application = false, application_id = NULL
+        WHERE converted_to_application = true
+          AND application_id IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM recruits WHERE recruits.id = qr_scans.application_id)
+      `);
+      // Survey scans: convertedToSurvey = true but survey response deleted
+      await db.execute(sql`
+        UPDATE qr_scans
+        SET converted_to_survey = false, survey_response_id = NULL
+        WHERE converted_to_survey = true
+          AND survey_response_id IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM qr_survey_responses WHERE qr_survey_responses.id = qr_scans.survey_response_id)
+      `);
+
       // Get all scans for this user (or station if station commander/admin)
       // Sort by most recent first
       let allScans;
@@ -1908,13 +2002,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             conversionType: string | null;
             ipAddress: string | null;
             approxLocation: {
-              country: string | null;
-              region: string | null;
               city: string | null;
-              latitude: string | null;
-              longitude: string | null;
-              timezone: string | null;
-              isp: string | null;
+              region: string | null;
+              country: string | null;
             };
           }>;
         }
@@ -1946,6 +2036,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         scansByLocation[locationKey].totalScans++;
+        // After orphan cleanup above, these flags are now accurate
         const converted =
           scan.scanType === "survey"
             ? scan.convertedToSurvey || false
@@ -1963,13 +2054,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           conversionType: converted ? scan.scanType : null,
           ipAddress: scan.ipAddress,
           approxLocation: {
-            country: scan.scanCountry,
-            region: scan.scanRegion,
-            city: scan.scanCity,
-            latitude: scan.scanLatitude,
-            longitude: scan.scanLongitude,
-            timezone: scan.scanTimezone,
-            isp: scan.scanIsp,
+            city: scan.scanCity ?? null,
+            region: scan.scanRegion ?? null,
+            country: scan.scanCountry ?? null,
           },
         });
       });
@@ -1988,25 +2075,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         (a, b) => b.totalScans - a.totalScans
       );
 
+      const totalConverted = allScans.filter((s) =>
+        s.scanType === "survey" ? s.convertedToSurvey : s.convertedToApplication
+      ).length;
+
       res.json({
         locations,
         totalScans: allScans.length,
-        totalConverted: allScans.filter((s) =>
-          s.scanType === "survey"
-            ? s.convertedToSurvey
-            : s.convertedToApplication
-        ).length,
+        totalConverted,
         overallConversionRate:
           allScans.length > 0
-            ? Math.round(
-                (allScans.filter((s) =>
-                  s.scanType === "survey"
-                    ? s.convertedToSurvey
-                    : s.convertedToApplication
-                ).length /
-                  allScans.length) *
-                  100
-              )
+            ? Math.round((totalConverted / allScans.length) * 100)
             : 0,
       });
     } catch (error) {
@@ -2178,6 +2257,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
+      // ── Orphan cleanup: clear stale conversion flags for deleted records ──
+      await db.execute(sql`
+        UPDATE qr_scans
+        SET converted_to_application = false, application_id = NULL
+        WHERE converted_to_application = true
+          AND application_id IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM recruits WHERE recruits.id = qr_scans.application_id)
+      `);
+      await db.execute(sql`
+        UPDATE qr_scans
+        SET converted_to_survey = false, survey_response_id = NULL
+        WHERE converted_to_survey = true
+          AND survey_response_id IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM qr_survey_responses WHERE qr_survey_responses.id = qr_scans.survey_response_id)
+      `);
+
       // Use optimized aggregation for stats instead of loading all recruits
       let stats;
       let recruiterRecruits: any[] = [];
@@ -2329,6 +2424,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get recent recruits (already sorted by database query, just take first 10)
       const recentRecruits = recruiterRecruits.slice(0, 10);
 
+      // Allow client and shared proxy to cache for 60s; private = per-user only
+      res.setHeader("Cache-Control", "private, max-age=60, stale-while-revalidate=30");
       res.json({
         ...stats,
         recentRecruits,
@@ -2416,9 +2513,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             : null,
         }));
 
+        res.setHeader("Cache-Control", "private, max-age=60, stale-while-revalidate=30");
         res.json(recruitsWithRecruiter);
+        auditPiiAccess({ userId, userName: user.fullName, ip: req.ip, method: "GET", endpoint: "/api/recruits", action: "VIEW_RECRUITS_LIST", statusCode: 200, userAgent: req.headers["user-agent"] });
       } else {
+        res.setHeader("Cache-Control", "private, max-age=60, stale-while-revalidate=30");
         res.json(userRecruits);
+        auditPiiAccess({ userId, userName: user.fullName, ip: req.ip, method: "GET", endpoint: "/api/recruits", action: "VIEW_RECRUITS_LIST", statusCode: 200, userAgent: req.headers["user-agent"] });
       }
     } catch (error) {
       res.status(500).json({
@@ -2452,24 +2553,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verify user has permission to view this recruit
       if (user.role === "admin") {
-        // Admin can see all recruits
         res.json(recruit);
+        auditPiiAccess({ userId, userName: user.fullName, ip: req.ip, method: "GET", endpoint: "/api/recruits/:id", action: "VIEW_RECRUIT_DETAIL", recordId: recruit.id, statusCode: 200, userAgent: req.headers["user-agent"] });
       } else if (user.role === "station_commander" && user.stationId) {
-        // Station commander can see recruits from their station
         const recruiter = await db
           .select()
           .from(users)
           .where(eq(users.id, recruit.recruiterId || ""));
         if (recruiter.length > 0 && recruiter[0].stationId === user.stationId) {
           res.json(recruit);
+          auditPiiAccess({ userId, userName: user.fullName, ip: req.ip, method: "GET", endpoint: "/api/recruits/:id", action: "VIEW_RECRUIT_DETAIL", recordId: recruit.id, statusCode: 200, userAgent: req.headers["user-agent"] });
         } else {
           res
             .status(403)
             .json({ error: "You don't have permission to view this recruit" });
         }
       } else if (recruit.recruiterId === userId) {
-        // Regular recruiter can only see their own recruits
         res.json(recruit);
+        auditPiiAccess({ userId, userName: user.fullName, ip: req.ip, method: "GET", endpoint: "/api/recruits/:id", action: "VIEW_RECRUIT_DETAIL", recordId: recruit.id, statusCode: 200, userAgent: req.headers["user-agent"] });
       } else {
         res
           .status(403)
@@ -2518,11 +2619,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         verificationToken,
         resetPasswordToken,
         qrCode: _qrCode,
+        email: _email,
         ...recruiterInfo
       } = recruiter;
+
+      // Only specific accounts are allowed to collect PII via the interest form
+      const FORMS_ENABLED_EMAILS = new Set([
+        "moran.alex@icloud.com",
+        "alex.moran4.mil@army.mil",
+      ]);
+      const formsEnabled = FORMS_ENABLED_EMAILS.has(recruiter.email ?? "");
+
       res.json({
         recruiter: recruiterInfo,
         locationLabel: locationQR?.locationLabel || null,
+        formsEnabled,
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch recruiter information" });
@@ -2640,11 +2751,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(
         `📝 POST /api/recruits - Session userId: ${
           userId || "NULL"
-        }, recruiterCode: ${recruiterCode || "NULL"}`
-      );
-      console.log(
-        `📝 Session data:`,
-        JSON.stringify((req as any).session || {})
+        }, recruiterCode: ${recruiterCode ? "[PRESENT]" : "NULL"}`
       );
 
       // Determine source and recruiterId:
@@ -2742,7 +2849,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Remove recruiterCode from body and use recruiterId
-      const { recruiterCode: _, ...recruitData } = body;
+      const { recruiterCode: _, age, jobCategory, ...recruitData } = body;
+
+      // Convert age → approximate date of birth (Jan 1 of birth year)
+      if (age !== undefined && age !== null) {
+        const birthYear = new Date().getFullYear() - parseInt(age);
+        recruitData.dateOfBirth = recruitData.dateOfBirth || `${birthYear}-01-01`;
+      }
+
+      // Ensure no required fields are left blank/null
+      recruitData.dateOfBirth    = recruitData.dateOfBirth    || "1990-01-01";
+      recruitData.educationLevel = recruitData.educationLevel || "not_provided";
+      recruitData.hasDriversLicense = recruitData.hasDriversLicense || "unknown";
+      recruitData.hasPriorService   = recruitData.hasPriorService   || "no";
+      recruitData.availability      = recruitData.availability      || "flexible";
+      recruitData.address  = recruitData.address  || "";
+      recruitData.city     = recruitData.city     || "";
+      recruitData.state    = recruitData.state    || "";
+      recruitData.zipCode  = recruitData.zipCode  || "";
+
+      // If a job category was provided without a preferredMOS, use the category itself
+      if (jobCategory && !recruitData.preferredMOS) {
+        recruitData.preferredMOS = jobCategory;
+      }
 
       console.log(
         `📝 Creating recruit - recruiterId: ${
@@ -2892,6 +3021,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Audit new PII submission (no personal details in the log, only record ID)
+      auditPiiAccess({ userId: recruiterId ?? null, ip: req.ip, method: "POST", endpoint: "/api/recruits", action: "PII_SUBMISSION_RECEIVED", recordId: recruit.id, statusCode: 201, userAgent: req.headers["user-agent"] });
       res.status(201).json(recruit);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -3656,6 +3787,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           new Date().toISOString().split("T")[0]
         }.csv`
       );
+      // Audit high-sensitivity bulk export
+      const [exportUser] = await db.select().from(users).where(eq(users.id, userId));
+      auditPiiAccess({ userId, userName: exportUser?.fullName, ip: req.ip, method: "GET", endpoint: "/api/recruits/export/csv", action: "EXPORT_PII_BULK_CSV", recordId: null, statusCode: 200, userAgent: req.headers["user-agent"] });
       res.send(csvContent);
     } catch (error) {
       res.status(500).json({
@@ -3676,11 +3810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Interest description is required" });
       }
 
-      console.log(`🎯 MOS suggestion request for: "${interestDescription}"`);
-      
       const suggestions = await suggestMOS(interestDescription);
-      
-      console.log(`✅ Found ${suggestions.length} MOS suggestions`);
       
       res.json({ 
         suggestions,

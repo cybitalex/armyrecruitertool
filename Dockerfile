@@ -6,8 +6,11 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (with retry/timeout config for flaky registry connections)
+RUN npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retries 5 && \
+    npm ci
 
 # Copy source code
 COPY . .
@@ -24,7 +27,10 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including dev deps needed by bundled code)
-RUN npm ci
+RUN npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retries 5 && \
+    npm ci
 
 # Copy built files from builder
 # The dist directory contains both backend (index.js) and frontend (public/)
