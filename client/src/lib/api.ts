@@ -331,7 +331,7 @@ export const stationCommander = {
 
 // Location QR Codes API
 export const locationQRCodes = {
-  create: async (data: { locationLabel: string; qrType: "application" | "survey" | "sweepstakes" }) => {
+  create: async (data: { locationLabel: string; qrType: "application" | "survey" | "life_goals" | "high_school" | "sweepstakes" }) => {
     return apiCall<{
       id: string;
       locationLabel: string;
